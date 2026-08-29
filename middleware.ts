@@ -28,5 +28,5 @@ export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
  * can never be taken down by an auth problem.
  */
 export const config = {
-  matcher: ["/app", "/app/(.*)", "/api/auth(.*)"],
+  matcher: ["/app", "/app/(.*)", "/api/auth(.*)", "/api/google(.*)"],
 };

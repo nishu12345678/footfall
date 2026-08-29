@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { Steps } from "@/components/steps";
@@ -13,9 +13,13 @@ export default function OthersPage() {
   const saveLogo = useMutation(api.branding.saveLogo);
   const setBackground = useMutation(api.branding.setLogoBackground);
   const finish = useMutation(api.branding.finishOnboarding);
+  const findLogos = useAction(api.branding.findLogoCandidates);
+  const useLogoFromUrl = useAction(api.branding.useLogoFromUrl);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [candidates, setCandidates] = useState<string[] | null>(null);
+  const [finding, setFinding] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,6 +70,35 @@ export default function OthersPage() {
     }
   }
 
+  async function findFromWebsite() {
+    setFinding(true);
+    setError(null);
+    try {
+      const found = await findLogos({});
+      setCandidates(found);
+      if (found.length === 0) {
+        setError("We couldn't find a logo on your website. Upload one instead.");
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setFinding(false);
+    }
+  }
+
+  async function pickCandidate(url: string) {
+    setUploading(true);
+    setError(null);
+    try {
+      await useLogoFromUrl({ url, background });
+      setCandidates(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function done() {
     setBusy(true);
     setError(null);
@@ -99,6 +132,59 @@ export default function OthersPage() {
             if (file) void upload(file);
           }}
         />
+
+        {business.website ? (
+          <div className="mt-6 rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]">
+            <div className="flex items-center justify-between gap-3">
+              <p className="flex items-center gap-1.5 font-display text-[14px] font-bold">
+                <span aria-hidden className="text-pin">
+                  ✦
+                </span>
+                find it from my website
+              </p>
+              <button
+                type="button"
+                onClick={() => void findFromWebsite()}
+                disabled={finding || uploading}
+                className="font-mono text-[11px] underline underline-offset-4 hover:text-pin disabled:opacity-50"
+              >
+                {finding ? "looking…" : candidates ? "look again" : "find my logo"}
+              </button>
+            </div>
+
+            {candidates && candidates.length > 0 ? (
+              <>
+                <ul className="mt-3 grid grid-cols-4 gap-2">
+                  {candidates.map((src) => (
+                    <li key={src}>
+                      <button
+                        type="button"
+                        onClick={() => void pickCandidate(src)}
+                        disabled={uploading}
+                        className="grid aspect-square w-full place-items-center rounded-[10px] border border-rule bg-white p-1.5 transition-colors hover:border-ink disabled:opacity-50"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={src}
+                          alt=""
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 font-mono text-[10px] leading-relaxed text-muted">
+                  tap the one that&rsquo;s yours. some of these will be the
+                  website builder&rsquo;s logo, not yours — ignore those.
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 text-[13px] leading-relaxed text-muted">
+                We&rsquo;ll read {business.website} and show you what we find.
+              </p>
+            )}
+          </div>
+        ) : null}
 
         {business.logoUrl ? (
           <>
@@ -195,7 +281,7 @@ export default function OthersPage() {
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="mt-6 flex w-full flex-col items-center gap-2 rounded-[14px] border-2 border-dashed border-rule bg-paper-2 px-6 py-10 transition-colors hover:border-ink disabled:opacity-50"
+            className="mt-4 flex w-full flex-col items-center gap-2 rounded-[14px] border-2 border-dashed border-rule bg-paper-2 px-6 py-10 transition-colors hover:border-ink disabled:opacity-50"
           >
             <span aria-hidden className="text-[24px]">
               ⬆

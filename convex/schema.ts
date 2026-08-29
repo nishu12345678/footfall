@@ -49,6 +49,20 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_gbp_location", ["gbpLocationName"]),
 
+  /**
+   * One-time tokens that carry "who started this link" through Google's
+   * redirect, so the HTTPS callback on .convex.site knows which user came
+   * back. Short-lived and single-use.
+   */
+  googleLinkTokens: defineTable({
+    userId: v.id("users"),
+    token: v.string(),
+    codeVerifier: v.string(),
+    returnTo: v.string(),
+    expiresAt: v.number(),
+    usedAt: v.optional(v.number()),
+  }).index("by_token", ["token"]),
+
   /** OAuth tokens for the Google account that owns the listing. */
   googleAccounts: defineTable({
     userId: v.id("users"),

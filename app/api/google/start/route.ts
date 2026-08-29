@@ -1,16 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { ConvexHttpClient } from "convex/browser";
+import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
+import { api } from "@/convex/_generated/api";
 
 /**
  * Sends the owner to Google's consent screen.
  *
- * One scope: business.manage — "see, edit, create and delete your Google
- * business listings". access_type=offline plus prompt=consent is what makes
- * Google hand back a refresh token, without which the agent can only act
- * for an hour.
- *
- * PKCE is included because Google can decline to issue an authorisation
- * code without it. The verifier rides along in an httpOnly cookie and is
- * replayed at token exchange.
+ * The redirect URI is this deployment's HTTPS endpoint on .convex.site, not
+ * the Next app: Google would not return an authorisation code to an
+ * http://localhost redirect. `state` is a one-time token that tells the
+ * callback which signed-in user came back, and it carries the PKCE verifier.
  */
 
 function base64url(bytes: Uint8Array): string {
@@ -34,28 +33,51 @@ async function challengeFor(verifier: string): Promise<string> {
 }
 
 export const GET = async (request: NextRequest) => {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  if (!clientId) {
-    return NextResponse.json(
-      { error: "GOOGLE_CLIENT_ID is not set" },
-      { status: 500 },
+  const origin = request.nextUrl.origin;
+  const fail = (reason: string) =>
+    NextResponse.redirect(
+      `${origin}/app/connect?error=${encodeURIComponent(reason)}`,
     );
+
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+  const convexSite = process.env.NEXT_PUBLIC_CONVEX_SITE_URL;
+  if (!clientId || !convexUrl || !convexSite) {
+    return fail("Google or Convex is not configured.");
   }
 
-  const origin = request.nextUrl.origin;
-  const redirectUri = `${origin}/api/google/callback`;
-  const state = crypto.randomUUID();
+  const sessionToken = await convexAuthNextjsToken();
+  if (!sessionToken) return fail("Your session expired. Sign in again.");
+
   const verifier = randomVerifier();
   const challenge = await challengeFor(verifier);
 
+  let state: string;
+  try {
+    const client = new ConvexHttpClient(convexUrl);
+    client.setAuth(sessionToken);
+    state = await client.mutation(api.google.startLink, {
+      returnTo: `${origin}/app/connect/processing`,
+      codeVerifier: verifier,
+    });
+  } catch (error) {
+    console.error("[google/start]", error);
+    return fail(
+      error instanceof Error ? error.message : "Could not start the link.",
+    );
+  }
+
+  // Diagnostic: ?probe=1 asks for a basic scope instead of business.manage.
+  const probe = request.nextUrl.searchParams.get("probe") === "1";
+  const scope = probe
+    ? "openid email profile"
+    : "https://www.googleapis.com/auth/business.manage";
+
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.searchParams.set("client_id", clientId);
-  url.searchParams.set("redirect_uri", redirectUri);
+  url.searchParams.set("redirect_uri", `${convexSite}/google/callback`);
   url.searchParams.set("response_type", "code");
-  url.searchParams.set(
-    "scope",
-    "https://www.googleapis.com/auth/business.manage",
-  );
+  url.searchParams.set("scope", scope);
   url.searchParams.set("access_type", "offline");
   url.searchParams.set("prompt", "consent");
   url.searchParams.set("state", state);
@@ -63,16 +85,5 @@ export const GET = async (request: NextRequest) => {
   url.searchParams.set("code_challenge_method", "S256");
 
   console.log(`[google/start] ${url.toString()}`);
-
-  const response = NextResponse.redirect(url.toString());
-  const cookie = {
-    httpOnly: true,
-    sameSite: "lax" as const,
-    secure: origin.startsWith("https"),
-    path: "/",
-    maxAge: 600,
-  };
-  response.cookies.set("g_state", state, cookie);
-  response.cookies.set("g_verifier", verifier, cookie);
-  return response;
+  return NextResponse.redirect(url.toString());
 };

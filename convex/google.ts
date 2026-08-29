@@ -1,5 +1,11 @@
 import { v } from "convex/values";
-import { action, internalMutation, internalQuery } from "./_generated/server";
+import {
+  action,
+  internalAction,
+  internalMutation,
+  internalQuery,
+  mutation,
+} from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
@@ -335,5 +341,100 @@ export const linkLocation = action({
     );
 
     return { businessId };
+  },
+});
+
+/* ------------------------- https callback plumbing -----------------------
+   Google would not return an authorisation code to http://localhost. The
+   consent redirect now lands on this deployment's HTTPS endpoint instead,
+   the same origin Convex Auth's own Google login uses successfully.        */
+
+export const startLink = mutation({
+  args: { returnTo: v.string(), codeVerifier: v.string() },
+  handler: async (ctx, { returnTo, codeVerifier }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+
+    const token = crypto.randomUUID().replace(/-/g, "");
+    await ctx.db.insert("googleLinkTokens", {
+      userId,
+      token,
+      codeVerifier,
+      returnTo,
+      expiresAt: Date.now() + 10 * 60 * 1000,
+    });
+    return token;
+  },
+});
+
+export const consumeLinkToken = internalMutation({
+  args: { token: v.string() },
+  handler: async (ctx, { token }) => {
+    const row = await ctx.db
+      .query("googleLinkTokens")
+      .withIndex("by_token", (q) => q.eq("token", token))
+      .first();
+    if (!row) return null;
+    if (row.usedAt || row.expiresAt < Date.now()) return null;
+
+    await ctx.db.patch(row._id, { usedAt: Date.now() });
+    return {
+      userId: row.userId,
+      codeVerifier: row.codeVerifier,
+      returnTo: row.returnTo,
+    };
+  },
+});
+
+/** Exchanges the code on behalf of the user the link token identifies. */
+export const completeLink = internalAction({
+  args: { code: v.string(), state: v.string(), redirectUri: v.string() },
+  handler: async (
+    ctx,
+    { code, state, redirectUri },
+  ): Promise<{
+    ok: boolean;
+    returnTo: string | null;
+    error: string | null;
+  }> => {
+    const link = await ctx.runMutation(internal.google.consumeLinkToken, {
+      token: state,
+    });
+    if (!link) {
+      return { ok: false, returnTo: null, error: "That link expired. Try again." };
+    }
+
+    const res = await fetch(TOKEN_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: process.env.GOOGLE_CLIENT_ID!,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code",
+        code_verifier: link.codeVerifier,
+      }),
+    });
+
+    const payload = await res.json();
+    if (!res.ok) {
+      console.error("[google] token exchange failed", payload);
+      return {
+        ok: false,
+        returnTo: link.returnTo,
+        error: payload.error_description ?? payload.error ?? "Token exchange failed",
+      };
+    }
+
+    await ctx.runMutation(internal.google.saveAccount, {
+      userId: link.userId,
+      accessToken: payload.access_token,
+      refreshToken: payload.refresh_token,
+      expiresAt: Date.now() + (payload.expires_in ?? 3600) * 1000,
+      scope: payload.scope ?? "",
+    });
+
+    return { ok: true, returnTo: link.returnTo, error: null };
   },
 });

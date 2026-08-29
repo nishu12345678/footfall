@@ -1,26 +1,273 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ---------------------------------------------------------------
+   footfall — design tokens
+   palette is pulled from the subject's own world: map-pin red,
+   open-now green, review-star amber, on warm printed-paper cream.
+   --------------------------------------------------------------- */
+
+@theme {
+  --color-paper: #f6f2e9;
+  --color-paper-2: #fffdf7;
+  --color-paper-3: #efe9db;
+  --color-ink: #14130e;
+  --color-ink-soft: #454034;
+  --color-muted: #7c7565;
+  --color-rule: #ded5c2;
+  --color-rule-soft: #e9e2d3;
+  --color-pin: #dd4327;
+  --color-pin-soft: #fbe8e2;
+  --color-open: #12744e;
+  --color-open-soft: #e2f0e8;
+  --color-star: #e2a021;
+  --color-chat: #1f6f4a;
+
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, monospace;
+
+  --radius-window: 14px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* --------------------------------- base --------------------------------- */
+
+* {
+  border-color: var(--color-rule);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-feature-settings: "cv01", "cv03", "ss01";
+  overflow-x: hidden;
+}
+
+/* the page is set in lowercase throughout, like the reference.
+   proper nouns are written lowercase on purpose. */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+::selection {
+  background: var(--color-pin);
+  color: var(--color-paper-2);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-pin);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ------------------------------ paper grain -----------------------------
+   a faint printed texture so the cream never reads as flat #f5f5f0 filler */
+
+.grain::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: radial-gradient(
+      var(--color-rule) 0.5px,
+      transparent 0.5px
+    );
+  background-size: 22px 22px;
+}
+
+/* ------------------------------ window chrome ---------------------------
+   the reference frames everything in mac windows. we keep the frame and
+   put google-listing artifacts inside it. */
+
+.window {
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-ink);
+  border-radius: var(--radius-window);
+  box-shadow: 3px 4px 0 rgb(20 19 14 / 0.9);
+  overflow: hidden;
+}
+
+.window-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-ink);
+  background: var(--color-paper-3);
+}
+
+.window-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-ink);
+  flex: none;
+}
+
+.window-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--color-ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ------------------------------- controls ------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 999px;
+  border: 1px solid var(--color-ink);
+  padding: 13px 22px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  transition: transform 0.14s ease, box-shadow 0.14s ease,
+    background-color 0.14s ease;
+  will-change: transform;
+}
+
+.btn-primary {
+  background: var(--color-pin);
+  color: var(--color-paper-2);
+  box-shadow: 3px 3px 0 var(--color-ink);
+}
+
+.btn-primary:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--color-ink);
+}
+
+.btn-primary:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--color-ink);
+}
+
+.btn-ghost {
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  box-shadow: 3px 3px 0 var(--color-ink);
+}
+
+.btn-ghost:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--color-ink);
+}
+
+.btn-ghost:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--color-ink);
+}
+
+.btn-sm {
+  padding: 9px 16px;
+  font-size: 14px;
+  box-shadow: 2px 2px 0 var(--color-ink);
+}
+
+/* -------------------------------- eyebrow ------------------------------- */
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--color-muted);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--color-ink);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--color-paper-2);
+}
+
+/* -------------------------------- motion -------------------------------- */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes float-a {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--tilt, 0deg));
+  }
+  50% {
+    transform: translateY(-9px) rotate(var(--tilt, 0deg));
+  }
+}
+
+.floaty {
+  animation: float-a 7s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.blink {
+  animation: blink 1.6s steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .floaty,
+  .blink {
+    animation: none !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
 }

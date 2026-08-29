@@ -47,3 +47,10 @@ skills-lock.json
 
 .vercel
 .env*
+
+# convex auth keys (never commit)
+.auth-keys.json
+
+# local reference material, never publish
+screenshots/
+credentials.txt

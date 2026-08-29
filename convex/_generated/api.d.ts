@@ -11,6 +11,7 @@
 import type * as about from "../about.js";
 import type * as auth from "../auth.js";
 import type * as businesses from "../businesses.js";
+import type * as gbp from "../gbp.js";
 import type * as google from "../google.js";
 import type * as http from "../http.js";
 
@@ -24,6 +25,7 @@ declare const fullApi: ApiFromModules<{
   about: typeof about;
   auth: typeof auth;
   businesses: typeof businesses;
+  gbp: typeof gbp;
   google: typeof google;
   http: typeof http;
 }>;

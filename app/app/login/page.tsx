@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useConvexAuth } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { BRAND } from "@/lib/content";
 
@@ -11,6 +12,7 @@ const CODE_LENGTH = { phone: 4, email: 6 } as const;
 
 export default function LoginPage() {
   const { signIn } = useAuthActions();
+  const { isAuthenticated } = useConvexAuth();
 
   const [method, setMethod] = useState<Method>("phone");
   const [step, setStep] = useState<Step>("identify");
@@ -43,6 +45,12 @@ export default function LoginPage() {
   useEffect(() => {
     if (step === "code") codeRef.current?.focus();
   }, [step]);
+
+  // OAuth returns here with ?code=; the provider exchanges it, and the moment
+  // a session exists we move on to the app.
+  useEffect(() => {
+    if (isAuthenticated) window.location.href = "/app";
+  }, [isAuthenticated]);
 
   function reset(next: Method) {
     setMethod(next);
@@ -105,7 +113,7 @@ export default function LoginPage() {
     setError(null);
     setDetail(null);
     try {
-      await signIn("google");
+      await signIn("google", { redirectTo: "/app/login" });
     } catch (e) {
       report(e, "Google sign-in didn't work. Try your number or email.");
       setBusy(null);

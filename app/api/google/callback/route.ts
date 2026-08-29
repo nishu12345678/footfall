@@ -42,7 +42,14 @@ export const GET = async (request: NextRequest) => {
   }
 
   const code = params.get("code");
-  if (!code) return fail("Google didn't send an authorisation code.");
+  if (!code) {
+    // Google echoes the requested scope but issues no code when the owner
+    // clicks Continue without ticking the permission checkbox on the
+    // granular-consent screen. No error is returned — just no code.
+    return fail(
+      "Google didn't grant the permission. On the Google screen you must TICK the checkbox next to “See, edit, create and delete your Google business listings” before clicking Continue.",
+    );
+  }
 
   const state = params.get("state");
   const expected = request.cookies.get("g_state")?.value;

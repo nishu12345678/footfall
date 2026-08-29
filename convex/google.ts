@@ -95,8 +95,12 @@ export const patchAccessToken = internalMutation({
 /* ------------------------------ oauth code ------------------------------ */
 
 export const exchangeCode = action({
-  args: { code: v.string(), redirectUri: v.string() },
-  handler: async (ctx, { code, redirectUri }) => {
+  args: {
+    code: v.string(),
+    codeVerifier: v.string(),
+    redirectUri: v.string(),
+  },
+  handler: async (ctx, { code, codeVerifier, redirectUri }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Sign in first.");
 
@@ -115,6 +119,7 @@ export const exchangeCode = action({
         client_secret: clientSecret,
         redirect_uri: redirectUri,
         grant_type: "authorization_code",
+        code_verifier: codeVerifier,
       }),
     });
 

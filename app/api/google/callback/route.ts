@@ -50,6 +50,11 @@ export const GET = async (request: NextRequest) => {
     return fail("That sign-in link expired. Try connecting again.");
   }
 
+  const codeVerifier = request.cookies.get("g_verifier")?.value;
+  if (!codeVerifier) {
+    return fail("That sign-in link expired. Try connecting again.");
+  }
+
   const token = await convexAuthNextjsToken();
   console.log(
     `[google/callback] convex session token: ${token ? "present" : "MISSING"}`,
@@ -64,6 +69,7 @@ export const GET = async (request: NextRequest) => {
     client.setAuth(token);
     await client.action(api.google.exchangeCode, {
       code,
+      codeVerifier,
       redirectUri: `${origin}/api/google/callback`,
     });
   } catch (error) {
@@ -75,5 +81,6 @@ export const GET = async (request: NextRequest) => {
 
   const response = NextResponse.redirect(`${origin}/app/connect/processing`);
   response.cookies.delete("g_state");
+  response.cookies.delete("g_verifier");
   return response;
 };

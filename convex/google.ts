@@ -46,6 +46,8 @@ export type GoogleLocation = {
   category?: string;
   lat?: number;
   lng?: number;
+  reviewUri?: string;
+  mapsUri?: string;
   accountName: string;
 };
 
@@ -242,6 +244,8 @@ export const listLocations = action({
           category: loc.categories?.primaryCategory?.displayName,
           lat: loc.latlng?.latitude,
           lng: loc.latlng?.longitude,
+          reviewUri: loc.metadata?.newReviewUri,
+          mapsUri: loc.metadata?.mapsUri,
           accountName: account.name,
         });
       }
@@ -267,6 +271,8 @@ export const createBusinessFromLocation = internalMutation({
       category: v.optional(v.string()),
       lat: v.optional(v.number()),
       lng: v.optional(v.number()),
+      reviewUri: v.optional(v.string()),
+      mapsUri: v.optional(v.string()),
       accountName: v.string(),
     }),
   },
@@ -292,6 +298,8 @@ export const createBusinessFromLocation = internalMutation({
       gbpAccountName: location.accountName,
       gbpLocationName: location.name,
       primaryCategory: location.category,
+      reviewUri: location.reviewUri,
+      mapsUri: location.mapsUri,
       onboardingStep: 2,
       onboardingComplete: false,
       agentActive: false,
@@ -328,6 +336,8 @@ export const linkLocation = action({
       category: v.optional(v.string()),
       lat: v.optional(v.number()),
       lng: v.optional(v.number()),
+      reviewUri: v.optional(v.string()),
+      mapsUri: v.optional(v.string()),
       accountName: v.string(),
     }),
   },
@@ -437,4 +447,64 @@ export const completeLink = internalAction({
 
     return { ok: true, returnTo: link.returnTo, error: null };
   },
+});
+
+/**
+ * Re-reads the linked listing from Google and updates the stored copy.
+ * Used to backfill fields added after a business was first connected.
+ */
+export const refreshLocation = action({
+  args: {},
+  handler: async (ctx): Promise<{ ok: boolean; title?: string }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+
+    const business = await ctx.runQuery(internal.google.businessForUser, {
+      userId,
+    });
+    if (!business?.gbpLocationName) {
+      throw new Error("No Google listing is linked.");
+    }
+
+    const token = await freshAccessToken(ctx, userId);
+    const url =
+      `${INFO_BASE}/${business.gbpLocationName}` +
+      `?readMask=${encodeURIComponent(LOCATION_READ_MASK)}`;
+    const loc = await googleGet(url, token);
+
+    const addr = loc.storefrontAddress;
+    await ctx.runMutation(internal.google.createBusinessFromLocation, {
+      userId,
+      location: {
+        name: loc.name,
+        title: loc.title ?? business.orgName,
+        address: addr
+          ? [...(addr.addressLines ?? []), addr.locality, addr.administrativeArea]
+              .filter(Boolean)
+              .join(", ")
+          : undefined,
+        city: addr?.locality,
+        pinCode: addr?.postalCode,
+        phone: loc.phoneNumbers?.primaryPhone,
+        website: loc.websiteUri,
+        category: loc.categories?.primaryCategory?.displayName,
+        lat: loc.latlng?.latitude,
+        lng: loc.latlng?.longitude,
+        reviewUri: loc.metadata?.newReviewUri,
+        mapsUri: loc.metadata?.mapsUri,
+        accountName: business.gbpAccountName ?? "",
+      },
+    });
+
+    return { ok: true, title: loc.title };
+  },
+});
+
+export const businessForUser = internalQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }) =>
+    await ctx.db
+      .query("businesses")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first(),
 });

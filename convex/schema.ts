@@ -36,6 +36,9 @@ export default defineSchema({
     gbpAccountName: v.optional(v.string()), // "accounts/123"
     gbpLocationName: v.optional(v.string()), // "locations/456"
     primaryCategory: v.optional(v.string()),
+    // Google's own "write a review" short link, from location metadata.
+    reviewUri: v.optional(v.string()),
+    mapsUri: v.optional(v.string()),
 
     // Step 5 — branding
     logoUrl: v.optional(v.string()),

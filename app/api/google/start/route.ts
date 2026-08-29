@@ -31,8 +31,11 @@ export const GET = async (request: NextRequest) => {
   );
   url.searchParams.set("access_type", "offline");
   url.searchParams.set("prompt", "consent");
-  url.searchParams.set("include_granted_scopes", "true");
+  // Deliberately NOT include_granted_scopes: it merges unrelated scopes this
+  // client was granted before (calendar, userinfo) into our consent screen.
   url.searchParams.set("state", state);
+
+  console.log(`[google/start] redirect_uri=${redirectUri} state=${state}`);
 
   const response = NextResponse.redirect(url.toString());
   response.cookies.set("g_state", state, {

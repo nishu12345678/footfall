@@ -12,6 +12,21 @@ export const GET = async (request: NextRequest) => {
   const origin = request.nextUrl.origin;
   const params = request.nextUrl.searchParams;
 
+  // Log exactly what Google sent so a missing `code` is obvious.
+  console.log(
+    "[google/callback] params:",
+    JSON.stringify(
+      Object.fromEntries(
+        [...params.entries()].map(([k, v]) => [
+          k,
+          k === "code" ? `${v.slice(0, 8)}…(${v.length} chars)` : v,
+        ]),
+      ),
+      null,
+      2,
+    ),
+  );
+
   const fail = (reason: string) =>
     NextResponse.redirect(
       `${origin}/app/connect?error=${encodeURIComponent(reason)}`,
@@ -36,6 +51,9 @@ export const GET = async (request: NextRequest) => {
   }
 
   const token = await convexAuthNextjsToken();
+  console.log(
+    `[google/callback] convex session token: ${token ? "present" : "MISSING"}`,
+  );
   if (!token) return fail("Your session expired. Sign in again.");
 
   const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;

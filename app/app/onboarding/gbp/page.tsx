@@ -43,10 +43,14 @@ export default function GbpPage() {
   const toggleAttribute = useMutation(api.gbp.toggleAttribute);
   const complete = useMutation(api.gbp.complete);
   const suggestKeywords = useAction(api.gbp.suggestKeywords);
+  const researchKeywords = useAction(api.gbp.researchKeywords);
 
   const [tab, setTab] = useState<Tab>("areas");
   const [draft, setDraft] = useState("");
   const [ideas, setIdeas] = useState<string[]>([]);
+  const [researched, setResearched] = useState<
+    { term: string; score: number; why: string; topReviews?: number }[]
+  >([]);
   const [thinking, setThinking] = useState(false);
   const [hours, setLocalHours] = useState<HourRow[]>(DEFAULT_HOURS);
   const [hoursLoaded, setHoursLoaded] = useState(false);
@@ -95,6 +99,18 @@ export default function GbpPage() {
     setLocalHours((rows) =>
       rows.map((r) => (r.day === day ? { ...r, ...patch } : r)),
     );
+  }
+
+  async function runResearch(deep: boolean) {
+    setThinking(true);
+    setError(null);
+    try {
+      setResearched(await researchKeywords({ deep }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setThinking(false);
+    }
   }
 
   async function getKeywordIdeas() {
@@ -261,6 +277,71 @@ export default function GbpPage() {
             </ul>
 
             <div className="mt-7 rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-display text-[14px] font-bold">
+                  Researched from Google
+                </p>
+                <span className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void runResearch(false)}
+                    disabled={thinking}
+                    className="font-mono text-[11px] underline underline-offset-4 hover:text-pin disabled:opacity-50"
+                  >
+                    {thinking ? "…" : "find"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void runResearch(true)}
+                    disabled={thinking}
+                    className="font-mono text-[11px] underline underline-offset-4 hover:text-pin disabled:opacity-50"
+                  >
+                    + competition
+                  </button>
+                </span>
+              </div>
+
+              {researched.length ? (
+                <ul className="mt-3 space-y-2">
+                  {researched.map((r) => (
+                    <li
+                      key={r.term}
+                      className="rounded-[10px] border border-rule bg-paper p-2.5"
+                    >
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void addKeyword({ term: r.term });
+                            setResearched((s) =>
+                              s.filter((x) => x.term !== r.term),
+                            );
+                          }}
+                          className="min-w-0 flex-1 text-left text-[13px]"
+                        >
+                          <span aria-hidden className="text-pin">+ </span>
+                          {r.term}
+                        </button>
+                        <span className="flex-none rounded-full border border-ink px-1.5 py-0.5 font-mono text-[9px]">
+                          {r.score}
+                        </span>
+                      </div>
+                      <p className="mt-1 font-mono text-[9px] leading-snug text-muted">
+                        {r.why}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-[12px] leading-relaxed text-muted">
+                  Pulls what Google actually autocompletes for what you sell.
+                  &ldquo;+ competition&rdquo; also checks how strong the current
+                  top 3 are — slower, and uses more search credits.
+                </p>
+              )}
+            </div>
+
+            <div className="mt-4 rounded-[14px] border border-rule bg-paper-2 p-4">
               <div className="flex items-center justify-between gap-3">
                 <p className="flex items-center gap-1.5 font-display text-[14px] font-bold">
                   <span aria-hidden className="text-pin">

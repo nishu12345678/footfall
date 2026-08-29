@@ -361,3 +361,172 @@ export const complete = mutation({
     });
   },
 });
+
+/* --------------------------- keyword research ----------------------------
+   Real signals, not invented volume numbers.
+
+   demand      Google Autocomplete. If Google suggests a phrase, people type
+               it; how early it appears is a rough popularity proxy.
+   winnability The map results for that phrase. Three rivals with 500 reviews
+               each is a wall; three with 15 reviews is an opening.
+
+   Nothing here claims a monthly search volume, because no source we have
+   provides one. DataForSEO or Google Ads would, and both cost money.      */
+
+type Researched = {
+  term: string;
+  suggestedAt?: number;
+  topReviews?: number;
+  rivals?: number;
+  score: number;
+  why: string;
+};
+
+async function autocomplete(seed: string): Promise<string[]> {
+  const key = process.env.SERPAPI_KEY;
+  if (!key) throw new Error("SERPAPI_KEY is not set.");
+
+  const url = new URL("https://serpapi.com/search");
+  url.searchParams.set("engine", "google_autocomplete");
+  url.searchParams.set("q", seed);
+  url.searchParams.set("gl", "in");
+  url.searchParams.set("hl", "en");
+  url.searchParams.set("api_key", key);
+
+  const res = await fetch(url.toString());
+  const data = await res.json();
+  if (data.error) {
+    console.log(`[serpapi/autocomplete] ${data.error}`);
+    return [];
+  }
+  return (data.suggestions ?? [])
+    .map((s: { value?: string }) => (s.value ?? "").toLowerCase().trim())
+    .filter(Boolean);
+}
+
+async function competition(
+  term: string,
+  lat: number,
+  lng: number,
+): Promise<{ topReviews: number; rivals: number }> {
+  const key = process.env.SERPAPI_KEY;
+  if (!key) throw new Error("SERPAPI_KEY is not set.");
+
+  const url = new URL("https://serpapi.com/search");
+  url.searchParams.set("engine", "google_maps");
+  url.searchParams.set("q", term);
+  url.searchParams.set("ll", `@${lat},${lng},14z`);
+  url.searchParams.set("type", "search");
+  url.searchParams.set("api_key", key);
+
+  const res = await fetch(url.toString());
+  const data = await res.json();
+  const results = data.local_results ?? [];
+  const top3 = results.slice(0, 3);
+  const topReviews =
+    top3.length === 0
+      ? 0
+      : Math.round(
+          top3.reduce((t: number, r: any) => t + (r.reviews ?? 0), 0) / top3.length,
+        );
+  return { topReviews, rivals: results.length };
+}
+
+export const researchKeywords = action({
+  args: { deep: v.optional(v.boolean()) },
+  handler: async (ctx, { deep = false }): Promise<Researched[]> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+
+    const c = await ctx.runQuery(internal.gbp.keywordContext, { userId });
+    if (!c) throw new Error("Connect your Google profile first.");
+
+    const business = await ctx.runQuery(internal.google.businessForUser, {
+      userId,
+    });
+    if (!business?.lat || !business?.lng) {
+      throw new Error("We don't have coordinates for your shop yet.");
+    }
+
+    // Seeds come from what the shop actually sells, plus its category.
+    const seeds = [
+      ...(c.category ? [c.category.toLowerCase()] : []),
+      ...c.offerings.slice(0, 4).map((o: string) => o.toLowerCase()),
+    ].slice(0, 5);
+
+    if (seeds.length === 0) throw new Error("Add some offerings first.");
+
+    const pool = new Map<string, number>();
+    for (const seed of seeds) {
+      const suggestions = await autocomplete(seed);
+      suggestions.forEach((term, i) => {
+        if (!pool.has(term) || (pool.get(term) ?? 99) > i) pool.set(term, i);
+      });
+    }
+
+    const city = (c.city ?? "").toLowerCase();
+    const already = new Set(c.have.map((h: string) => h.toLowerCase()));
+
+    // Keep phrases that are local in intent and not already targeted:
+    // "near me", or naming this city — not Delhi, Chennai, Noida.
+    const otherCityWords = [
+      "delhi", "mumbai", "chennai", "kolkata", "bangalore", "bengaluru",
+      "hyderabad", "pune", "noida", "gurgaon", "lucknow", "jaipur",
+      "ahmedabad", "kannur", "kochi", "surat", "indore", "nagpur",
+    ].filter((w) => w !== city);
+
+    const candidates = [...pool.entries()]
+      .filter(([term]) => !already.has(term))
+      .filter(([term]) => term.split(" ").length >= 2)
+      .filter(([term]) => !otherCityWords.some((w) => term.includes(w)))
+      .filter(([term]) => term.includes("near me") || !city || term.includes(city))
+      .sort((a, b) => a[1] - b[1])
+      .slice(0, deep ? 10 : 14);
+
+    const out: Researched[] = [];
+
+    for (const [term, suggestedAt] of candidates) {
+      // Demand: how early Google suggested it. 0 is the top suggestion.
+      const demand = Math.max(0, 10 - suggestedAt);
+
+      if (!deep) {
+        out.push({
+          term,
+          suggestedAt,
+          score: demand,
+          why: `Google suggests this at position ${suggestedAt + 1}`,
+        });
+        continue;
+      }
+
+      const { topReviews, rivals } = await competition(
+        term,
+        business.lat,
+        business.lng,
+      );
+      // Winnability: the fewer reviews the current top three have, the more
+      // realistic it is to displace them.
+      const winnable =
+        topReviews === 0 ? 5 : Math.max(0, 10 - Math.log10(topReviews + 1) * 3.5);
+      const score = Math.round((demand * 0.6 + winnable * 0.4) * 10) / 10;
+
+      out.push({
+        term,
+        suggestedAt,
+        topReviews,
+        rivals,
+        score,
+        why:
+          `Suggested at position ${suggestedAt + 1}. ` +
+          `Top 3 average ${topReviews} reviews — ` +
+          (topReviews < 50
+            ? "beatable."
+            : topReviews < 200
+              ? "competitive."
+              : "hard to crack."),
+      });
+    }
+
+    return out.sort((a, b) => b.score - a.score);
+  },
+});

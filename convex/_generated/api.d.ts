@@ -17,6 +17,7 @@ import type * as gbp from "../gbp.js";
 import type * as google from "../google.js";
 import type * as http from "../http.js";
 import type * as lists from "../lists.js";
+import type * as performance from "../performance.js";
 
 import type {
   ApiFromModules,
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   google: typeof google;
   http: typeof http;
   lists: typeof lists;
+  performance: typeof performance;
 }>;
 
 /**

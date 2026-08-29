@@ -1,11 +1,43 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useAction, useQuery } from "convex/react";
+import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
 
 export default function PerformancePage() {
   const data = useQuery(api.lists.performance);
+  const syncMetrics = useAction(api.performance.syncMetrics);
+  const checkRanks = useAction(api.performance.checkRanks);
+
+  const [busy, setBusy] = useState<null | "metrics" | "ranks">(null);
+  const [note, setNote] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function run(which: "metrics" | "ranks") {
+    setBusy(which);
+    setError(null);
+    setNote(null);
+    try {
+      if (which === "metrics") {
+        const r = await syncMetrics({});
+        setNote(
+          r.days
+            ? `Pulled ${r.days} days: ${r.views} views, ${r.calls} calls, ${r.directions} direction requests.`
+            : "Google returned no data for this period yet.",
+        );
+      } else {
+        const r = await checkRanks({});
+        setNote(
+          `Checked ${r.checked} keywords — found you in ${r.found}. ${r.competitors} competitors recorded.`,
+        );
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
 
   if (data === undefined) return <Loading />;
   if (data === null) return <NeedsConnect />;
@@ -32,7 +64,40 @@ export default function PerformancePage() {
         What your listing did, and where you rank for the searches that matter.
       </p>
 
-      <div className="mt-6 grid grid-cols-3 gap-2">
+      <div className="mt-5 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => void run("metrics")}
+          disabled={busy !== null}
+          className="btn btn-ghost btn-sm disabled:opacity-40"
+        >
+          {busy === "metrics" ? "syncing…" : "sync from google"}
+        </button>
+        <button
+          type="button"
+          onClick={() => void run("ranks")}
+          disabled={busy !== null}
+          className="btn btn-primary btn-sm disabled:opacity-40"
+        >
+          {busy === "ranks" ? "checking…" : "check rankings"}
+        </button>
+      </div>
+
+      {note ? (
+        <p className="mt-3 rounded-[12px] border border-open bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
+          {note}
+        </p>
+      ) : null}
+      {error ? (
+        <p
+          role="alert"
+          className="mt-3 rounded-[12px] border border-pin bg-pin-soft px-3.5 py-2.5 font-mono text-[12px] leading-snug break-words"
+        >
+          {error}
+        </p>
+      ) : null}
+
+      <div className="mt-5 grid grid-cols-3 gap-2">
         {[
           ["Views", totals.views],
           ["Calls", totals.calls],

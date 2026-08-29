@@ -508,3 +508,10 @@ export const businessForUser = internalQuery({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first(),
 });
+
+/** A valid access token for this user, refreshing it first if needed. */
+export const accessTokenFor = internalAction({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }): Promise<string> =>
+    await freshAccessToken(ctx, userId),
+});

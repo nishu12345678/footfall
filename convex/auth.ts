@@ -41,15 +41,26 @@ export const MSG91Phone = Phone({
     const templateId = process.env.MSG91_TEMPLATE_ID;
     const senderId = process.env.MSG91_SENDER_ID;
 
+    // DEV ONLY. Prints the code into the Convex logs so sign-in is testable
+    // without SMS credits. Never set OTP_DEV_ECHO on the production
+    // deployment — it puts a valid login code in the log stream.
+    if (process.env.OTP_DEV_ECHO === "1") {
+      console.log(`[otp-dev-echo] ${normalisePhone(phone)} -> ${token}`);
+    }
+
     if (!authKey || !templateId) {
       // No MSG91 configured — log the code so the flow stays testable.
       console.log(`[otp] ${phone} -> ${token} (MSG91 not configured)`);
       return;
     }
 
+    // Normalise again here rather than trusting the identifier we were handed.
+    // MSG91 needs the country code; a bare 10-digit number does not route.
+    const mobile = normalisePhone(phone);
+
     const url = new URL("https://control.msg91.com/api/v5/otp");
     url.searchParams.set("template_id", templateId);
-    url.searchParams.set("mobile", phone);
+    url.searchParams.set("mobile", mobile);
     url.searchParams.set("otp", token);
     url.searchParams.set("otp_length", "4");
     url.searchParams.set("otp_expiry", "5");

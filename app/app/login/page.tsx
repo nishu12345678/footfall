@@ -13,10 +13,14 @@ export default function LoginPage() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [detail, setDetail] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const codeRef = useRef<HTMLInputElement>(null);
 
   const digits = phone.replace(/\D/g, "");
+  // One canonical identifier everywhere: country code + 10 digits. Sending a
+  // bare 10-digit number here creates a second account for the same person.
+  const e164 = `91${digits}`;
   const phoneReady = digits.length === 10;
   const codeReady = code.replace(/\D/g, "").length === 4;
 
@@ -34,11 +38,13 @@ export default function LoginPage() {
     setBusy(true);
     setError(null);
     try {
-      await signIn("msg91", { phone: digits });
+      await signIn("msg91", { phone: e164 });
       setStep("code");
       setSecondsLeft(30);
-    } catch {
+    } catch (e) {
+      console.error("[signIn] send failed", e);
       setError("Couldn't send the code. Check the number and try again.");
+      setDetail(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
@@ -48,11 +54,13 @@ export default function LoginPage() {
     setBusy(true);
     setError(null);
     try {
-      await signIn("msg91", { phone: digits, code: code.replace(/\D/g, "") });
+      await signIn("msg91", { phone: e164, code: code.replace(/\D/g, "") });
       // The middleware redirects to /app once the session cookie is set.
       window.location.href = "/app";
-    } catch {
+    } catch (e) {
+      console.error("[signIn] verify failed", e);
       setError("That code isn't right. Check it, or ask for a new one.");
+      setDetail(e instanceof Error ? e.message : String(e));
       setBusy(false);
     }
   }
@@ -176,6 +184,11 @@ export default function LoginPage() {
               className="mt-4 rounded-[12px] border border-pin bg-pin-soft px-4 py-3 text-[14px] leading-snug text-ink"
             >
               {error}
+              {detail ? (
+                <span className="mt-2 block max-h-40 overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-ink-soft">
+                  {detail}
+                </span>
+              ) : null}
             </p>
           ) : null}
         </div>

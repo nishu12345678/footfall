@@ -122,7 +122,9 @@ Time: today, whatever remains.
 - [ ] T2 API spike — 60 min timebox
 - [ ] T3 Meta applications submitted
 - [ ] Write "PLAN A" or "PLAN B" in the Daily Log
-- [ ] **Run the pipeline once.** One sentence to Claude Code:
+- [x] **Pipeline live.** Repo: https://github.com/nishu12345678/footfall (public) · Live: https://footfall-delta.vercel.app
+      ⚠ **Auto-deploy is NOT wired yet** — see "one manual step" below. Until then, deploy with `vercel --prod`.
+- [ ] ~~Run the pipeline once.~~ One sentence to Claude Code:
       *"Ship this to Vercel. Set up GitHub and Vercel from scratch and make it auto-deploy. Ask me the repo name and whether it's public."*
       It will pause twice — repo name, public or private. **Public.** The submission requires it.
 - [ ] Commit this file as the first commit
@@ -317,7 +319,7 @@ Every idea that arrives mid-build goes here immediately and is not discussed aga
 
 | Day | Plan A or B | What shipped | Biggest blocker found | Deployed? |
 |---|---|---|---|---|
-| Sat 29 | | | | |
+| Sat 29 | *(pending T2)* | landing page — hero, map-pack climb, pricing, faq | vercel↔github auto-deploy not connected | ✅ footfall-delta.vercel.app |
 | Sun 30 | | | | |
 | Mon 31 | | | | |
 | Tue 1 | | | | |

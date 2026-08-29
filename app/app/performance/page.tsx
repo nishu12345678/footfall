@@ -1,7 +1,7 @@
 "use client";
 
 import { useAction, useQuery } from "convex/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
 
@@ -48,6 +48,24 @@ export default function PerformancePage() {
   const [busy, setBusy] = useState<null | "metrics" | "ranks">(null);
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [autoSyncing, setAutoSyncing] = useState(false);
+  const autoRan = useRef(false);
+
+  // Google's numbers cost nothing to read, so refresh them whenever the
+  // screen is opened and the data has gone stale. Rank checks are NOT
+  // automatic here — each one spends a SerpApi search per keyword.
+  const STALE_AFTER_MS = 30 * 60 * 1000;
+  const syncedAt = data?.business.metricsSyncedAt;
+  const stale = data ? !syncedAt || Date.now() - syncedAt > STALE_AFTER_MS : false;
+
+  useEffect(() => {
+    if (!data || autoRan.current || !stale) return;
+    autoRan.current = true;
+    setAutoSyncing(true);
+    void syncMetrics({ days: 90 })
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .finally(() => setAutoSyncing(false));
+  }, [data, stale, syncMetrics]);
 
   async function run(which: "metrics" | "ranks") {
     setBusy(which);
@@ -131,7 +149,9 @@ export default function PerformancePage() {
       <p className="mt-2 flex flex-wrap items-center gap-x-2 font-mono text-[10px] text-muted">
         {rangeLabel ? <span>{rangeLabel}</span> : <span>no data in range</span>}
         <span aria-hidden>·</span>
-        <span>synced {ago(business.metricsSyncedAt)}</span>
+        <span>
+          {autoSyncing ? "syncing now…" : `synced ${ago(business.metricsSyncedAt)}`}
+        </span>
       </p>
 
       <div className="mt-4 grid grid-cols-2 gap-2">

@@ -1,5 +1,10 @@
 import { v } from "convex/values";
-import { action, internalMutation, internalQuery } from "./_generated/server";
+import {
+  action,
+  internalAction,
+  internalMutation,
+  internalQuery,
+} from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
@@ -76,14 +81,12 @@ export const saveMetrics = internalMutation({
   },
 });
 
-export const syncMetrics = action({
-  args: { days: v.optional(v.number()) },
+export const syncMetricsForUser = internalAction({
+  args: { userId: v.id("users"), days: v.optional(v.number()) },
   handler: async (
     ctx,
-    { days = 30 },
+    { userId, days = 30 },
   ): Promise<{ days: number; views: number; calls: number; directions: number }> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
 
     const business = await ctx.runQuery(internal.google.businessForUser, {
       userId,
@@ -272,13 +275,12 @@ export const saveCompetitors = internalMutation({
   },
 });
 
-export const checkRanks = action({
-  args: {},
+export const checkRanksForUser = internalAction({
+  args: { userId: v.id("users") },
   handler: async (
     ctx,
+    { userId },
   ): Promise<{ checked: number; found: number; competitors: number }> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
 
     const context = await ctx.runQuery(internal.performance.rankContext, {
       userId,
@@ -456,5 +458,90 @@ export const rankContext = internalQuery({
       lng: business.lng,
       keywords: keywords.filter((k) => k.targeted),
     };
+  },
+});
+
+
+/* --------------------------- public wrappers ---------------------------- */
+
+export const syncMetrics = action({
+  args: { days: v.optional(v.number()) },
+  handler: async (
+    ctx,
+    { days },
+  ): Promise<{ days: number; views: number; calls: number; directions: number }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+    return await ctx.runAction(internal.performance.syncMetricsForUser, {
+      userId,
+      days,
+    });
+  },
+});
+
+export const checkRanks = action({
+  args: {},
+  handler: async (
+    ctx,
+  ): Promise<{ checked: number; found: number; competitors: number }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+    return await ctx.runAction(internal.performance.checkRanksForUser, {
+      userId,
+    });
+  },
+});
+
+/* ------------------------------ cron fanout ----------------------------- */
+
+export const connectedBusinesses = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db.query("businesses").collect();
+    return rows
+      .filter((b) => b.gbpLocationName && b.agentActive)
+      .map((b) => ({ userId: b.userId, name: b.orgName }));
+  },
+});
+
+/** Nightly refresh of Google's own numbers. Free, so it runs for everyone. */
+export const syncAllMetrics = internalAction({
+  args: {},
+  handler: async (ctx): Promise<{ businesses: number }> => {
+    const businesses: { userId: Id<"users">; name: string }[] =
+      await ctx.runQuery(internal.performance.connectedBusinesses, {});
+    for (const b of businesses) {
+      try {
+        await ctx.runAction(internal.performance.syncMetricsForUser, {
+          userId: b.userId,
+          days: 30,
+        });
+      } catch (error) {
+        console.error(`[cron] metrics failed for ${b.name}`, error);
+      }
+    }
+    return { businesses: businesses.length };
+  },
+});
+
+/**
+ * Weekly rank check. Deliberately not daily: every run costs one SerpApi
+ * search per keyword, per business.
+ */
+export const checkAllRanks = internalAction({
+  args: {},
+  handler: async (ctx): Promise<{ businesses: number }> => {
+    const businesses: { userId: Id<"users">; name: string }[] =
+      await ctx.runQuery(internal.performance.connectedBusinesses, {});
+    for (const b of businesses) {
+      try {
+        await ctx.runAction(internal.performance.checkRanksForUser, {
+          userId: b.userId,
+        });
+      } catch (error) {
+        console.error(`[cron] ranks failed for ${b.name}`, error);
+      }
+    }
+    return { businesses: businesses.length };
   },
 });

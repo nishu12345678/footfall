@@ -262,7 +262,7 @@ export const suggestKeywords = action({
       console.error("[openai] unparseable keyword reply");
     }
 
-    const seen = new Set(c.have.map((h) => h.toLowerCase()));
+    const seen = new Set(c.have.map((h: string) => h.toLowerCase()));
     return items
       .filter((i) => typeof i === "string" && i.trim())
       .map((i) => i.trim().toLowerCase())

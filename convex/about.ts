@@ -250,7 +250,7 @@ export const suggest = action({
       console.error("[openai] unparseable reply", raw.slice(0, 200));
     }
 
-    const seen = new Set(context.have.map((h) => h.toLowerCase()));
+    const seen = new Set(context.have.map((h: string) => h.toLowerCase()));
     return items
       .filter((i) => typeof i === "string" && i.trim())
       .map((i) => i.trim())

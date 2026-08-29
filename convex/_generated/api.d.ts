@@ -12,6 +12,7 @@ import type * as about from "../about.js";
 import type * as auth from "../auth.js";
 import type * as branding from "../branding.js";
 import type * as businesses from "../businesses.js";
+import type * as crons from "../crons.js";
 import type * as dashboard from "../dashboard.js";
 import type * as gbp from "../gbp.js";
 import type * as google from "../google.js";
@@ -30,6 +31,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   branding: typeof branding;
   businesses: typeof businesses;
+  crons: typeof crons;
   dashboard: typeof dashboard;
   gbp: typeof gbp;
   google: typeof google;

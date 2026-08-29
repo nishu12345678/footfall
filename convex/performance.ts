@@ -72,6 +72,7 @@ export const saveMetrics = internalMutation({
         await ctx.db.insert("metrics", { businessId, ...row });
       }
     }
+    await ctx.db.patch(businessId, { metricsSyncedAt: Date.now() });
   },
 });
 
@@ -237,6 +238,7 @@ export const saveRanks = internalMutation({
         rank,
         checkedAt: Date.now(),
       });
+      await ctx.db.patch(row.businessId, { ranksCheckedAt: Date.now() });
     }
   },
 });

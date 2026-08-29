@@ -40,6 +40,10 @@ export default defineSchema({
     reviewUri: v.optional(v.string()),
     mapsUri: v.optional(v.string()),
 
+    // When we last pulled performance data and ran a rank check.
+    metricsSyncedAt: v.optional(v.number()),
+    ranksCheckedAt: v.optional(v.number()),
+
     // Step 5 — branding
     logoUrl: v.optional(v.string()),
     logoBackground: v.optional(v.string()), // "black" | "white"

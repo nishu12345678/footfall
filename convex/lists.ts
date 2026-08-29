@@ -76,6 +76,11 @@ export const performance = query({
         .collect(),
     ]);
 
-    return { business, metrics, keywords, competitors };
+    return {
+      business,
+      metrics: metrics.sort((a, b) => a.date.localeCompare(b.date)),
+      keywords,
+      competitors,
+    };
   },
 });

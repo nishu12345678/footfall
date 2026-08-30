@@ -547,26 +547,12 @@ export const seedServiceAreas = mutation({
       .collect();
     if (existing.length > 0) return existing.map((r) => r.name);
 
-    // Straight from the Google listing: the city, and the locality named in
-    // the address line. Both are facts, not guesses.
+    // Only the city, which Google gives us as a clean field. Slicing a
+    // locality out of the address line produced junk like
+    // "agra Uttar Pradesh 282001" — the surrounding localities come from
+    // the map instead, where they're real places with real distances.
     const seeds: string[] = [];
     if (business.city) seeds.push(business.city);
-
-    const line: string[] = (business.streetAddress ?? "")
-      .split(",")
-      .map((s: string) => s.trim());
-    const cityIndex = business.city
-      ? line.findIndex(
-          (part: string) =>
-            part.toLowerCase() === business.city!.toLowerCase(),
-        )
-      : -1;
-    if (cityIndex > 0) {
-      const locality = line[cityIndex - 1];
-      if (locality && locality.length > 2 && !/^near\b/i.test(locality)) {
-        seeds.unshift(locality);
-      }
-    }
 
     for (const name of [...new Set(seeds)]) {
       await ctx.db.insert("serviceAreas", {
@@ -607,18 +593,45 @@ export const nearbyAreas = action({
       `(node["place"~"^(suburb|neighbourhood|quarter|town|village)$"]` +
       `(around:${radius},${business.lat},${business.lng}););out body 80;`;
 
-    const res = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ data: query }),
-    });
+    // Overpass asks callers to identify themselves, and individual mirrors
+    // drop connections often enough that one endpoint isn't reliable.
+    const MIRRORS = [
+      "https://overpass-api.de/api/interpreter",
+      "https://overpass.osm.ch/api/interpreter",
+      "https://overpass.kumi.systems/api/interpreter",
+    ];
 
-    if (!res.ok) {
-      console.error(`[overpass] ${res.status}`);
-      throw new Error("Could not read the map right now. Try again.");
+    let data: any = null;
+    let lastError = "";
+
+    for (const mirror of MIRRORS) {
+      try {
+        const res = await fetch(mirror, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": "footfall/1.0 (local business listing tool)",
+            Accept: "application/json",
+          },
+          body: new URLSearchParams({ data: query }),
+        });
+        if (!res.ok) {
+          lastError = `${mirror} -> ${res.status}`;
+          continue;
+        }
+        data = await res.json();
+        break;
+      } catch (error) {
+        lastError = `${mirror} -> ${error instanceof Error ? error.message : String(error)}`;
+      }
     }
 
-    const data = await res.json();
+    if (!data) {
+      console.error(`[overpass] all mirrors failed. ${lastError}`);
+      throw new Error(
+        "Couldn't reach the map service just now. Add your areas by hand, or try again in a minute.",
+      );
+    }
     const existing: string[] = await ctx.runQuery(internal.gbp.areasFor, {
       userId,
     });

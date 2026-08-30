@@ -480,6 +480,18 @@ export const postDaily = internalAction({
 const POST_DAYS = [1, 3, 5]; // Mon, Wed, Fri
 const POST_HOUR_UTC = 4; // 09:30 IST
 
+/**
+ * What time of year it actually is in India, so the planner doesn't reach
+ * for "spring" during the monsoon. Only a hint — the prompt still says to
+ * use it only where it genuinely applies to the trade.
+ */
+function indianSeason(month: number): string {
+  if (month >= 5 && month <= 8) return "the monsoon";
+  if (month === 9 || month === 10) return "the festival season";
+  if (month === 11 || month <= 1) return "winter, and the wedding season";
+  return "summer";
+}
+
 /** The next N posting slots that aren't already taken. */
 function nextSlots(count: number, taken: number[]): number[] {
   const slots: number[] = [];
@@ -543,10 +555,12 @@ export const planPosts = action({
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error("OPENAI_API_KEY is not set.");
 
-    const month = new Date().toLocaleDateString("en-IN", {
+    const now = new Date();
+    const month = now.toLocaleDateString("en-IN", {
       month: "long",
       year: "numeric",
     });
+    const season = indianSeason(now.getMonth());
     const nearMe = c.keywords.filter(
       (k: string) => k.includes("near me") || k.includes("nearby"),
     );
@@ -570,7 +584,8 @@ export const planPosts = action({
       "Each needs a distinct reason to exist. Draw on different angles:",
       "- one specific product or service in depth",
       "- a question customers actually ask before buying",
-      "- what suits the season, if it genuinely applies to this trade",
+      `- what suits ${season}, but ONLY if it genuinely affects this trade`,
+      "- never reference a season, festival or event that is not happening now",
       "- the localities served and how easy the shop is to reach",
       "- what makes this shop a different choice from the ones nearby",
       "- practical guidance a customer would find useful",

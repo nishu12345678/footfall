@@ -141,6 +141,7 @@ export const addKeyword = mutation({
       businessId: business._id,
       term: trimmed,
       targeted: true,
+      nearMe: trimmed.includes("near me") || trimmed.includes("nearby"),
     });
   },
 });
@@ -571,6 +572,16 @@ export const seedServiceAreas = mutation({
  * it. So this works on a radius the owner picks, and every name is a place
  * that actually exists on the map rather than something a model recalled.
  */
+export const setServiceRadius = mutation({
+  args: { radiusKm: v.number() },
+  handler: async (ctx, { radiusKm }) => {
+    const business = await requireBusiness(ctx);
+    await ctx.db.patch(business._id, {
+      serviceRadiusKm: Math.min(Math.max(radiusKm, 2), 50),
+    });
+  },
+});
+
 export const nearbyAreas = action({
   args: { radiusKm: v.optional(v.number()) },
   handler: async (

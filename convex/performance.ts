@@ -229,16 +229,26 @@ async function mapsSearch(
 export const saveRanks = internalMutation({
   args: {
     ranks: v.array(
-      v.object({ id: v.id("keywords"), rank: v.optional(v.number()) }),
+      v.object({
+        id: v.id("keywords"),
+        rank: v.optional(v.number()),
+        avgRank: v.optional(v.number()),
+        coverageFound: v.number(),
+        coverageTotal: v.number(),
+      }),
     ),
   },
   handler: async (ctx, { ranks }) => {
-    for (const { id, rank } of ranks) {
-      const row = await ctx.db.get(id);
+    for (const entry of ranks) {
+      const row = await ctx.db.get(entry.id);
       if (!row) continue;
-      await ctx.db.patch(id, {
+      await ctx.db.patch(entry.id, {
         previousRank: row.rank,
-        rank,
+        previousCoverage: row.coverageFound,
+        rank: entry.rank,
+        avgRank: entry.avgRank,
+        coverageFound: entry.coverageFound,
+        coverageTotal: entry.coverageTotal,
         checkedAt: Date.now(),
       });
       await ctx.db.patch(row.businessId, { ranksCheckedAt: Date.now() });
@@ -275,13 +285,35 @@ export const saveCompetitors = internalMutation({
   },
 });
 
+/**
+ * Points to search from: the shop, then a ring around it at the edge of the
+ * area it serves, then a ring halfway out.
+ *
+ * "dentist near me" has no single answer — Google returns whatever is close
+ * to whoever is asking. Measuring from the shop's own door tells the owner
+ * nothing about the customer three kilometres away who is the whole point.
+ */
+function scanPoints(lat: number, lng: number, radiusKm: number) {
+  const points: { lat: number; lng: number }[] = [{ lat, lng }];
+  const dLat = (km: number) => km / 111;
+  const dLng = (km: number) => km / (111 * Math.cos((lat * Math.PI) / 180) || 1);
+
+  for (const fraction of [0.5, 1]) {
+    const km = radiusKm * fraction;
+    points.push({ lat: lat + dLat(km), lng });
+    points.push({ lat: lat - dLat(km), lng });
+    points.push({ lat, lng: lng + dLng(km) });
+    points.push({ lat, lng: lng - dLng(km) });
+  }
+  return points;
+}
+
 export const checkRanksForUser = internalAction({
   args: { userId: v.id("users") },
   handler: async (
     ctx,
     { userId },
   ): Promise<{ checked: number; found: number; competitors: number }> => {
-
     let context = await ctx.runQuery(internal.performance.rankContext, {
       userId,
     });
@@ -299,20 +331,36 @@ export const checkRanksForUser = internalAction({
       throw new Error("Add some keywords in setup first.");
     }
 
-    const ranks: { id: Id<"keywords">; rank?: number }[] = [];
+    const radius = context.serviceRadiusKm ?? 15;
+    const points = scanPoints(context.lat, context.lng, radius);
+
+    // "near me" is what people type, so those are measured across the whole
+    // area. City-name phrases are checked once, from the shop.
+    const nearMe = context.keywords.filter((k: any) =>
+      k.term.includes("near me") || k.term.includes("nearby"),
+    );
+    const rest = context.keywords.filter(
+      (k: any) => !k.term.includes("near me") && !k.term.includes("nearby"),
+    );
+
+    const ranks: {
+      id: Id<"keywords">;
+      rank?: number;
+      avgRank?: number;
+      coverageFound: number;
+      coverageTotal: number;
+    }[] = [];
+
     const rivals = new Map<
       string,
       { name: string; rating?: number; reviewCount?: number; positions: number[] }
     >();
 
-    for (const kw of context.keywords) {
-      const results = await mapsSearch(kw.term, context.lat, context.lng);
-      ranks.push({ id: kw._id, rank: findRank(results, context.name) });
-
+    const collectRivals = (results: any[], selfName: string) => {
       for (const r of results.slice(0, 10)) {
         const title: string = r.title ?? "";
         if (!title) continue;
-        if (findRank([r], context.name) !== undefined) continue; // that's us
+        if (findRank([r], selfName) !== undefined) continue;
         const key = normalise(title);
         const entry =
           rivals.get(key) ??
@@ -325,6 +373,38 @@ export const checkRanksForUser = internalAction({
         if (typeof r.position === "number") entry.positions.push(r.position);
         rivals.set(key, entry);
       }
+    };
+
+    for (const kw of nearMe) {
+      const found: number[] = [];
+      for (const point of points) {
+        const results = await mapsSearch(kw.term, point.lat, point.lng);
+        const rank = findRank(results, context.name);
+        if (rank !== undefined) found.push(rank);
+        collectRivals(results, context.name);
+      }
+      ranks.push({
+        id: kw._id,
+        rank: found.length ? Math.min(...found) : undefined,
+        avgRank: found.length
+          ? Math.round((found.reduce((a, b) => a + b, 0) / found.length) * 10) / 10
+          : undefined,
+        coverageFound: found.length,
+        coverageTotal: points.length,
+      });
+    }
+
+    for (const kw of rest) {
+      const results = await mapsSearch(kw.term, context.lat, context.lng);
+      const rank = findRank(results, context.name);
+      collectRivals(results, context.name);
+      ranks.push({
+        id: kw._id,
+        rank,
+        avgRank: rank,
+        coverageFound: rank === undefined ? 0 : 1,
+        coverageTotal: 1,
+      });
     }
 
     await ctx.runMutation(internal.performance.saveRanks, { ranks });
@@ -351,7 +431,7 @@ export const checkRanksForUser = internalAction({
 
     return {
       checked: ranks.length,
-      found: ranks.filter((r) => r.rank !== undefined).length,
+      found: ranks.filter((r) => r.coverageFound > 0).length,
       competitors: competitors.length,
     };
   },
@@ -468,6 +548,7 @@ export const rankContext = internalQuery({
       name: business.orgName,
       lat: business.lat,
       lng: business.lng,
+      serviceRadiusKm: business.serviceRadiusKm,
       keywords: keywords.filter((k) => k.targeted),
     };
   },

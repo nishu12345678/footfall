@@ -59,6 +59,7 @@ export default function GbpPage() {
   const researchKeywords = useAction(api.keywords.research);
   const seedAreas = useMutation(api.gbp.seedServiceAreas);
   const nearbyAreas = useAction(api.gbp.nearbyAreas);
+  const setServiceRadius = useMutation(api.gbp.setServiceRadius);
 
   const [tab, setTab] = useState<Tab>("areas");
   const [draft, setDraft] = useState("");
@@ -250,8 +251,8 @@ export default function GbpPage() {
           <>
             <h1 className="text-[1.75rem]">where do your customers come from?</h1>
             <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
-              The localities around you. We write these into your posts and
-              pages so people nearby find you first.
+              How far people travel to you. We measure your &ldquo;near
+              me&rdquo; ranking across this whole area, not just at your door.
             </p>
 
             {data.business.lat && data.business.lng ? (
@@ -310,6 +311,7 @@ export default function GbpPage() {
                       type="button"
                       onClick={() => {
                         setRadiusKm(km);
+                        void setServiceRadius({ radiusKm: km });
                         void findAreas(km);
                       }}
                       aria-pressed={radiusKm === km}

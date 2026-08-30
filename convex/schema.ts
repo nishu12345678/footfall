@@ -41,6 +41,10 @@ export default defineSchema({
     reviewUri: v.optional(v.string()),
     mapsUri: v.optional(v.string()),
 
+    // How far out this business realistically pulls customers from. Every
+    // "near me" rank check is measured across this radius, not at the door.
+    serviceRadiusKm: v.optional(v.number()),
+
     // When we last pulled performance data and ran a rank check.
     metricsSyncedAt: v.optional(v.number()),
     ranksCheckedAt: v.optional(v.number()),
@@ -132,8 +136,16 @@ export default defineSchema({
     businessId: v.id("businesses"),
     term: v.string(),
     targeted: v.boolean(),
-    rank: v.optional(v.number()),
+    /** True for "near me" phrasing, which is what people actually type. */
+    nearMe: v.optional(v.boolean()),
+
+    // Measured across the service area, not from a single point.
+    rank: v.optional(v.number()), // best position found anywhere
+    avgRank: v.optional(v.number()), // average where found
+    coverageFound: v.optional(v.number()), // points where we appear
+    coverageTotal: v.optional(v.number()), // points searched
     previousRank: v.optional(v.number()),
+    previousCoverage: v.optional(v.number()),
     checkedAt: v.optional(v.number()),
   }).index("by_business", ["businessId"]),
 

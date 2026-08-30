@@ -423,7 +423,10 @@ export const research = action({
     // the two patterns that carry walk-in intent. Discovery alone misses
     // these — it follows whatever seed happened to go first.
     for (const noun of [...new Set(seeds)].slice(0, 10)) {
+      // Three ways people phrase the same nearby intent, plus one
+      // city-named fallback for the minority who type that.
       pool.set(`${noun} near me`, "built");
+      pool.set(`best ${noun} near me`, "built");
       pool.set(`${noun} shop near me`, "built");
       if (city) pool.set(`${noun} in ${city}`, "built");
     }
@@ -520,8 +523,12 @@ export const research = action({
         : raw > 0
           ? `"${head}" scores ${raw} on Trends in ${c.state ?? "India"}`
           : `"${head}" is too niche for Trends to measure`;
-      const local = term.includes("near me") || (city && term.includes(city));
-      const intentBonus = local ? 1.5 : 0;
+      // "dentist near me" is what people type. "dentist in agra" is what
+      // agencies put in reports. Weight accordingly.
+      const isNearMe = term.includes("near me") || term.includes("nearby");
+      const namesCity = Boolean(city && term.includes(city));
+      const intentBonus = isNearMe ? 4 : namesCity ? 0.5 : 0;
+      const local = isNearMe || namesCity;
 
       if (!deep) {
         out.push({

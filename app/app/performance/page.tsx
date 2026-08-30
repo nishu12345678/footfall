@@ -350,9 +350,32 @@ export default function PerformancePage() {
                                 : "border-pin bg-pin-soft text-pin"
                         }`}
                       >
-                        {checked ? (kw.rank ?? "not in top 20") : "—"}
+                        {checked ? (kw.rank ?? "nowhere") : "—"}
                       </span>
                     </div>
+
+                    {checked && (kw.coverageTotal ?? 0) > 1 ? (
+                      <div className="mt-1.5">
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-paper-3">
+                            <div
+                              className={`h-full rounded-full ${
+                                (kw.coverageFound ?? 0) === 0
+                                  ? "bg-pin/30"
+                                  : "bg-open"
+                              }`}
+                              style={{
+                                width: `${Math.round(((kw.coverageFound ?? 0) / (kw.coverageTotal ?? 1)) * 100)}%`,
+                              }}
+                            />
+                          </div>
+                          <span className="flex-none font-mono text-[10px] text-muted">
+                            seen at {kw.coverageFound ?? 0}/{kw.coverageTotal} spots
+                            {kw.avgRank ? ` · avg ${kw.avgRank}` : ""}
+                          </span>
+                        </div>
+                      </div>
+                    ) : null}
 
                     {checked ? (
                       <button
@@ -393,8 +416,8 @@ export default function PerformancePage() {
             {business.ranksCheckedAt === undefined
               ? "Checking where you rank right now…"
               : rankedCount === 0
-                ? `You're not in the top 20 for any of these yet. That's normal for a listing with few reviews — the shops ranking above you have hundreds. Collecting reviews is the fastest way to change it.`
-                : `You appear in the top 20 for ${rankedCount} of ${keywords.length} searches. Lower is better.`}
+                ? `You don't appear anywhere in your service area for these searches yet. That's normal for a listing with few reviews — the shops ranking above you have hundreds. Collecting reviews is the fastest way to change it.`
+                : `You show up somewhere in your service area for ${rankedCount} of ${keywords.length} searches. "Seen at 3/9 spots" means someone standing at 3 of the 9 places we checked would find you.`}
           </p>
         ) : null}
       </section>

@@ -282,12 +282,18 @@ export const checkRanksForUser = internalAction({
     { userId },
   ): Promise<{ checked: number; found: number; competitors: number }> => {
 
-    const context = await ctx.runQuery(internal.performance.rankContext, {
+    let context = await ctx.runQuery(internal.performance.rankContext, {
       userId,
     });
     if (!context) throw new Error("Connect your Google profile first.");
     if (context.lat === undefined || context.lng === undefined) {
-      throw new Error("We don't have coordinates for your shop yet.");
+      await ctx.runAction(internal.google.ensureCoordinates, { userId });
+      context = await ctx.runQuery(internal.performance.rankContext, { userId });
+    }
+    if (!context || context.lat === undefined || context.lng === undefined) {
+      throw new Error(
+        "We couldn't work out where your shop is. Check the address in step 2.",
+      );
     }
     if (context.keywords.length === 0) {
       throw new Error("Add some keywords in setup first.");
@@ -397,11 +403,17 @@ export const runGeoGrid = action({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Sign in first.");
 
-    const context = await ctx.runQuery(internal.performance.rankContext, {
+    let context = await ctx.runQuery(internal.performance.rankContext, {
       userId,
     });
     if (!context || context.lat === undefined || context.lng === undefined) {
-      throw new Error("We don't have coordinates for your shop yet.");
+      await ctx.runAction(internal.google.ensureCoordinates, { userId });
+      context = await ctx.runQuery(internal.performance.rankContext, { userId });
+    }
+    if (!context || context.lat === undefined || context.lng === undefined) {
+      throw new Error(
+        "We couldn't work out where your shop is. Check the address in step 2.",
+      );
     }
 
     const half = Math.floor(size / 2);

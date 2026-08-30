@@ -521,3 +521,97 @@ export const accessTokenFor = internalAction({
   handler: async (ctx, { userId }): Promise<string> =>
     await freshAccessToken(ctx, userId),
 });
+
+/* ---------------------------- coordinates -------------------------------
+   Google leaves latlng off plenty of listings — clinics and service-area
+   businesses especially. Without it there is no rank check, no geo-grid and
+   no nearby areas, so we geocode the address once and keep it.            */
+
+export const patchCoordinates = internalMutation({
+  args: { businessId: v.id("businesses"), lat: v.number(), lng: v.number() },
+  handler: async (ctx, { businessId, lat, lng }) => {
+    await ctx.db.patch(businessId, { lat, lng });
+  },
+});
+
+export const ensureCoordinates = internalAction({
+  args: { userId: v.id("users") },
+  handler: async (
+    ctx,
+    { userId },
+  ): Promise<{ lat: number; lng: number } | null> => {
+    const business = await ctx.runQuery(internal.google.businessForUser, {
+      userId,
+    });
+    if (!business) return null;
+    if (business.lat !== undefined && business.lng !== undefined) {
+      return { lat: business.lat, lng: business.lng };
+    }
+
+    // A full Indian shop address rarely geocodes as written — "4/127, Bagh
+    // Farzana Rd, Bank Colony, Civil Lines, Agra" finds nothing, while
+    // "Civil Lines, Agra" finds the locality. So we drop segments off the
+    // front until something matches, then fall back to the pin code and city.
+    const segments = (business.streetAddress ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const attempts: string[] = [];
+    for (let i = 0; i < segments.length; i++) {
+      attempts.push(segments.slice(i).join(", "));
+    }
+    if (business.pinCode) {
+      attempts.push(
+        [business.pinCode, business.city, business.state, "India"]
+          .filter(Boolean)
+          .join(", "),
+      );
+    }
+    attempts.push(
+      [business.city, business.state, "India"].filter(Boolean).join(", "),
+    );
+
+    const tried = new Set<string>();
+
+    for (const query of attempts) {
+      if (!query || query.length < 4 || tried.has(query)) continue;
+      tried.add(query);
+      try {
+        const url = new URL("https://nominatim.openstreetmap.org/search");
+        url.searchParams.set("q", query);
+        url.searchParams.set("format", "json");
+        url.searchParams.set("limit", "1");
+        url.searchParams.set("countrycodes", "in");
+
+        const res = await fetch(url.toString(), {
+          headers: {
+            "User-Agent": "footfall/1.0 (local business listing tool)",
+            Accept: "application/json",
+          },
+        });
+        if (!res.ok) continue;
+
+        const rows = await res.json();
+        const hit = Array.isArray(rows) ? rows[0] : null;
+        if (!hit?.lat || !hit?.lon) continue;
+
+        const lat = Number(hit.lat);
+        const lng = Number(hit.lon);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
+        await ctx.runMutation(internal.google.patchCoordinates, {
+          businessId: business._id,
+          lat,
+          lng,
+        });
+        console.log(`[geocode] "${query}" -> ${lat},${lng}`);
+        return { lat, lng };
+      } catch (error) {
+        console.log(`[geocode] failed for "${query}"`, error);
+      }
+    }
+
+    return null;
+  },
+});

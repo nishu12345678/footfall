@@ -582,11 +582,20 @@ export const nearbyAreas = action({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Sign in first.");
 
-    const business = await ctx.runQuery(internal.google.businessForUser, {
+    let business = await ctx.runQuery(internal.google.businessForUser, {
       userId,
     });
+
+    // Google leaves coordinates off plenty of listings; look them up from
+    // the address rather than telling the owner we can't help.
     if (!business?.lat || !business?.lng) {
-      throw new Error("We don't have your shop's location from Google yet.");
+      await ctx.runAction(internal.google.ensureCoordinates, { userId });
+      business = await ctx.runQuery(internal.google.businessForUser, { userId });
+    }
+    if (!business?.lat || !business?.lng) {
+      throw new Error(
+        "We couldn't work out where your shop is. Check the address in step 2.",
+      );
     }
 
     const radius = Math.round(Math.min(Math.max(radiusKm, 2), 50) * 1000);

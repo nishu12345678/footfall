@@ -4,6 +4,7 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
+import { resumeHref, resumeLabel } from "@/lib/onboarding";
 
 export default function HomePage() {
   const data = useQuery(api.dashboard.home);
@@ -72,6 +73,27 @@ export default function HomePage() {
       location={business.locationName ?? business.city}
       logoUrl={business.logoUrl}
     >
+      {/* Setup isn't finished — say so, and offer the exact step they left. */}
+      {!business.onboardingComplete ? (
+        <a
+          href={resumeHref(business)}
+          className="mb-4 flex items-center gap-3 rounded-[14px] border border-ink bg-star/20 p-4 shadow-[3px_3px_0_var(--color-ink)]"
+        >
+          <span className="min-w-0 flex-1">
+            <span className="block font-display text-[15px] font-bold leading-tight">
+              Your setup isn&rsquo;t finished
+            </span>
+            <span className="mt-0.5 block text-[13px] text-ink-soft">
+              Step {business.onboardingStep} of 6 —{" "}
+              {resumeLabel(business).replace("continue setup — ", "")}
+            </span>
+          </span>
+          <span aria-hidden className="flex-none text-ink">
+            ›
+          </span>
+        </a>
+      ) : null}
+
       {/* ---------------------------- reviews ---------------------------- */}
       <section
         className={`rounded-[14px] border p-4 ${

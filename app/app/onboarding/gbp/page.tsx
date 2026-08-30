@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { Steps } from "@/components/steps";
 import { Working } from "@/components/working";
+import { ONBOARDING_STEPS } from "@/lib/onboarding";
 import dynamic from "next/dynamic";
 
 const AreaMap = dynamic(
@@ -83,6 +84,7 @@ export default function GbpPage() {
   >([]);
   const [radiusKm, setRadiusKm] = useState(20);
   const [autoRan, setAutoRan] = useState<Record<string, boolean>>({});
+  const [seen, setSeen] = useState<Record<string, boolean>>({ areas: true });
   const [areasSeeded, setAreasSeeded] = useState(false);
   const [findingAreas, setFindingAreas] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -224,6 +226,7 @@ export default function GbpPage() {
             type="button"
             onClick={() => {
               setTab(t.id);
+              setSeen((s) => ({ ...s, [t.id]: true }));
               setDraft("");
             }}
             className={`-mb-px flex-none border-b-2 pb-2.5 font-display text-[13px] font-semibold transition-colors ${
@@ -233,6 +236,11 @@ export default function GbpPage() {
             }`}
           >
             {t.label}
+            {seen[t.id] && tab !== t.id ? (
+              <span aria-hidden className="ml-1 text-open">
+                ✓
+              </span>
+            ) : null}
           </button>
         ))}
       </div>
@@ -658,20 +666,32 @@ export default function GbpPage() {
         ) : null}
       </div>
 
+      <p className="mt-8 text-center font-mono text-[10px] text-muted">
+        step 4 of 6 · {TABS.filter((x) => seen[x.id]).length} of {TABS.length}{" "}
+        sections done
+      </p>
+
       <button
         type="button"
         onClick={() => void next()}
         disabled={busy}
-        className="btn btn-primary mt-8 w-full disabled:opacity-40"
+        className="btn btn-primary mt-2 w-full disabled:opacity-40"
       >
         {tab === "hours"
           ? "save hours & next"
           : tab === "attributes"
             ? busy
               ? "saving…"
-              : "save & finish setup"
+              : "save & make my website"
             : "save & next"}
       </button>
+
+      <a
+        href={ONBOARDING_STEPS[4].href}
+        className="mt-3 block text-center font-mono text-[11px] text-muted underline underline-offset-4 hover:text-pin"
+      >
+        skip the rest of this step
+      </a>
     </main>
   );
 }

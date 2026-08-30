@@ -9,6 +9,7 @@
  */
 
 import type * as about from "../about.js";
+import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
 import type * as branding from "../branding.js";
 import type * as businesses from "../businesses.js";
@@ -31,6 +32,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   about: typeof about;
+  admin: typeof admin;
   auth: typeof auth;
   branding: typeof branding;
   businesses: typeof businesses;

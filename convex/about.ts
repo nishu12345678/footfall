@@ -151,30 +151,89 @@ export const businessContext = internalQuery({
   },
 });
 
-/** Reads the shop's own website, if it has one, for grounding. */
-async function siteText(website?: string): Promise<string> {
+/**
+ * Reads what the web already says about this shop.
+ *
+ * A local business's real catalogue is rarely on a website they built — it's
+ * on their JustDial page, their IndiaMART listing, their Instagram. So we
+ * search for the business first and read the top few results, rather than
+ * only the one URL we happen to have on file.
+ */
+async function webContext(
+  name: string,
+  city?: string,
+  category?: string,
+  website?: string,
+): Promise<string> {
   const key = process.env.FIRECRAWL_API_KEY;
-  if (!key || !website) return "";
+  if (!key) return "";
+
+  const targets: string[] = [];
+  if (website) targets.push(website);
+
   try {
-    const res = await fetch("https://api.firecrawl.dev/v2/scrape", {
+    const res = await fetch("https://api.firecrawl.dev/v2/search", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${key}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ url: website, formats: ["markdown"] }),
+      body: JSON.stringify({
+        query: [name, city, category].filter(Boolean).join(" "),
+        limit: 5,
+      }),
     });
-    if (!res.ok) {
-      console.log(`[firecrawl] ${res.status} ${(await res.text()).slice(0, 200)}`);
-      return "";
+    if (res.ok) {
+      const data = await res.json();
+      const web = data?.data?.web ?? data?.data ?? [];
+      const hosts = new Set(
+        targets.map((u) => {
+          try {
+            return new URL(u).host;
+          } catch {
+            return u;
+          }
+        }),
+      );
+      for (const row of Array.isArray(web) ? web : []) {
+        const url: string = row?.url ?? "";
+        if (!url) continue;
+        try {
+          const host = new URL(url).host;
+          if (hosts.has(host)) continue;
+          hosts.add(host);
+          targets.push(url);
+        } catch {
+          /* skip */
+        }
+      }
     }
-    const data = await res.json();
-    const markdown: string = data?.data?.markdown ?? "";
-    return markdown.slice(0, 3000);
   } catch (error) {
-    console.log("[firecrawl] failed", error);
-    return "";
+    console.log("[firecrawl] search failed", error);
   }
+
+  const chunks: string[] = [];
+  for (const url of targets.slice(0, 3)) {
+    try {
+      const res = await fetch("https://api.firecrawl.dev/v2/scrape", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url, formats: ["markdown"] }),
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const markdown: string = data?.data?.markdown ?? "";
+      if (markdown)
+        chunks.push(`--- from ${url} ---\n${markdown.slice(0, 2500)}`);
+    } catch {
+      /* one bad page shouldn't stop the rest */
+    }
+  }
+
+  return chunks.join("\n\n").slice(0, 7000);
 }
 
 export const suggest = action({
@@ -192,7 +251,12 @@ export const suggest = action({
     if (!apiKey) throw new Error("OPENAI_API_KEY is not set.");
 
     const wantSpecialties = kind === "specialties";
-    const site = await siteText(context.website);
+    const site = await webContext(
+      context.name,
+      context.city,
+      context.category,
+      context.website,
+    );
 
     const ask = wantSpecialties
       ? `things this business is BEST KNOWN FOR — short reputation phrases a happy customer would use, like "Premium Marble Collection" or "Expert Installation Advice"`

@@ -4,6 +4,7 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { Steps } from "@/components/steps";
+import { Working } from "@/components/working";
 
 type Tab = "areas" | "keywords" | "hours" | "attributes";
 
@@ -45,7 +46,7 @@ export default function GbpPage() {
   const suggestKeywords = useAction(api.gbp.suggestKeywords);
   const researchKeywords = useAction(api.keywords.research);
   const seedAreas = useMutation(api.gbp.seedServiceAreas);
-  const suggestAreas = useAction(api.gbp.suggestServiceAreas);
+  const nearbyAreas = useAction(api.gbp.nearbyAreas);
 
   const [tab, setTab] = useState<Tab>("areas");
   const [draft, setDraft] = useState("");
@@ -66,7 +67,11 @@ export default function GbpPage() {
   const [thinking, setThinking] = useState(false);
   const [hours, setLocalHours] = useState<HourRow[]>(DEFAULT_HOURS);
   const [hoursLoaded, setHoursLoaded] = useState(false);
-  const [areaIdeas, setAreaIdeas] = useState<string[]>([]);
+  const [areaIdeas, setAreaIdeas] = useState<
+    { name: string; km: number; kind: string }[]
+  >([]);
+  const [radiusKm, setRadiusKm] = useState(20);
+  const [autoRan, setAutoRan] = useState<Record<string, boolean>>({});
   const [areasSeeded, setAreasSeeded] = useState(false);
   const [findingAreas, setFindingAreas] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -124,11 +129,11 @@ export default function GbpPage() {
     );
   }
 
-  async function findAreas() {
+  async function findAreas(km: number) {
     setFindingAreas(true);
     setError(null);
     try {
-      setAreaIdeas(await suggestAreas({}));
+      setAreaIdeas(await nearbyAreas({ radiusKm: km }));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -159,6 +164,20 @@ export default function GbpPage() {
       setThinking(false);
     }
   }
+
+  // Shop owners shouldn't have to press "research". Opening the tab does it.
+  useEffect(() => {
+    if (!data) return;
+    if (tab === "areas" && !autoRan.areas) {
+      setAutoRan((s) => ({ ...s, areas: true }));
+      void findAreas(radiusKm);
+    }
+    if (tab === "keywords" && !autoRan.keywords) {
+      setAutoRan((s) => ({ ...s, keywords: true }));
+      void runResearch(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, data]);
 
   async function next() {
     const order: Tab[] = ["areas", "keywords", "hours", "attributes"];
@@ -245,29 +264,50 @@ export default function GbpPage() {
                 <p className="font-display text-[14px] font-bold">
                   Areas near you
                 </p>
-                <button
-                  type="button"
-                  onClick={() => void findAreas()}
-                  disabled={findingAreas}
-                  className="font-mono text-[11px] underline underline-offset-4 hover:text-pin disabled:opacity-50"
-                >
-                  {findingAreas ? "looking…" : areaIdeas.length ? "more" : "suggest nearby"}
-                </button>
+                <div className="flex flex-none items-center gap-1 rounded-full border border-rule p-0.5">
+                  {[10, 20, 30].map((km) => (
+                    <button
+                      key={km}
+                      type="button"
+                      onClick={() => {
+                        setRadiusKm(km);
+                        void findAreas(km);
+                      }}
+                      aria-pressed={radiusKm === km}
+                      className={`rounded-full px-2 py-0.5 font-mono text-[10px] transition-colors ${
+                        radiusKm === km
+                          ? "bg-ink text-paper-2"
+                          : "text-muted hover:text-ink"
+                      }`}
+                    >
+                      {km}km
+                    </button>
+                  ))}
+                </div>
               </div>
-              {areaIdeas.length ? (
+              {findingAreas ? (
+                <div className="mt-3">
+                  <Working label={`Reading the map ${radiusKm}km around you`} />
+                </div>
+              ) : areaIdeas.length ? (
                 <ul className="mt-3 flex flex-wrap gap-2">
-                  {areaIdeas.map((name) => (
-                    <li key={name}>
+                  {areaIdeas.map((area) => (
+                    <li key={area.name}>
                       <button
                         type="button"
                         onClick={() => {
-                          void addArea({ name });
-                          setAreaIdeas((s) => s.filter((x) => x !== name));
+                          void addArea({ name: area.name });
+                          setAreaIdeas((s) =>
+                            s.filter((x) => x.name !== area.name),
+                          );
                         }}
                         className="inline-flex items-center gap-1.5 rounded-full border border-rule bg-paper py-1.5 pl-2.5 pr-3 text-[13px] transition-colors hover:border-ink"
                       >
                         <span aria-hidden className="text-pin">+</span>
-                        {name}
+                        {area.name}
+                        <span className="font-mono text-[10px] text-muted">
+                          {area.km}km
+                        </span>
                       </button>
                     </li>
                   ))}
@@ -275,7 +315,6 @@ export default function GbpPage() {
               ) : (
                 <p className="mt-2 text-[12px] leading-relaxed text-muted">
                   Your own locality and city are already added from Google.
-                  Add the neighbourhoods your customers travel from.
                 </p>
               )}
             </div>
@@ -357,27 +396,21 @@ export default function GbpPage() {
                 <p className="font-display text-[14px] font-bold">
                   Researched from Google
                 </p>
-                <span className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void runResearch(false)}
-                    disabled={thinking}
-                    className="font-mono text-[11px] underline underline-offset-4 hover:text-pin disabled:opacity-50"
-                  >
-                    {thinking ? "…" : "find"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void runResearch(true)}
-                    disabled={thinking}
-                    className="font-mono text-[11px] underline underline-offset-4 hover:text-pin disabled:opacity-50"
-                  >
-                    + competition
-                  </button>
-                </span>
+                <button
+                  type="button"
+                  onClick={() => void runResearch(true)}
+                  disabled={thinking}
+                  className="flex-none font-mono text-[11px] underline underline-offset-4 hover:text-pin disabled:opacity-50"
+                >
+                  check competition
+                </button>
               </div>
 
-              {researched.length ? (
+              {thinking ? (
+                <div className="mt-3">
+                  <Working label="Finding what your customers search for" />
+                </div>
+              ) : researched.length ? (
                 <ul className="mt-3 space-y-2">
                   {researched.map((r) => (
                     <li

@@ -578,74 +578,80 @@ export const seedServiceAreas = mutation({
   },
 });
 
-export const suggestServiceAreas = action({
-  args: {},
-  handler: async (ctx): Promise<string[]> => {
+/**
+ * Real localities around the shop, from OpenStreetMap, with real distances.
+ *
+ * A shop doesn't serve one colony — it serves everyone willing to travel to
+ * it. So this works on a radius the owner picks, and every name is a place
+ * that actually exists on the map rather than something a model recalled.
+ */
+export const nearbyAreas = action({
+  args: { radiusKm: v.optional(v.number()) },
+  handler: async (
+    ctx,
+    { radiusKm = 20 },
+  ): Promise<{ name: string; km: number; kind: string }[]> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Sign in first.");
 
     const business = await ctx.runQuery(internal.google.businessForUser, {
       userId,
     });
-    if (!business?.city) throw new Error("We don't know your city yet.");
+    if (!business?.lat || !business?.lng) {
+      throw new Error("We don't have your shop's location from Google yet.");
+    }
 
-    const existing = await ctx.runQuery(internal.gbp.areasFor, { userId });
+    const radius = Math.round(Math.min(Math.max(radiusKm, 2), 50) * 1000);
+    const query =
+      `[out:json][timeout:25];` +
+      `(node["place"~"^(suburb|neighbourhood|quarter|town|village)$"]` +
+      `(around:${radius},${business.lat},${business.lng}););out body 80;`;
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("OPENAI_API_KEY is not set.");
-
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const res = await fetch("https://overpass-api.de/api/interpreter", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        temperature: 0.3,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "You know Indian cities and their localities well. You only name real localities.",
-          },
-          {
-            role: "user",
-            content: [
-              `A shop is at: ${business.streetAddress ?? ""}, ${business.city}, ${business.state ?? ""} ${business.pinCode ?? ""}`.trim(),
-              existing.length ? `Already listed: ${existing.join(", ")}` : "",
-              "",
-              `List 10 real residential or commercial localities in ${business.city} that are close enough to this address that someone there would travel to this shop.`,
-              "Nearest first. Real locality names only — no invented areas, no other cities.",
-              'Reply as JSON only: {"items":["...","..."]}',
-            ]
-              .filter(Boolean)
-              .join("\n"),
-          },
-        ],
-      }),
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ data: query }),
     });
 
     if (!res.ok) {
-      console.error(`[openai] ${res.status} ${(await res.text()).slice(0, 200)}`);
-      throw new Error(`Could not suggest areas (${res.status}).`);
+      console.error(`[overpass] ${res.status}`);
+      throw new Error("Could not read the map right now. Try again.");
     }
 
     const data = await res.json();
-    let items: string[] = [];
-    try {
-      items = JSON.parse(data?.choices?.[0]?.message?.content ?? "{}").items ?? [];
-    } catch {
-      return [];
-    }
+    const existing: string[] = await ctx.runQuery(internal.gbp.areasFor, {
+      userId,
+    });
+    const have = new Set(existing.map((a) => a.toLowerCase()));
 
-    const have = new Set(existing.map((a: string) => a.toLowerCase()));
-    return items
-      .filter((i) => typeof i === "string" && i.trim())
-      .map((i) => i.trim())
-      .filter((i) => !have.has(i.toLowerCase()))
-      .slice(0, 10);
+    const toRad = (x: number) => (x * Math.PI) / 180;
+    const distance = (lat: number, lng: number) => {
+      const dLat = toRad(lat - business.lat!);
+      const dLng = toRad(lng - business.lng!);
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(business.lat!)) *
+          Math.cos(toRad(lat)) *
+          Math.sin(dLng / 2) ** 2;
+      return 2 * 6371 * Math.asin(Math.sqrt(a));
+    };
+
+    const seen = new Set<string>();
+    return (data.elements ?? [])
+      .filter((e: any) => e?.tags?.name && e.lat && e.lon)
+      .map((e: any) => ({
+        name: String(e.tags.name),
+        kind: String(e.tags.place),
+        km: Math.round(distance(e.lat, e.lon) * 10) / 10,
+      }))
+      .filter((e: { name: string }) => {
+        const key = e.name.toLowerCase();
+        if (have.has(key) || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((a: { km: number }, b: { km: number }) => a.km - b.km)
+      .slice(0, 24);
   },
 });
 

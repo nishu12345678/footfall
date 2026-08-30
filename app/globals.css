@@ -271,3 +271,25 @@ h4 {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* indeterminate progress used while footfall works on the owner's behalf */
+@keyframes sweep {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+.sweep {
+  animation: sweep 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sweep {
+    animation: none;
+    width: 100%;
+    opacity: 0.5;
+  }
+}

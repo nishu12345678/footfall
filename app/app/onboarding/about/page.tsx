@@ -1,9 +1,10 @@
 "use client";
 
 import { useAction, useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { Steps } from "@/components/steps";
+import { Working } from "@/components/working";
 
 type Tab = "offerings" | "specialties";
 
@@ -36,7 +37,20 @@ export default function AboutPage() {
     specialties: [],
   });
   const [thinking, setThinking] = useState(false);
+  const [autoRan, setAutoRan] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
+
+  // The owner confirms suggestions; they don't go looking for them.
+  useEffect(() => {
+    if (!data || autoRan[tab]) return;
+    setAutoRan((s) => ({ ...s, [tab]: true }));
+    setThinking(true);
+    void suggest({ kind: tab })
+      .then((items) => setSuggestions((s) => ({ ...s, [tab]: items })))
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .finally(() => setThinking(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, data]);
 
   if (data === undefined) {
     return (
@@ -186,17 +200,23 @@ export default function AboutPage() {
               type="button"
               onClick={() => void getSuggestions()}
               disabled={thinking}
-              className="font-mono text-[11px] underline underline-offset-4 hover:text-pin disabled:opacity-50"
+              className="flex-none font-mono text-[11px] underline underline-offset-4 hover:text-pin disabled:opacity-50"
             >
-              {thinking
-                ? "thinking…"
-                : ideas.length
-                  ? "suggest more"
-                  : "suggest for me"}
+              more
             </button>
           </div>
 
-          {ideas.length ? (
+          {thinking ? (
+            <div className="mt-3">
+              <Working
+                label={
+                  tab === "offerings"
+                    ? "Reading what the web says you sell"
+                    : "Working out what you're known for"
+                }
+              />
+            </div>
+          ) : ideas.length ? (
             <ul className="mt-3 flex flex-wrap gap-2">
               {ideas.map((idea) => (
                 <li key={idea}>

@@ -14,12 +14,13 @@ crons.daily(
   internal.performance.syncAllMetrics,
 );
 
-// A listing that posts every day reads as active to Google, and to anyone
-// who lands on it. This is the agent's main job.
+// Three posts a week, planned ahead. This runs every morning and publishes
+// whatever the plan says is due today — most mornings that is nothing.
+// Posting daily on a small local listing reads as automated.
 crons.daily(
-  "publish daily post",
+  "publish scheduled posts",
   { hourUTC: 4, minuteUTC: 0 }, // 09:30 IST, as shops are opening
-  internal.posts.postDaily,
+  internal.posts.publishDue,
 );
 
 // One photo a day reads like a shop someone is running. Thirty at once

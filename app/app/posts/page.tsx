@@ -4,17 +4,34 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
+import { Working } from "@/components/working";
 import type { Id } from "@/convex/_generated/dataModel";
+
+function when(timestamp?: number) {
+  if (!timestamp) return "";
+  const date = new Date(timestamp);
+  const days = Math.round((timestamp - Date.now()) / 86_400_000);
+  const label = date.toLocaleDateString("en-IN", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+  if (days <= 0) return `${label} · due`;
+  if (days === 1) return `${label} · tomorrow`;
+  return `${label} · in ${days} days`;
+}
 
 export default function PostsPage() {
   const data = useQuery(api.lists.posts);
   const writePost = useAction(api.posts.writePost);
+  const planPosts = useAction(api.posts.planPosts);
   const publishPost = useAction(api.posts.publishPost);
   const updateDraft = useMutation(api.posts.updateDraft);
   const removePost = useMutation(api.posts.removePost);
 
   const [brief, setBrief] = useState("");
   const [writing, setWriting] = useState(false);
+  const [planning, setPlanning] = useState(false);
   const [publishing, setPublishing] = useState<Id<"posts"> | null>(null);
   const [editing, setEditing] = useState<Id<"posts"> | null>(null);
   const [editText, setEditText] = useState("");
@@ -25,8 +42,31 @@ export default function PostsPage() {
   if (data === null) return <NeedsConnect />;
 
   const { business, rows } = data;
-  const drafts = rows.filter((p) => p.status !== "published");
-  const published = rows.filter((p) => p.status === "published");
+  const scheduled = rows
+    .filter((p) => p.status === "scheduled")
+    .sort((a, b) => (a.scheduledFor ?? 0) - (b.scheduledFor ?? 0));
+  const drafts = rows.filter(
+    (p) => p.status === "draft" || p.status === "failed",
+  );
+  const published = rows
+    .filter((p) => p.status === "published")
+    .sort((a, b) => (b.publishedAt ?? 0) - (a.publishedAt ?? 0));
+
+  async function plan() {
+    setPlanning(true);
+    setError(null);
+    setNote(null);
+    try {
+      const r = await planPosts({ count: 6 });
+      setNote(
+        `${r.planned} posts planned and scheduled — three a week for the next fortnight.`,
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPlanning(false);
+    }
+  }
 
   async function write() {
     setWriting(true);
@@ -57,6 +97,42 @@ export default function PostsPage() {
     }
   }
 
+  function PostBody({
+    post,
+    muted = false,
+  }: {
+    post: (typeof rows)[number];
+    muted?: boolean;
+  }) {
+    return (
+      <>
+        {post.imageUrl && editing !== post._id ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={post.imageUrl}
+            alt=""
+            className={`mb-3 aspect-[4/3] w-full rounded-[10px] border border-rule object-cover ${
+              muted ? "opacity-90" : ""
+            }`}
+          />
+        ) : null}
+
+        {editing === post._id ? (
+          <textarea
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            rows={12}
+            className="w-full resize-none rounded-[10px] border border-rule bg-paper p-3 text-[13px] leading-relaxed outline-none"
+          />
+        ) : (
+          <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed">
+            {post.body}
+          </p>
+        )}
+      </>
+    );
+  }
+
   return (
     <AppScreen
       name={business.orgName}
@@ -65,31 +141,25 @@ export default function PostsPage() {
     >
       <h1 className="text-[1.6rem]">posts</h1>
       <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
-        Google quietly rewards a listing that&rsquo;s alive. Posts go out with
-        a photo from your listing — add photos first if you haven&rsquo;t.
+        Three posts a week, planned ahead so Google sees a listing someone is
+        running. Posting daily looks automated and does more harm than good.
       </p>
 
-      <div className="mt-5 rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_4px_0_var(--color-ink)]">
-        <label htmlFor="brief" className="eyebrow">
-          anything specific? (optional)
-        </label>
-        <input
-          id="brief"
-          value={brief}
-          onChange={(e) => setBrief(e.target.value)}
-          placeholder="e.g. monsoon offer on floor tiles"
-          className="mt-2 w-full rounded-[12px] border border-rule bg-paper px-3.5 py-2.5 text-[14px] outline-none placeholder:text-muted/50"
-        />
-        <button
-          type="button"
-          onClick={() => void write()}
-          disabled={writing}
-          className="btn btn-primary mt-3 w-full disabled:opacity-40"
-        >
-          <span aria-hidden>✦</span>
-          {writing ? "writing…" : "write a post"}
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => void plan()}
+        disabled={planning}
+        className="btn btn-primary mt-5 w-full disabled:opacity-40"
+      >
+        <span aria-hidden>✦</span>
+        {planning ? "researching topics…" : "plan the next two weeks"}
+      </button>
+
+      {planning ? (
+        <div className="mt-4">
+          <Working label="Working out what to post about" />
+        </div>
+      ) : null}
 
       {note ? (
         <p className="mt-4 rounded-[12px] border border-open bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
@@ -105,44 +175,39 @@ export default function PostsPage() {
         </p>
       ) : null}
 
-      {drafts.length > 0 ? (
-        <section className="mt-7">
-          <h2 className="font-display text-[15px] font-bold">
-            Ready to publish
-          </h2>
+      {/* ---------------------------- coming up --------------------------- */}
+      <section className="mt-8">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="font-display text-[15px] font-bold">Coming up</h2>
+          <span className="flex-none font-mono text-[10px] text-muted">
+            {scheduled.length} scheduled
+          </span>
+        </div>
+
+        {scheduled.length === 0 ? (
+          <p className="mt-3 rounded-[14px] border border-dashed border-rule px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
+            Nothing scheduled. Plan the next two weeks and they&rsquo;ll appear
+            here before they go out.
+          </p>
+        ) : (
           <ul className="mt-3 space-y-3">
-            {drafts.map((post) => (
+            {scheduled.map((post) => (
               <li
                 key={post._id}
                 className="rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]"
               >
-                {post.imageUrl && editing !== post._id ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={post.imageUrl}
-                    alt=""
-                    className="mb-3 aspect-[4/3] w-full rounded-[10px] border border-rule object-cover"
-                  />
-                ) : null}
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <span className="rounded-full border border-star bg-star/20 px-2 py-0.5 font-mono text-[10px]">
+                    {when(post.scheduledFor)}
+                  </span>
+                  {post.title ? (
+                    <span className="min-w-0 truncate font-mono text-[10px] text-muted">
+                      {post.title}
+                    </span>
+                  ) : null}
+                </div>
 
-                {editing === post._id ? (
-                  <textarea
-                    value={editText}
-                    onChange={(e) => setEditText(e.target.value)}
-                    rows={7}
-                    className="w-full resize-none rounded-[10px] border border-rule bg-paper p-3 text-[14px] leading-relaxed outline-none"
-                  />
-                ) : (
-                  <p className="whitespace-pre-wrap text-[14px] leading-relaxed">
-                    {post.body}
-                  </p>
-                )}
-
-                {post.status === "failed" && post.error ? (
-                  <p className="mt-3 break-words rounded-[10px] border border-pin bg-pin-soft px-3 py-2 font-mono text-[11px] leading-snug">
-                    {post.error}
-                  </p>
-                ) : null}
+                <PostBody post={post} />
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   {editing === post._id ? (
@@ -171,11 +236,9 @@ export default function PostsPage() {
                         type="button"
                         onClick={() => void publish(post._id)}
                         disabled={publishing !== null}
-                        className="btn btn-primary btn-sm disabled:opacity-40"
+                        className="btn btn-ghost btn-sm disabled:opacity-40"
                       >
-                        {publishing === post._id
-                          ? "publishing…"
-                          : "publish to google"}
+                        {publishing === post._id ? "publishing…" : "post it now"}
                       </button>
                       <button
                         type="button"
@@ -192,7 +255,7 @@ export default function PostsPage() {
                         onClick={() => void removePost({ id: post._id })}
                         className="ml-auto font-mono text-[11px] text-muted underline underline-offset-4 hover:text-pin"
                       >
-                        delete
+                        skip this one
                       </button>
                     </>
                   )}
@@ -200,17 +263,76 @@ export default function PostsPage() {
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      {/* ----------------------------- drafts ----------------------------- */}
+      {drafts.length > 0 ? (
+        <section className="mt-8">
+          <h2 className="font-display text-[15px] font-bold">
+            Waiting for you
+          </h2>
+          <ul className="mt-3 space-y-3">
+            {drafts.map((post) => (
+              <li
+                key={post._id}
+                className="rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]"
+              >
+                <PostBody post={post} />
+
+                {post.status === "failed" && post.error ? (
+                  <p className="mt-3 break-words rounded-[10px] border border-pin bg-pin-soft px-3 py-2 font-mono text-[11px] leading-snug">
+                    {post.error}
+                  </p>
+                ) : null}
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void publish(post._id)}
+                    disabled={publishing !== null}
+                    className="btn btn-primary btn-sm disabled:opacity-40"
+                  >
+                    {publishing === post._id ? "publishing…" : "publish now"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditing(post._id);
+                      setEditText(post.body);
+                    }}
+                    className="btn btn-ghost btn-sm"
+                  >
+                    edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void removePost({ id: post._id })}
+                    className="ml-auto font-mono text-[11px] text-muted underline underline-offset-4 hover:text-pin"
+                  >
+                    delete
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         </section>
       ) : null}
 
-      <section className="mt-7">
-        <h2 className="font-display text-[15px] font-bold">
-          Published ({published.length})
-        </h2>
+      {/* ---------------------------- published --------------------------- */}
+      <section className="mt-8">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="font-display text-[15px] font-bold">
+            On your listing
+          </h2>
+          <span className="flex-none font-mono text-[10px] text-muted">
+            {published.length} published
+          </span>
+        </div>
 
         {published.length === 0 ? (
           <p className="mt-3 rounded-[14px] border border-dashed border-rule px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
-            Nothing on your listing yet. Write one above and publish it.
+            Nothing on your listing yet.
           </p>
         ) : (
           <ul className="mt-3 space-y-3">
@@ -219,9 +341,9 @@ export default function PostsPage() {
                 key={post._id}
                 className="rounded-[14px] border border-rule bg-paper-2 p-4"
               >
-                <div className="flex items-center justify-between gap-3">
+                <div className="mb-3 flex items-center justify-between gap-3">
                   <span className="flex items-center gap-1.5 rounded-full border border-open bg-open-soft px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-open">
-                    <span aria-hidden>✓</span> live on google
+                    <span aria-hidden>✓</span> live
                   </span>
                   <span className="flex-none font-mono text-[10px] text-muted">
                     {post.publishedAt
@@ -232,17 +354,9 @@ export default function PostsPage() {
                       : ""}
                   </span>
                 </div>
-                {post.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={post.imageUrl}
-                    alt=""
-                    className="mt-2.5 aspect-[4/3] w-full rounded-[10px] border border-rule object-cover"
-                  />
-                ) : null}
-                <p className="mt-2.5 whitespace-pre-wrap text-[14px] leading-relaxed">
-                  {post.body}
-                </p>
+
+                <PostBody post={post} muted />
+
                 {business.mapsUri ? (
                   <a
                     href={business.mapsUri}
@@ -257,6 +371,28 @@ export default function PostsPage() {
             ))}
           </ul>
         )}
+      </section>
+
+      {/* ------------------------- write one yourself --------------------- */}
+      <section className="mt-8 rounded-[14px] border border-rule bg-paper-2 p-4">
+        <label htmlFor="brief" className="eyebrow">
+          want something specific posted?
+        </label>
+        <input
+          id="brief"
+          value={brief}
+          onChange={(e) => setBrief(e.target.value)}
+          placeholder="e.g. we now stock Kajaria tiles"
+          className="mt-2 w-full rounded-[12px] border border-rule bg-paper px-3.5 py-2.5 text-[14px] outline-none placeholder:text-muted/50"
+        />
+        <button
+          type="button"
+          onClick={() => void write()}
+          disabled={writing}
+          className="btn btn-ghost btn-sm mt-3 w-full disabled:opacity-40"
+        >
+          {writing ? "writing…" : "write one now"}
+        </button>
       </section>
     </AppScreen>
   );

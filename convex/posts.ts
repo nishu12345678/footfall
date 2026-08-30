@@ -467,3 +467,241 @@ export const postDaily = internalAction({
     return { attempted: businesses.length, published };
   },
 });
+
+/* ---------------------------- the content plan ---------------------------
+   Three posts a week, planned in advance and visible before they go out.
+
+   Daily posting on a small local listing reads as automated, and a run of
+   near-identical posts is worse than no posts at all. So the agent
+   researches a fortnight of distinct topics up front — services, the
+   season, the locality, the questions customers actually ask — and
+   schedules them for Monday, Wednesday and Friday.                       */
+
+const POST_DAYS = [1, 3, 5]; // Mon, Wed, Fri
+const POST_HOUR_UTC = 4; // 09:30 IST
+
+/** The next N posting slots that aren't already taken. */
+function nextSlots(count: number, taken: number[]): number[] {
+  const slots: number[] = [];
+  const cursor = new Date();
+  cursor.setUTCHours(POST_HOUR_UTC, 0, 0, 0);
+  if (cursor.getTime() <= Date.now()) cursor.setUTCDate(cursor.getUTCDate() + 1);
+
+  for (let i = 0; i < 40 && slots.length < count; i++) {
+    if (POST_DAYS.includes(cursor.getUTCDay())) {
+      const time = cursor.getTime();
+      const clash = taken.some((t) => Math.abs(t - time) < 12 * 3600_000);
+      if (!clash) slots.push(time);
+    }
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return slots;
+}
+
+export const scheduledFor = internalQuery({
+  args: { businessId: v.id("businesses") },
+  handler: async (ctx, { businessId }) => {
+    const rows = await ctx.db
+      .query("posts")
+      .withIndex("by_business", (q) => q.eq("businessId", businessId))
+      .collect();
+    return rows
+      .filter((r) => r.status === "scheduled" && r.scheduledFor)
+      .map((r) => r.scheduledFor as number);
+  },
+});
+
+export const saveScheduled = internalMutation({
+  args: {
+    businessId: v.id("businesses"),
+    body: v.string(),
+    title: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    scheduledFor: v.number(),
+  },
+  handler: async (ctx, args) =>
+    await ctx.db.insert("posts", {
+      ...args,
+      status: "scheduled",
+      generatedBy: "ai",
+    }),
+});
+
+/** Researches what to post about, then writes and schedules each one. */
+export const planPosts = action({
+  args: { count: v.optional(v.number()) },
+  handler: async (
+    ctx,
+    { count = 6 },
+  ): Promise<{ planned: number; topics: string[] }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+
+    const c = await ctx.runQuery(internal.posts.postContext, { userId });
+    if (!c) throw new Error("Connect your Google profile first.");
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new Error("OPENAI_API_KEY is not set.");
+
+    const month = new Date().toLocaleDateString("en-IN", {
+      month: "long",
+      year: "numeric",
+    });
+    const nearMe = c.keywords.filter(
+      (k: string) => k.includes("near me") || k.includes("nearby"),
+    );
+
+    const brief = [
+      `Business: ${c.business.orgName}`,
+      c.business.primaryCategory ? `Category: ${c.business.primaryCategory}` : "",
+      c.business.city ? `City: ${c.business.city}` : "",
+      c.areas.length ? `Serves: ${c.areas.slice(0, 6).join(", ")}` : "",
+      c.offerings.length ? `Sells: ${c.offerings.join(", ")}` : "",
+      c.specialties.length ? `Known for: ${c.specialties.join(", ")}` : "",
+      nearMe.length
+        ? `Searches to target across the plan: ${nearMe.join(", ")}`
+        : "",
+      c.recent.length
+        ? `\nAlready posted about:\n- ${c.recent.map((r: string) => r.slice(0, 100)).join("\n- ")}`
+        : "",
+      `\nIt is ${month}.`,
+      "",
+      `Plan ${count} Google Business Profile posts, three a week over the next fortnight.`,
+      "Each needs a distinct reason to exist. Draw on different angles:",
+      "- one specific product or service in depth",
+      "- a question customers actually ask before buying",
+      "- what suits the season, if it genuinely applies to this trade",
+      "- the localities served and how easy the shop is to reach",
+      "- what makes this shop a different choice from the ones nearby",
+      "- practical guidance a customer would find useful",
+      "",
+      "Rules:",
+      "- No two topics may overlap. If you cannot find enough distinct angles, return fewer.",
+      "- Do not invent offers, discounts, events or prices.",
+      "",
+      'Reply as JSON only: {"topics":[{"topic":"...","targets":"..."}]}',
+      "topic = a one-line brief for the post. targets = which search phrase it leans on.",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const research = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0.9,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "You plan Google Business Profile content for Indian neighbourhood businesses. You think like a local SEO specialist: every post must earn its place, and no two may cover the same ground.",
+          },
+          { role: "user", content: brief },
+        ],
+      }),
+    });
+
+    if (!research.ok) {
+      console.error(`[openai] plan ${research.status}`);
+      throw new Error("Couldn't plan the posts just now. Try again.");
+    }
+
+    const payload = await research.json();
+    let topics: { topic: string; targets?: string }[] = [];
+    try {
+      topics =
+        JSON.parse(payload?.choices?.[0]?.message?.content ?? "{}").topics ?? [];
+    } catch {
+      throw new Error("The planner returned something we couldn't read.");
+    }
+    topics = topics.filter((t) => t?.topic).slice(0, count);
+    if (topics.length === 0) throw new Error("No topics came back. Try again.");
+
+    const taken: number[] = await ctx.runQuery(internal.posts.scheduledFor, {
+      businessId: c.business._id,
+    });
+    const slots = nextSlots(topics.length, taken);
+
+    const usedImages = [...c.recentImages];
+    let planned = 0;
+
+    for (let i = 0; i < topics.length && i < slots.length; i++) {
+      const topicBrief = topics[i].targets
+        ? `${topics[i].topic} (lean on the search phrase: ${topics[i].targets})`
+        : topics[i].topic;
+
+      const body = await ctx.runAction(internal.posts.draftBody, {
+        userId,
+        brief: topicBrief,
+      });
+      if (!body) continue;
+
+      const image = pickImage(c.photos, usedImages);
+      if (image) usedImages.push(image);
+
+      await ctx.runMutation(internal.posts.saveScheduled, {
+        businessId: c.business._id,
+        body,
+        title: topics[i].topic,
+        imageUrl: image,
+        scheduledFor: slots[i],
+      });
+      planned += 1;
+    }
+
+    return { planned, topics: topics.map((t) => t.topic) };
+  },
+});
+
+export const dueNow = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db
+      .query("posts")
+      .filter((q) => q.eq(q.field("status"), "scheduled"))
+      .collect();
+    const now = Date.now();
+    return rows
+      .filter((r) => (r.scheduledFor ?? 0) <= now)
+      .map((r) => ({ id: r._id, businessId: r.businessId }));
+  },
+});
+
+export const ownerOf = internalQuery({
+  args: { businessId: v.id("businesses") },
+  handler: async (ctx, { businessId }) => {
+    const business = await ctx.db.get(businessId);
+    return business?.userId ?? null;
+  },
+});
+
+/** Publishes whatever the plan says is due. Runs every morning. */
+export const publishDue = internalAction({
+  args: {},
+  handler: async (ctx): Promise<{ published: number }> => {
+    const due = await ctx.runQuery(internal.posts.dueNow, {});
+    let published = 0;
+
+    for (const item of due) {
+      try {
+        const userId = await ctx.runQuery(internal.posts.ownerOf, {
+          businessId: item.businessId,
+        });
+        if (!userId) continue;
+        const r = await ctx.runAction(internal.posts.pushToGoogle, {
+          postId: item.id,
+          userId,
+        });
+        if (r.ok) published += 1;
+      } catch (error) {
+        console.error("[agent] scheduled post failed", error);
+      }
+    }
+    return { published };
+  },
+});

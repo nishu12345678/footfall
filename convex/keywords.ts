@@ -155,6 +155,68 @@ async function demandFor(terms: string[], geo: string) {
   return scores;
 }
 
+/* --------------------------- 3b real volume ------------------------------
+   DataForSEO reads Google Ads' own numbers, so it gives an actual monthly
+   search volume for a city — including long-tail phrases that Google Trends
+   is far too coarse to measure. When it answers we use it and stop guessing;
+   when it doesn't, we fall back to Trends.                                */
+
+export type Volume = {
+  volume: number | null;
+  competition: string | null;
+  cpc: number | null;
+};
+
+async function dataForSeoVolume(
+  terms: string[],
+  locationName: string,
+): Promise<Map<string, Volume>> {
+  const out = new Map<string, Volume>();
+  const auth = process.env.DATAFORSEO_AUTH;
+  if (!auth || terms.length === 0) return out;
+
+  const attempt = async (location: string) => {
+    const res = await fetch(
+      "https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${auth}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify([
+          {
+            keywords: terms.slice(0, 700),
+            location_name: location,
+            language_code: "en",
+          },
+        ]),
+      },
+    );
+    const data = await res.json();
+    if (data?.status_code !== 20000) {
+      console.log(`[dataforseo] ${data?.status_code} ${data?.status_message}`);
+      return null;
+    }
+    return data?.tasks?.[0]?.result ?? [];
+  };
+
+  // City first — a shop cares about demand in its own city, not the country.
+  let rows = await attempt(locationName);
+  if (rows === null || rows.length === 0) rows = await attempt("India");
+  if (!rows) return out;
+
+  for (const row of rows) {
+    if (!row?.keyword) continue;
+    out.set(String(row.keyword).toLowerCase(), {
+      volume: row.search_volume ?? null,
+      competition: row.competition ?? null,
+      cpc: row.cpc ?? null,
+    });
+  }
+  return out;
+}
+
 /* ----------------------------- 4 winnability ---------------------------- */
 
 async function topThreeReviews(term: string, lat: number, lng: number) {
@@ -303,10 +365,13 @@ export const context = internalQuery({
 export type Researched = {
   term: string;
   demand: number;
+  volume?: number | null;
+  competition?: string | null;
   reviews?: number;
   score: number;
   source: string;
   why: string;
+  measured: string;
 };
 
 export const research = action({
@@ -380,18 +445,47 @@ export const research = action({
       throw new Error("Nothing relevant to your shop came back. Try again.");
     }
 
-    // 3 · demand on the head terms — a long-tail local phrase never
-    //     registers in Trends, but the product noun behind it does.
-    const heads = [...new Set(refined.map((r) => r.head))].slice(0, 15);
-    const demand = await demandFor(heads, geo);
+    // 3 · demand. Real monthly volume for this city if DataForSEO answers,
+    //     otherwise relative Trends interest on the head terms.
+    const locationName = [c.city, c.state, "India"].filter(Boolean).join(",");
+    const volumes = await dataForSeoVolume(
+      refined.map((r) => r.term),
+      locationName,
+    );
+    const usingVolume = [...volumes.values()].some((v) => v.volume !== null);
+
+    const demand = usingVolume
+      ? new Map<string, number>()
+      : await demandFor(
+          [...new Set(refined.map((r) => r.head))].slice(0, 15),
+          geo,
+        );
+
+    const peakVolume = Math.max(
+      1,
+      ...[...volumes.values()].map((v) => v.volume ?? 0),
+    );
     const peak = Math.max(1, ...[...demand.values()]);
 
     const out: Researched[] = [];
 
     for (const { term, head } of refined) {
       const source = candidates.find(([t]) => t === term)?.[1] ?? "trending";
-      const raw = demand.get(head) ?? 0;
-      const demandScore = (raw / peak) * 10;
+      const measurement = volumes.get(term);
+      const raw = usingVolume
+        ? (measurement?.volume ?? 0)
+        : (demand.get(head) ?? 0);
+      const demandScore = usingVolume
+        ? (raw / peakVolume) * 10
+        : (raw / peak) * 10;
+      const measured = usingVolume ? "volume" : "trends";
+      const demandWhy = usingVolume
+        ? raw > 0
+          ? `${raw.toLocaleString("en-IN")} searches a month in ${c.city ?? "India"}`
+          : `No measurable search volume in ${c.city ?? "India"}`
+        : raw > 0
+          ? `"${head}" scores ${raw} on Trends in ${c.state ?? "India"}`
+          : `"${head}" is too niche for Trends to measure`;
       const local = term.includes("near me") || (city && term.includes(city));
       const intentBonus = local ? 1.5 : 0;
 
@@ -399,12 +493,12 @@ export const research = action({
         out.push({
           term,
           demand: raw,
+          volume: measurement?.volume ?? null,
+          competition: measurement?.competition ?? null,
+          measured,
           source,
           score: Math.round((demandScore + intentBonus) * 10) / 10,
-          why:
-            raw > 0
-              ? `"${head}" scores ${raw} on Trends in ${c.state ?? "India"}${local ? ", and this is a local search" : ""}`
-              : `"${head}" is too niche for Trends to measure${local ? ", but this is a local search" : ""}`,
+          why: `${demandWhy}${local ? ". Local search." : "."}`,
         });
         continue;
       }
@@ -418,12 +512,14 @@ export const research = action({
       out.push({
         term,
         demand: raw,
+        volume: measurement?.volume ?? null,
+        competition: measurement?.competition ?? null,
+        measured,
         reviews,
         source,
         score,
         why:
-          `"${head}" scores ${raw} on Trends in ${c.state ?? "India"}. ` +
-          `Top 3 average ${reviews} reviews — ` +
+          `${demandWhy}. Top 3 average ${reviews} reviews — ` +
           (reviews < 50 ? "beatable." : reviews < 200 ? "competitive." : "hard."),
       });
     }

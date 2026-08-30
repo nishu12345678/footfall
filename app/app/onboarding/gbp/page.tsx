@@ -56,6 +56,9 @@ export default function GbpPage() {
       demand: number;
       source: string;
       reviews?: number;
+      volume?: number | null;
+      competition?: string | null;
+      measured: string;
     }[]
   >([]);
   const [thinking, setThinking] = useState(false);
@@ -286,7 +289,7 @@ export default function GbpPage() {
             <div className="mt-7 rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]">
               <div className="flex items-center justify-between gap-3">
                 <p className="font-display text-[14px] font-bold">
-                  Researched from Google Trends
+                  Researched from Google
                 </p>
                 <span className="flex gap-2">
                   <button
@@ -329,10 +332,15 @@ export default function GbpPage() {
                           <span aria-hidden className="text-pin">+ </span>
                           {r.term}
                         </button>
+                        {r.measured === "volume" && r.volume ? (
+                          <span className="flex-none rounded-full border border-open bg-open-soft px-1.5 py-0.5 font-mono text-[9px] text-open">
+                            {r.volume.toLocaleString("en-IN")}/mo
+                          </span>
+                        ) : null}
                         <span
                           className={`flex-none rounded-full border px-1.5 py-0.5 font-mono text-[9px] ${
                             r.demand > 0
-                              ? "border-open bg-open-soft text-open"
+                              ? "border-ink text-ink"
                               : "border-rule text-muted"
                           }`}
                           title="demand x winnability"
@@ -348,8 +356,9 @@ export default function GbpPage() {
                 </ul>
               ) : (
                 <p className="mt-2 text-[12px] leading-relaxed text-muted">
-                  Finds what people in your state actually search for what you
-                  sell, ranked by Google Trends demand.
+                  Finds what people near you actually search for what you sell,
+                  ranked by real monthly search volume where Google Ads
+                  measures it, and Google Trends demand where it doesn&rsquo;t.
                   &ldquo;+ competition&rdquo; also reads the map results to see
                   how strong the current top 3 are — slower, more credits.
                 </p>

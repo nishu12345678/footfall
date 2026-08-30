@@ -73,3 +73,24 @@ export const wipe = internalMutation({
     return removed;
   },
 });
+
+/** Clears just the posts, for re-running the planner from scratch. */
+export const clearPosts = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db.query("posts").collect();
+    for (const row of rows) await ctx.db.delete(row._id);
+    return rows.length;
+  },
+});
+
+/** The signed-up owner of the one business, for running actions by hand. */
+export const firstOwner = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const business = await ctx.db.query("businesses").first();
+    return business
+      ? { userId: business.userId, name: business.orgName }
+      : null;
+  },
+});

@@ -316,6 +316,7 @@ export const writePost = action({
         category: c.business.primaryCategory,
         orgName: c.business.orgName,
         city: c.business.city,
+        offerings: c.offerings,
       });
     }
 
@@ -551,16 +552,14 @@ export const saveScheduled = internalMutation({
 });
 
 /** Researches what to post about, then writes and schedules each one. */
-export const planPosts = action({
-  args: { count: v.optional(v.number()) },
+export const planForUser = internalAction({
+  args: { userId: v.id("users"), count: v.optional(v.number()) },
   handler: async (
     ctx,
-    { count = 6 },
+    { userId, count = 6 },
   ): Promise<{ planned: number; topics: string[] }> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
 
-    const c = await ctx.runQuery(internal.posts.postContext, { userId });
+    let c = await ctx.runQuery(internal.posts.postContext, { userId });
     if (!c) throw new Error("Connect your Google profile first.");
 
     const apiKey = process.env.OPENAI_API_KEY;
@@ -648,6 +647,20 @@ export const planPosts = action({
     topics = topics.filter((t) => t?.topic).slice(0, count);
     if (topics.length === 0) throw new Error("No topics came back. Try again.");
 
+    // The shop's own photos are the most relevant picture there is, so make
+    // sure we have them before falling back to a generated one.
+    if (c.photos.length === 0) {
+      try {
+        await ctx.runAction(internal.photos.syncForUser, { userId });
+        const refreshed = await ctx.runQuery(internal.posts.postContext, {
+          userId,
+        });
+        if (refreshed) c = refreshed;
+      } catch (error) {
+        console.log("[plan] could not pull photos from Google", error);
+      }
+    }
+
     const taken: number[] = await ctx.runQuery(internal.posts.scheduledFor, {
       businessId: c.business._id,
     });
@@ -686,6 +699,7 @@ export const planPosts = action({
           category: c.business.primaryCategory,
           orgName: c.business.orgName,
           city: c.business.city,
+          offerings: c.offerings,
         });
       }
       planned += 1;
@@ -800,10 +814,11 @@ export const generatePostImage = internalAction({
     category: v.optional(v.string()),
     orgName: v.string(),
     city: v.optional(v.string()),
+    offerings: v.optional(v.array(v.string())),
   },
   handler: async (
     ctx,
-    { postId, topic, category, orgName, city },
+    { postId, topic, category, orgName, city, offerings },
   ): Promise<string | null> => {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) return null;
@@ -812,10 +827,16 @@ export const generatePostImage = internalAction({
     const prompt = [
       `Editorial photograph for a ${category ?? "local business"}${city ? ` in ${city}, India` : " in India"}.`,
       `Show ${subject}.`,
-      `The scene should suit this theme: "${topic}".`,
-      "Natural daylight, warm and inviting, shallow depth of field, realistic and unstaged.",
+      `The picture must be about this specific subject: "${topic}".`,
+      offerings?.length
+        ? `This business offers: ${offerings.slice(0, 8).join(", ")}. The scene should show work of that kind, not something generic.`
+        : "",
+      "Indian setting and Indian people. Natural daylight, warm and inviting,",
+      "shallow depth of field, realistic and unstaged, like a photograph the shop took itself.",
       "Absolutely no text, no words, no letters, no numbers, no signage, no logos, no watermarks.",
-    ].join(" ");
+    ]
+      .filter(Boolean)
+      .join(" ");
 
     try {
       const res = await fetch("https://api.openai.com/v1/images/generations", {
@@ -857,5 +878,17 @@ export const generatePostImage = internalAction({
       console.error("[image] generation failed", error);
       return null;
     }
+  },
+});
+
+export const planPosts = action({
+  args: { count: v.optional(v.number()) },
+  handler: async (
+    ctx,
+    { count },
+  ): Promise<{ planned: number; topics: string[] }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+    return await ctx.runAction(internal.posts.planForUser, { userId, count });
   },
 });

@@ -77,12 +77,12 @@ export const saveGooglePhotos = internalMutation({
   },
 });
 
-export const syncFromGoogle = action({
-  args: {},
-  handler: async (ctx): Promise<{ added: number; total: number }> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
-
+export const syncForUser = internalAction({
+  args: { userId: v.id("users") },
+  handler: async (
+    ctx,
+    { userId },
+  ): Promise<{ added: number; total: number }> => {
     const business = await ctx.runQuery(internal.google.businessForUser, {
       userId,
     });
@@ -308,5 +308,14 @@ export const publishDaily = internalAction({
       }
     }
     return { published };
+  },
+});
+
+export const syncFromGoogle = action({
+  args: {},
+  handler: async (ctx): Promise<{ added: number; total: number }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+    return await ctx.runAction(internal.photos.syncForUser, { userId });
   },
 });

@@ -218,6 +218,9 @@ export const generateSite = action({
       c.keywords.length
         ? `Phrases people search: ${c.keywords.slice(0, 10).join(", ")}`
         : "",
+      c.hasHours
+        ? "Opening hours are on file and shown on the page separately."
+        : "NO OPENING HOURS ARE KNOWN for this business.",
       "",
       "Write the copy for a simple one-page website for this local business.",
       "This page exists to rank in local search, so:",
@@ -228,6 +231,10 @@ export const generateSite = action({
       "Rules:",
       "- Plain Indian English. Warm and factual, never corporate.",
       "- Do NOT invent prices, discounts, years in business, awards, or claims.",
+      "- Do NOT state opening hours, days open, or timings anywhere in the copy,",
+      "  including the FAQs. The page shows real hours separately when we have them.",
+      "  If asked about timings in an FAQ, say to check the Google listing or call.",
+      "- Do NOT invent a menu, dish names, brands, or services you were not given.",
       "- about: 60-90 words.",
       "- services: 4 to 6 items, each with a 20-35 word description.",
       "- faqs: 4 questions a real customer would ask before visiting.",

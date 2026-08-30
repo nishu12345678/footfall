@@ -530,3 +530,137 @@ export const researchKeywords = action({
     return out.sort((a, b) => b.score - a.score);
   },
 });
+
+/* ---------------------------- service areas ------------------------------
+   A shop's service area is not a blank box. We know its city and street
+   address from Google, so those go in by themselves, and the localities
+   around it are offered as suggestions to confirm.                        */
+
+export const seedServiceAreas = mutation({
+  args: {},
+  handler: async (ctx): Promise<string[]> => {
+    const business = await requireBusiness(ctx);
+
+    const existing = await ctx.db
+      .query("serviceAreas")
+      .withIndex("by_business", (q) => q.eq("businessId", business._id))
+      .collect();
+    if (existing.length > 0) return existing.map((r) => r.name);
+
+    // Straight from the Google listing: the city, and the locality named in
+    // the address line. Both are facts, not guesses.
+    const seeds: string[] = [];
+    if (business.city) seeds.push(business.city);
+
+    const line: string[] = (business.streetAddress ?? "")
+      .split(",")
+      .map((s: string) => s.trim());
+    const cityIndex = business.city
+      ? line.findIndex(
+          (part: string) =>
+            part.toLowerCase() === business.city!.toLowerCase(),
+        )
+      : -1;
+    if (cityIndex > 0) {
+      const locality = line[cityIndex - 1];
+      if (locality && locality.length > 2 && !/^near\b/i.test(locality)) {
+        seeds.unshift(locality);
+      }
+    }
+
+    for (const name of [...new Set(seeds)]) {
+      await ctx.db.insert("serviceAreas", {
+        businessId: business._id,
+        name,
+      });
+    }
+    return seeds;
+  },
+});
+
+export const suggestServiceAreas = action({
+  args: {},
+  handler: async (ctx): Promise<string[]> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+
+    const business = await ctx.runQuery(internal.google.businessForUser, {
+      userId,
+    });
+    if (!business?.city) throw new Error("We don't know your city yet.");
+
+    const existing = await ctx.runQuery(internal.gbp.areasFor, { userId });
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new Error("OPENAI_API_KEY is not set.");
+
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0.3,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "You know Indian cities and their localities well. You only name real localities.",
+          },
+          {
+            role: "user",
+            content: [
+              `A shop is at: ${business.streetAddress ?? ""}, ${business.city}, ${business.state ?? ""} ${business.pinCode ?? ""}`.trim(),
+              existing.length ? `Already listed: ${existing.join(", ")}` : "",
+              "",
+              `List 10 real residential or commercial localities in ${business.city} that are close enough to this address that someone there would travel to this shop.`,
+              "Nearest first. Real locality names only — no invented areas, no other cities.",
+              'Reply as JSON only: {"items":["...","..."]}',
+            ]
+              .filter(Boolean)
+              .join("\n"),
+          },
+        ],
+      }),
+    });
+
+    if (!res.ok) {
+      console.error(`[openai] ${res.status} ${(await res.text()).slice(0, 200)}`);
+      throw new Error(`Could not suggest areas (${res.status}).`);
+    }
+
+    const data = await res.json();
+    let items: string[] = [];
+    try {
+      items = JSON.parse(data?.choices?.[0]?.message?.content ?? "{}").items ?? [];
+    } catch {
+      return [];
+    }
+
+    const have = new Set(existing.map((a: string) => a.toLowerCase()));
+    return items
+      .filter((i) => typeof i === "string" && i.trim())
+      .map((i) => i.trim())
+      .filter((i) => !have.has(i.toLowerCase()))
+      .slice(0, 10);
+  },
+});
+
+export const areasFor = internalQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }) => {
+    const business = await ctx.db
+      .query("businesses")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (!business) return [];
+    const rows = await ctx.db
+      .query("serviceAreas")
+      .withIndex("by_business", (q) => q.eq("businessId", business._id))
+      .collect();
+    return rows.map((r) => r.name);
+  },
+});

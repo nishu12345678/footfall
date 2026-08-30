@@ -44,6 +44,8 @@ export default function GbpPage() {
   const complete = useMutation(api.gbp.complete);
   const suggestKeywords = useAction(api.gbp.suggestKeywords);
   const researchKeywords = useAction(api.keywords.research);
+  const seedAreas = useMutation(api.gbp.seedServiceAreas);
+  const suggestAreas = useAction(api.gbp.suggestServiceAreas);
 
   const [tab, setTab] = useState<Tab>("areas");
   const [draft, setDraft] = useState("");
@@ -64,8 +66,19 @@ export default function GbpPage() {
   const [thinking, setThinking] = useState(false);
   const [hours, setLocalHours] = useState<HourRow[]>(DEFAULT_HOURS);
   const [hoursLoaded, setHoursLoaded] = useState(false);
+  const [areaIdeas, setAreaIdeas] = useState<string[]>([]);
+  const [areasSeeded, setAreasSeeded] = useState(false);
+  const [findingAreas, setFindingAreas] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // The shop's own locality and city are already known from Google, so the
+  // service area box should never start empty.
+  useEffect(() => {
+    if (!data || areasSeeded) return;
+    setAreasSeeded(true);
+    if (data.serviceAreas.length === 0) void seedAreas({});
+  }, [data, areasSeeded, seedAreas]);
 
   useEffect(() => {
     if (!data || hoursLoaded) return;
@@ -109,6 +122,18 @@ export default function GbpPage() {
     setLocalHours((rows) =>
       rows.map((r) => (r.day === day ? { ...r, ...patch } : r)),
     );
+  }
+
+  async function findAreas() {
+    setFindingAreas(true);
+    setError(null);
+    try {
+      setAreaIdeas(await suggestAreas({}));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setFindingAreas(false);
+    }
   }
 
   async function runResearch(deep: boolean) {
@@ -215,7 +240,48 @@ export default function GbpPage() {
               </button>
             </form>
 
-            <ul className="mt-5 flex flex-wrap gap-2">
+            <div className="mt-6 rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-display text-[14px] font-bold">
+                  Areas near you
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void findAreas()}
+                  disabled={findingAreas}
+                  className="font-mono text-[11px] underline underline-offset-4 hover:text-pin disabled:opacity-50"
+                >
+                  {findingAreas ? "looking…" : areaIdeas.length ? "more" : "suggest nearby"}
+                </button>
+              </div>
+              {areaIdeas.length ? (
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {areaIdeas.map((name) => (
+                    <li key={name}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void addArea({ name });
+                          setAreaIdeas((s) => s.filter((x) => x !== name));
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-rule bg-paper py-1.5 pl-2.5 pr-3 text-[13px] transition-colors hover:border-ink"
+                      >
+                        <span aria-hidden className="text-pin">+</span>
+                        {name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-[12px] leading-relaxed text-muted">
+                  Your own locality and city are already added from Google.
+                  Add the neighbourhoods your customers travel from.
+                </p>
+              )}
+            </div>
+
+            <p className="eyebrow mt-6">you serve</p>
+            <ul className="mt-3 flex flex-wrap gap-2">
               {data.serviceAreas.map((area) => (
                 <li key={area._id}>
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-pin bg-pin-soft py-1.5 pl-3 pr-1.5 text-[13px]">
@@ -321,17 +387,20 @@ export default function GbpPage() {
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
+                          aria-label={`add ${r.term}`}
                           onClick={() => {
                             void addKeyword({ term: r.term });
                             setResearched((s) =>
                               s.filter((x) => x.term !== r.term),
                             );
                           }}
-                          className="min-w-0 flex-1 text-left text-[13px]"
+                          className="grid h-7 w-7 flex-none place-items-center rounded-full border border-ink bg-pin font-mono text-[15px] leading-none text-paper-2 shadow-[2px_2px_0_var(--color-ink)] transition-transform active:translate-x-px active:translate-y-px active:shadow-none"
                         >
-                          <span aria-hidden className="text-pin">+ </span>
-                          {r.term}
+                          +
                         </button>
+                        <span className="min-w-0 flex-1 text-[13px]">
+                          {r.term}
+                        </span>
                         {r.measured === "volume" && r.volume ? (
                           <span className="flex-none rounded-full border border-open bg-open-soft px-1.5 py-0.5 font-mono text-[9px] text-open">
                             {r.volume.toLocaleString("en-IN")}/mo

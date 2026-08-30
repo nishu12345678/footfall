@@ -68,6 +68,22 @@ const INFORMATIONAL = [
   "photo", "wallpaper", "drawing", "hs code", "full form",
 ];
 
+/**
+ * "Granite Supply" -> "granite", "CP Fittings" -> "cp fittings".
+ * Shops name their offerings like catalogue lines; people search for the
+ * product itself.
+ */
+function productNoun(offering: string): string {
+  return offering
+    .toLowerCase()
+    .replace(
+      /\b(supply|supplies|sales|sale|services|service|dealer|dealers|products|collection|range|work|works)\b/g,
+      "",
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function serpUrl(params: Record<string, string>) {
   const url = new URL("https://serpapi.com/search");
   for (const [k, val] of Object.entries(params)) url.searchParams.set(k, val);
@@ -393,11 +409,26 @@ export const research = action({
     // 1 · discover, seeded from what the shop actually sells
     const seeds = [
       ...(c.category ? [c.category.toLowerCase()] : []),
-      ...c.offerings.slice(0, 3).map((o) => o.toLowerCase()),
-    ].slice(0, 4);
+      ...c.offerings.map((o) => productNoun(o)),
+    ]
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const uniqueSeeds = [...new Set(seeds)].slice(0, 6);
 
     const pool = new Map<string, string>();
-    for (const seed of seeds) {
+
+    // The phrases a local SEO specialist always targets, whether or not
+    // Google happens to surface them: every product the shop sells, times
+    // the two patterns that carry walk-in intent. Discovery alone misses
+    // these — it follows whatever seed happened to go first.
+    for (const noun of [...new Set(seeds)].slice(0, 10)) {
+      pool.set(`${noun} near me`, "built");
+      pool.set(`${noun} shop near me`, "built");
+      if (city) pool.set(`${noun} in ${city}`, "built");
+    }
+
+    for (const seed of uniqueSeeds) {
       for (const { term, source } of await relatedQueries(seed, geo)) {
         if (!pool.has(term)) pool.set(term, source);
       }
@@ -418,11 +449,14 @@ export const research = action({
         ([term]) => !OTHER_CITIES.filter((x) => x !== city).some((w) => term.includes(w)),
       )
       .filter(
-        ([term]) =>
+        ([term, source]) =>
+          source === "built" ||
           INTENT_WORDS.some((w) => term.includes(w)) ||
           (city && term.includes(city)),
       )
-      .slice(0, deep ? 12 : 20);
+      // Built phrases first: they are the ones we know carry buying intent.
+      .sort((a, b) => (b[1] === "built" ? 1 : 0) - (a[1] === "built" ? 1 : 0))
+      .slice(0, deep ? 18 : 28);
 
     if (candidates.length === 0) {
       throw new Error(

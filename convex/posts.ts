@@ -301,12 +301,23 @@ export const writePost = action({
     const body = await ctx.runAction(internal.posts.draftBody, { userId, brief });
     if (!body) throw new Error("Couldn't write a post just now. Try again.");
 
+    const image = pickImage(c.photos, c.recentImages);
     const id: Id<"posts"> = await ctx.runMutation(internal.posts.saveDraft, {
       businessId: c.business._id,
       body,
-      imageUrl: pickImage(c.photos, c.recentImages),
+      imageUrl: image,
       generatedBy: "ai",
     });
+
+    if (!image) {
+      await ctx.runAction(internal.posts.generatePostImage, {
+        postId: id,
+        topic: brief ?? `${c.business.orgName} in ${c.business.city ?? "India"}`,
+        category: c.business.primaryCategory,
+        orgName: c.business.orgName,
+        city: c.business.city,
+      });
+    }
 
     return { id, body };
   },
@@ -659,13 +670,24 @@ export const planPosts = action({
       const image = pickImage(c.photos, usedImages);
       if (image) usedImages.push(image);
 
-      await ctx.runMutation(internal.posts.saveScheduled, {
+      const postId = await ctx.runMutation(internal.posts.saveScheduled, {
         businessId: c.business._id,
         body,
         title: topics[i].topic,
         imageUrl: image,
         scheduledFor: slots[i],
       });
+
+      // No photo of their own to use, so make one that suits the trade.
+      if (!image) {
+        await ctx.runAction(internal.posts.generatePostImage, {
+          postId,
+          topic: topics[i].topic,
+          category: c.business.primaryCategory,
+          orgName: c.business.orgName,
+          city: c.business.city,
+        });
+      }
       planned += 1;
     }
 
@@ -718,5 +740,122 @@ export const publishDue = internalAction({
       }
     }
     return { published };
+  },
+});
+
+/* ------------------------------ post images ------------------------------
+   Every post gets a picture, because a Google Business post with an image
+   takes several times the space of a text-only one in the feed.
+
+   The shop's own photos come first when it has them — a real picture of a
+   real shop always beats a generated one. When it has none, we generate
+   something that suits the trade and the topic, and we keep it generic:
+   an illustration of the kind of work, never a fake photograph of their
+   premises or their staff.                                                */
+
+/** What a picture for this trade should actually show. */
+function subjectFor(category: string | undefined, orgName: string): string {
+  const c = (category ?? orgName).toLowerCase();
+  const has = (...words: string[]) => words.some((w) => c.includes(w));
+
+  if (has("dent", "clinic", "doctor", "hospital", "medical", "physio"))
+    return "a friendly Indian person smiling naturally, relaxed and at ease, with a clean modern clinic softly blurred behind them";
+  if (has("salon", "parlour", "parlor", "spa", "barber", "beauty"))
+    return "an Indian person with freshly styled hair, calm and happy, in a bright modern salon";
+  if (has("cafe", "coffee", "restaurant", "food", "bakery", "sweet", "dhaba"))
+    return "freshly made food and drink arranged on a clean table, warm light, a welcoming cafe interior behind";
+  if (has("tile", "marble", "granite", "stone", "sanitary", "hardware", "building", "cement", "paint"))
+    return "a bright showroom interior with tiles and stone samples displayed neatly in rows, a customer considering a sample";
+  if (has("gym", "fitness", "yoga"))
+    return "an Indian person mid-workout in a clean, well-lit gym";
+  if (has("cloth", "boutique", "fashion", "tailor", "garment"))
+    return "neatly arranged clothing on rails in a bright boutique interior";
+  if (has("mattress", "furniture", "home", "interior"))
+    return "a warm, well-styled room interior with the furniture as the focus";
+  if (has("school", "coaching", "academy", "tuition"))
+    return "Indian students working attentively in a bright, tidy classroom";
+  return "a welcoming Indian shop interior with products displayed neatly and a member of staff ready to help";
+}
+
+export const savePostImage = internalMutation({
+  args: { postId: v.id("posts"), storageId: v.id("_storage") },
+  handler: async (ctx, { postId, storageId }) => {
+    const url = await ctx.storage.getUrl(storageId);
+    if (url) await ctx.db.patch(postId, { imageUrl: url });
+    return url;
+  },
+});
+
+/**
+ * Makes a picture for one post and attaches it.
+ *
+ * Deliberately generic: no text in the image, no signage, no logos. Image
+ * models render text badly, and putting a fabricated shopfront or a
+ * made-up sign on a real business's listing would be a lie.
+ */
+export const generatePostImage = internalAction({
+  args: {
+    postId: v.id("posts"),
+    topic: v.string(),
+    category: v.optional(v.string()),
+    orgName: v.string(),
+    city: v.optional(v.string()),
+  },
+  handler: async (
+    ctx,
+    { postId, topic, category, orgName, city },
+  ): Promise<string | null> => {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) return null;
+
+    const subject = subjectFor(category, orgName);
+    const prompt = [
+      `Editorial photograph for a ${category ?? "local business"}${city ? ` in ${city}, India` : " in India"}.`,
+      `Show ${subject}.`,
+      `The scene should suit this theme: "${topic}".`,
+      "Natural daylight, warm and inviting, shallow depth of field, realistic and unstaged.",
+      "Absolutely no text, no words, no letters, no numbers, no signage, no logos, no watermarks.",
+    ].join(" ");
+
+    try {
+      const res = await fetch("https://api.openai.com/v1/images/generations", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-image-1",
+          prompt,
+          size: "1024x1024",
+          quality: "medium",
+          n: 1,
+        }),
+      });
+
+      if (!res.ok) {
+        console.error(`[image] ${res.status} ${(await res.text()).slice(0, 200)}`);
+        return null;
+      }
+
+      const data = await res.json();
+      const b64: string | undefined = data?.data?.[0]?.b64_json;
+      if (!b64) return null;
+
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+      const storageId = await ctx.storage.store(
+        new Blob([bytes], { type: "image/png" }),
+      );
+      return await ctx.runMutation(internal.posts.savePostImage, {
+        postId,
+        storageId,
+      });
+    } catch (error) {
+      console.error("[image] generation failed", error);
+      return null;
+    }
   },
 });

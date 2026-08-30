@@ -31,6 +31,14 @@ crons.daily(
   internal.photos.publishDaily,
 );
 
+// Refills the content plan before it runs out, so the profile never goes
+// quiet. Google posts lose prominence after about seven days.
+crons.weekly(
+  "top up the post plan",
+  { dayOfWeek: "sunday", hourUTC: 3, minuteUTC: 0 }, // 08:30 IST Sunday
+  internal.posts.topUpPlans,
+);
+
 crons.weekly(
   "check keyword ranks",
   { dayOfWeek: "monday", hourUTC: 2, minuteUTC: 0 }, // 07:30 IST Monday

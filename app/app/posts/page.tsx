@@ -144,19 +144,27 @@ export default function PostsPage() {
     >
       <h1 className="text-[1.6rem]">posts</h1>
       <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
-        Three posts a week, planned ahead so Google sees a listing someone is
-        running. Posting daily looks automated and does more harm than good.
+        This runs by itself. Three posts a week, on weekdays, planned a
+        fortnight ahead and topped up every Sunday. You don&rsquo;t need to do
+        anything — everything below is just so you can see what&rsquo;s coming
+        and change it if you want.
       </p>
 
-      <button
-        type="button"
-        onClick={() => void plan()}
-        disabled={planning}
-        className="btn btn-primary mt-5 w-full disabled:opacity-40"
-      >
-        <span aria-hidden>✦</span>
-        {planning ? "researching topics…" : "plan the next two weeks"}
-      </button>
+      <div className="mt-4 rounded-[12px] border border-open bg-open-soft px-3.5 py-2.5">
+        <p className="flex items-center gap-2 text-[13px] font-semibold">
+          <span
+            aria-hidden
+            className="h-1.5 w-1.5 flex-none rounded-full bg-open"
+          />
+          {business.agentActive
+            ? "Posting automatically · Mon, Wed and Fri"
+            : "Paused — turn the agent on to start posting"}
+        </p>
+        <p className="mt-1 text-[12px] leading-snug text-ink-soft">
+          Google posts fade after about a week, so three a week keeps the
+          listing active. Posting daily pushes your best content down.
+        </p>
+      </div>
 
       {planning ? (
         <div className="mt-4">
@@ -378,6 +386,15 @@ export default function PostsPage() {
 
       {/* ------------------------- write one yourself --------------------- */}
       <section className="mt-8 rounded-[14px] border border-rule bg-paper-2 p-4">
+        <button
+          type="button"
+          onClick={() => void plan()}
+          disabled={planning}
+          className="btn btn-ghost btn-sm mb-4 w-full disabled:opacity-40"
+        >
+          {planning ? "researching topics…" : "plan more posts now"}
+        </button>
+
         <label htmlFor="brief" className="eyebrow">
           want something specific posted?
         </label>

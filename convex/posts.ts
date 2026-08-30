@@ -228,22 +228,26 @@ export const draftBody = internalAction({
       "",
       "Write one Google Business Profile post for this shop, in this exact shape:",
       "",
-      "1. A headline line: what this post is about, naming the business. No label, no markdown.",
-      "2. A blank line, then one opening paragraph of 40-60 words that names the locality and",
-      "   what someone searching nearby would be looking for.",
-      "3. A blank line, then 5 or 6 lines each starting with the ✔️ character and a space.",
-      "   Each line is one concrete thing the shop offers, 15-30 words, and between them they",
-      "   should work in the search phrases above the way a person would actually say them.",
-      "4. A blank line, then one closing line inviting the reader to visit or call.",
+      "1. An opening line that carries the whole point of the post in under 90 characters.",
+      "   Google cuts the text off there on a phone, so the value has to land before it.",
+      "   No greeting, no preamble, no 'we are pleased to'. Say the useful thing first.",
+      "2. A blank line, then one short paragraph of 30-45 words naming the locality and",
+      "   what someone searching nearby is actually trying to find.",
+      "3. A blank line, then 4 lines each starting with the ✔️ character and a space.",
+      "   Each is one concrete thing the shop offers, 12-22 words.",
+      "4. A blank line, then one closing line inviting them to visit.",
       "",
       "Rules:",
       "- Plain Indian English. Warm and factual. Never corporate, never breathless.",
-      "- 900 to 1300 characters in total. Never exceed 1450.",
-      "- Fit the search phrases into real sentences. Never list them, never repeat one twice,",
-      "  and never write something like 'visit our shop near me', which reads as nonsense.",
+      "- 600 to 900 characters in total. Never exceed 1000. Shorter reads better here.",
+      "- NEVER put a phone number in the text. Google rejects posts containing them,",
+      "  and the profile already carries a call button.",
+      "- Use AT MOST TWO of the search phrases, in real sentences, never repeated.",
+      "  Never write something like 'visit our shop near me' — that is nonsense to a reader,",
+      "  because 'near me' only makes sense from the searcher's side.",
       "- Do NOT invent prices, discounts, opening hours, offers, menu items, brands, awards,",
       "  years in business, or customer numbers. Only describe what you were told above.",
-      "- No hashtags. No emoji other than the ✔️ bullets.",
+      "- No ALL CAPS, no exclamation marks, no hashtags, no emoji besides the ✔️ bullets.",
       'Reply as JSON only: {"body":"..."}',
     ]
       .filter(Boolean)
@@ -279,7 +283,7 @@ export const draftBody = internalAction({
     try {
       const body = JSON.parse(data?.choices?.[0]?.message?.content ?? "{}").body;
       const text = String(body ?? "").trim();
-      return text ? text.slice(0, 1450) : null;
+      return text ? text.slice(0, 1000) : null;
     } catch {
       return null;
     }
@@ -490,7 +494,7 @@ export const postDaily = internalAction({
    schedules them for Monday, Wednesday and Friday.                       */
 
 const POST_DAYS = [1, 3, 5]; // Mon, Wed, Fri
-const POST_HOUR_UTC = 4; // 09:30 IST
+const POST_HOUR_UTC = 5; // 10:30 IST — inside shop hours, when people plan
 
 /**
  * What time of year it actually is in India, so the planner doesn't reach
@@ -590,7 +594,10 @@ export const planForUser = internalAction({
         : "",
       `\nIt is ${month}.`,
       "",
-      `Plan ${count} Google Business Profile posts, three a week over the next fortnight.`,
+      `Plan ${count} Google Business Profile posts, three a week on weekdays over the next fortnight.`,
+      "Google posts lose prominence after about seven days, so each one has to stand on its own.",
+      "Favour what someone decides on: what you stock, what a visit involves, what to bring,",
+      "how to reach you — not brand awareness.",
       "Each needs a distinct reason to exist. Draw on different angles:",
       "- one specific product or service in depth",
       "- a question customers actually ask before buying",
@@ -890,5 +897,46 @@ export const planPosts = action({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Sign in first.");
     return await ctx.runAction(internal.posts.planForUser, { userId, count });
+  },
+});
+
+/**
+ * Keeps every shop's plan topped up without anyone asking.
+ *
+ * Google posts lose prominence after roughly seven days, so a listing that
+ * goes quiet for a fortnight looks abandoned. This runs weekly and refills
+ * any plan that has dropped below a week's worth.
+ */
+export const topUpPlans = internalAction({
+  args: {},
+  handler: async (ctx): Promise<{ businesses: number; planned: number }> => {
+    const businesses: { userId: Id<"users">; name: string }[] =
+      await ctx.runQuery(internal.performance.connectedBusinesses, {});
+
+    let planned = 0;
+    for (const b of businesses) {
+      try {
+        const c = await ctx.runQuery(internal.posts.postContext, {
+          userId: b.userId,
+        });
+        if (!c || !c.business.agentActive) continue;
+
+        const pending: number[] = await ctx.runQuery(
+          internal.posts.scheduledFor,
+          { businessId: c.business._id },
+        );
+        // Fewer than four ahead means under a fortnight of runway.
+        if (pending.length >= 4) continue;
+
+        const result = await ctx.runAction(internal.posts.planForUser, {
+          userId: b.userId,
+          count: 6 - pending.length,
+        });
+        planned += result.planned;
+      } catch (error) {
+        console.error(`[agent] planning failed for ${b.name}`, error);
+      }
+    }
+    return { businesses: businesses.length, planned };
   },
 });

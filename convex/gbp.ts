@@ -110,7 +110,10 @@ export const addServiceArea = mutation({
     if (existing.some((r) => r.name.toLowerCase() === trimmed.toLowerCase())) {
       return;
     }
-    await ctx.db.insert("serviceAreas", { businessId: business._id, name: trimmed });
+    await ctx.db.insert("serviceAreas", {
+      businessId: business._id,
+      name: trimmed,
+    });
   },
 });
 
@@ -218,7 +221,9 @@ export const suggestKeywords = action({
       c.areas.length ? `Serves: ${c.areas.join(", ")}` : "",
       c.offerings.length ? `Sells: ${c.offerings.join(", ")}` : "",
       c.specialties.length ? `Known for: ${c.specialties.join(", ")}` : "",
-      c.have.length ? `Already targeting (skip these): ${c.have.join(", ")}` : "",
+      c.have.length
+        ? `Already targeting (skip these): ${c.have.join(", ")}`
+        : "",
       "",
       "List 12 search phrases a nearby customer would actually type into Google before visiting a shop like this.",
       "Rules: lowercase. 2-5 words. Mix 'near me' phrases with ones naming the city or locality.",
@@ -258,7 +263,8 @@ export const suggestKeywords = action({
     const data = await res.json();
     let items: string[] = [];
     try {
-      items = JSON.parse(data?.choices?.[0]?.message?.content ?? "{}").items ?? [];
+      items =
+        JSON.parse(data?.choices?.[0]?.message?.content ?? "{}").items ?? [];
     } catch {
       console.error("[openai] unparseable keyword reply");
     }
@@ -295,7 +301,10 @@ export const setHours = mutation({
     for (const row of existing) await ctx.db.delete(row._id);
 
     for (const row of hours) {
-      await ctx.db.insert("businessHours", { businessId: business._id, ...row });
+      await ctx.db.insert("businessHours", {
+        businessId: business._id,
+        ...row,
+      });
     }
   },
 });
@@ -428,7 +437,8 @@ async function competition(
     top3.length === 0
       ? 0
       : Math.round(
-          top3.reduce((t: number, r: any) => t + (r.reviews ?? 0), 0) / top3.length,
+          top3.reduce((t: number, r: any) => t + (r.reviews ?? 0), 0) /
+            top3.length,
         );
   return { topReviews, rivals: results.length };
 }
@@ -471,16 +481,33 @@ export const researchKeywords = action({
     // Keep phrases that are local in intent and not already targeted:
     // "near me", or naming this city — not Delhi, Chennai, Noida.
     const otherCityWords = [
-      "delhi", "mumbai", "chennai", "kolkata", "bangalore", "bengaluru",
-      "hyderabad", "pune", "noida", "gurgaon", "lucknow", "jaipur",
-      "ahmedabad", "kannur", "kochi", "surat", "indore", "nagpur",
+      "delhi",
+      "mumbai",
+      "chennai",
+      "kolkata",
+      "bangalore",
+      "bengaluru",
+      "hyderabad",
+      "pune",
+      "noida",
+      "gurgaon",
+      "lucknow",
+      "jaipur",
+      "ahmedabad",
+      "kannur",
+      "kochi",
+      "surat",
+      "indore",
+      "nagpur",
     ].filter((w) => w !== city);
 
     const candidates = [...pool.entries()]
       .filter(([term]) => !already.has(term))
       .filter(([term]) => term.split(" ").length >= 2)
       .filter(([term]) => !otherCityWords.some((w) => term.includes(w)))
-      .filter(([term]) => term.includes("near me") || !city || term.includes(city))
+      .filter(
+        ([term]) => term.includes("near me") || !city || term.includes(city),
+      )
       .sort((a, b) => a[1] - b[1])
       .slice(0, deep ? 10 : 14);
 
@@ -508,7 +535,9 @@ export const researchKeywords = action({
       // Winnability: the fewer reviews the current top three have, the more
       // realistic it is to displace them.
       const winnable =
-        topReviews === 0 ? 5 : Math.max(0, 10 - Math.log10(topReviews + 1) * 3.5);
+        topReviews === 0
+          ? 5
+          : Math.max(0, 10 - Math.log10(topReviews + 1) * 3.5);
       const score = Math.round((demand * 0.6 + winnable * 0.4) * 10) / 10;
 
       out.push({
@@ -601,7 +630,9 @@ export const nearbyAreas = action({
     // the address rather than telling the owner we can't help.
     if (!business?.lat || !business?.lng) {
       await ctx.runAction(internal.google.ensureCoordinates, { userId });
-      business = await ctx.runQuery(internal.google.businessForUser, { userId });
+      business = await ctx.runQuery(internal.google.businessForUser, {
+        userId,
+      });
     }
     if (!business?.lat || !business?.lng) {
       throw new Error(
@@ -654,11 +685,6 @@ export const nearbyAreas = action({
         "Couldn't reach the map service just now. Add your areas by hand, or try again in a minute.",
       );
     }
-    const existing: string[] = await ctx.runQuery(internal.gbp.areasFor, {
-      userId,
-    });
-    const have = new Set(existing.map((a) => a.toLowerCase()));
-
     const toRad = (x: number) => (x * Math.PI) / 180;
     const distance = (lat: number, lng: number) => {
       const dLat = toRad(lat - business.lat!);
@@ -683,27 +709,11 @@ export const nearbyAreas = action({
       }))
       .filter((e: { name: string }) => {
         const key = e.name.toLowerCase();
-        if (have.has(key) || seen.has(key)) return false;
+        if (seen.has(key)) return false;
         seen.add(key);
         return true;
       })
       .sort((a: { km: number }, b: { km: number }) => a.km - b.km)
-      .slice(0, 24);
-  },
-});
-
-export const areasFor = internalQuery({
-  args: { userId: v.id("users") },
-  handler: async (ctx, { userId }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
-    if (!business) return [];
-    const rows = await ctx.db
-      .query("serviceAreas")
-      .withIndex("by_business", (q) => q.eq("businessId", business._id))
-      .collect();
-    return rows.map((r) => r.name);
+      .slice(0, 30);
   },
 });

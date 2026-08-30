@@ -70,6 +70,12 @@ export const wipe = internalMutation({
       if (rows.length > 0) removed[table] = rows.length;
     }
 
+    // Uploaded and generated images live in file storage, not a table, so
+    // they survive a table wipe and leave the next test run with orphans.
+    const files = await ctx.db.system.query("_storage").collect();
+    for (const file of files) await ctx.storage.delete(file._id);
+    if (files.length > 0) removed.files = files.length;
+
     return removed;
   },
 });

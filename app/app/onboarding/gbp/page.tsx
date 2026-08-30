@@ -235,7 +235,9 @@ export default function GbpPage() {
       <div className="mt-7 flex-1">
         {tab === "areas" ? (
           <>
-            <h1 className="text-[1.75rem]">where do your customers come from?</h1>
+            <h1 className="text-[1.75rem]">
+              where do your customers come from?
+            </h1>
             <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
               How far people travel to you. We measure your &ldquo;near
               me&rdquo; ranking across this whole area, not just at your door.
@@ -318,30 +320,41 @@ export default function GbpPage() {
                 </div>
               ) : areaIdeas.length ? (
                 <ul className="mt-3 flex flex-wrap gap-2">
-                  {areaIdeas.map((area) => (
-                    <li key={area.name}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void addArea({ name: area.name });
-                          setAreaIdeas((s) =>
-                            s.filter((x) => x.name !== area.name),
-                          );
-                        }}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-rule bg-paper py-1.5 pl-2.5 pr-3 text-[13px] transition-colors hover:border-ink"
-                      >
-                        <span aria-hidden className="text-pin">+</span>
-                        {area.name}
-                        <span className="font-mono text-[10px] text-muted">
-                          {area.km}km
-                        </span>
-                      </button>
-                    </li>
-                  ))}
+                  {areaIdeas.map((area) => {
+                    const added = data.serviceAreas.some(
+                      (s) => s.name.toLowerCase() === area.name.toLowerCase(),
+                    );
+                    return (
+                      <li key={area.name}>
+                        <button
+                          type="button"
+                          disabled={added}
+                          onClick={() => void addArea({ name: area.name })}
+                          className={`inline-flex items-center gap-1.5 rounded-full border py-1.5 pl-2.5 pr-3 text-[13px] transition-colors ${
+                            added
+                              ? "border-pin bg-pin-soft"
+                              : "border-rule bg-paper hover:border-ink"
+                          }`}
+                        >
+                          <span
+                            aria-hidden
+                            className={added ? "text-pin" : "text-pin"}
+                          >
+                            {added ? "✓" : "+"}
+                          </span>
+                          {area.name}
+                          <span className="font-mono text-[10px] text-muted">
+                            {area.km}km
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : (
                 <p className="mt-2 text-[12px] leading-relaxed text-muted">
-                  Your own locality and city are already added from Google.
+                  No towns or neighbourhoods on the map within {radiusKm}km. Try
+                  a wider radius, or type an area name above.
                 </p>
               )}
             </div>
@@ -405,7 +418,9 @@ export default function GbpPage() {
                   key={kw._id}
                   className="flex items-center justify-between gap-3 rounded-[12px] border border-rule bg-paper-2 px-3.5 py-2.5"
                 >
-                  <span className="min-w-0 truncate text-[14px]">{kw.term}</span>
+                  <span className="min-w-0 truncate text-[14px]">
+                    {kw.term}
+                  </span>
                   <button
                     type="button"
                     onClick={() => void removeKeyword({ id: kw._id })}
@@ -486,14 +501,13 @@ export default function GbpPage() {
               ) : (
                 <p className="mt-2 text-[12px] leading-relaxed text-muted">
                   Finds what people near you actually search for what you sell,
-                  ranked by real monthly search volume where Google Ads
-                  measures it, and Google Trends demand where it doesn&rsquo;t.
-                  &ldquo;+ competition&rdquo; also reads the map results to see
-                  how strong the current top 3 are — slower, more credits.
+                  ranked by real monthly search volume where Google Ads measures
+                  it, and Google Trends demand where it doesn&rsquo;t. &ldquo;+
+                  competition&rdquo; also reads the map results to see how
+                  strong the current top 3 are — slower, more credits.
                 </p>
               )}
             </div>
-
           </>
         ) : null}
 

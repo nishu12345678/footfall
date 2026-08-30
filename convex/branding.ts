@@ -110,6 +110,63 @@ function absolute(src: string, base: string): string | null {
   }
 }
 
+async function scrapeForImages(
+  url: string,
+  key: string,
+): Promise<string[]> {
+  try {
+    const res = await fetch("https://api.firecrawl.dev/v2/scrape", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        url,
+        formats: ["html"],
+        onlyMainContent: false,
+      }),
+    });
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    const html: string = data?.data?.html ?? "";
+    const base: string = data?.data?.metadata?.sourceURL ?? url;
+
+    const found: string[] = [];
+    const push = (src?: string | null) => {
+      if (!src) return;
+      const abs = absolute(src, base);
+      if (abs && !found.includes(abs)) found.push(abs);
+    };
+
+    // Brand-named images first — most likely to be the shop's own mark.
+    for (const tag of html.matchAll(/<img[^>]+>/gi)) {
+      if (!/logo|brand/i.test(tag[0])) continue;
+      push(tag[0].match(/src=["']([^"']+)/i)?.[1]);
+    }
+    push(
+      html.match(
+        /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)/i,
+      )?.[1],
+    );
+    for (const tag of html.matchAll(
+      /<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]+>/gi,
+    )) {
+      push(tag[0].match(/href=["']([^"']+)/i)?.[1]);
+    }
+    return found.slice(0, 4);
+  } catch (error) {
+    console.log(`[firecrawl] scrape failed for ${url}`, error);
+    return [];
+  }
+}
+
+/**
+ * Looks for the shop's logo across its whole web presence, not just the one
+ * website we happen to have on file — a local business's real logo is often
+ * on a listing site or a social page rather than a site they built.
+ */
 export const findLogoCandidates = action({
   args: {},
   handler: async (ctx): Promise<string[]> => {
@@ -119,67 +176,69 @@ export const findLogoCandidates = action({
     const business = await ctx.runQuery(internal.google.businessForUser, {
       userId,
     });
-    if (!business?.website) {
-      throw new Error("We don't have a website for your shop to read.");
-    }
+    if (!business) throw new Error("Connect your Google profile first.");
 
     const key = process.env.FIRECRAWL_API_KEY;
     if (!key) throw new Error("FIRECRAWL_API_KEY is not set.");
 
-    const res = await fetch("https://api.firecrawl.dev/v2/scrape", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        url: business.website,
-        formats: ["html"],
-        onlyMainContent: false,
-      }),
-    });
+    const targets: string[] = [];
+    if (business.website) targets.push(business.website);
 
-    if (!res.ok) {
-      const body = await res.text();
-      console.error(`[firecrawl] ${res.status} ${body.slice(0, 200)}`);
-      throw new Error(`Could not read your website (${res.status}).`);
+    // Search the web for this business and read whatever it turns up.
+    const query = [business.orgName, business.city, business.primaryCategory]
+      .filter(Boolean)
+      .join(" ");
+
+    try {
+      const res = await fetch("https://api.firecrawl.dev/v2/search", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ query, limit: 5 }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const web = data?.data?.web ?? data?.data ?? [];
+        const seenHosts = new Set(
+          targets.map((t) => {
+            try {
+              return new URL(t).host;
+            } catch {
+              return t;
+            }
+          }),
+        );
+        for (const row of Array.isArray(web) ? web : []) {
+          const url: string = row?.url ?? "";
+          if (!url) continue;
+          try {
+            const host = new URL(url).host;
+            if (seenHosts.has(host)) continue;
+            seenHosts.add(host);
+            targets.push(url);
+          } catch {
+            /* skip unparseable */
+          }
+        }
+      }
+    } catch (error) {
+      console.log("[firecrawl] search failed", error);
     }
 
-    const data = await res.json();
-    const html: string = data?.data?.html ?? "";
-    const base: string = data?.data?.metadata?.sourceURL ?? business.website;
-
-    const found: string[] = [];
-    const push = (src?: string | null) => {
-      if (!src) return;
-      const url = absolute(src, base);
-      if (url && !found.includes(url)) found.push(url);
-    };
-
-    // Named brand images first — most likely to be the shop's own mark.
-    for (const tag of html.matchAll(/<img[^>]+>/gi)) {
-      const raw = tag[0];
-      if (!/logo|brand|header-img/i.test(raw)) continue;
-      push(raw.match(/src=["']([^"']+)/i)?.[1]);
-    }
-    // Then the social preview image and the site icons.
-    push(
-      html.match(
-        /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)/i,
-      )?.[1],
-    );
-    push(
-      html.match(
-        /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)/i,
-      )?.[1],
-    );
-    for (const tag of html.matchAll(
-      /<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]+>/gi,
-    )) {
-      push(tag[0].match(/href=["']([^"']+)/i)?.[1]);
+    if (targets.length === 0) {
+      throw new Error("We couldn't find your business online to read a logo from.");
     }
 
-    return found.slice(0, 8);
+    const all: string[] = [];
+    for (const target of targets.slice(0, 4)) {
+      for (const src of await scrapeForImages(target, key)) {
+        if (!all.includes(src)) all.push(src);
+      }
+    }
+
+    return all.slice(0, 12);
   },
 });
 

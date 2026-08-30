@@ -83,6 +83,27 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_business", ["businessId"]),
 
+  /**
+   * A free one-page site for shops that don't have one, built entirely from
+   * the Google listing. Its job is local SEO: correct NAP, service and area
+   * wording people actually search, and LocalBusiness structured data.
+   */
+  sites: defineTable({
+    businessId: v.id("businesses"),
+    slug: v.string(),
+    headline: v.string(),
+    subhead: v.optional(v.string()),
+    about: v.string(),
+    services: v.array(v.object({ name: v.string(), body: v.string() })),
+    faqs: v.array(v.object({ q: v.string(), a: v.string() })),
+    metaTitle: v.string(),
+    metaDescription: v.string(),
+    published: v.boolean(),
+    updatedAt: v.number(),
+  })
+    .index("by_business", ["businessId"])
+    .index("by_slug", ["slug"]),
+
   /* ------------------------ step 3: about business -------------------- */
 
   offerings: defineTable({

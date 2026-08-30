@@ -244,6 +244,15 @@ export default function HomePage() {
             }
           />
           <Counter
+            href="/app/website"
+            label={business.website ? "Your website" : "Free website"}
+            detail={
+              business.website
+                ? "a page that matches your listing exactly"
+                : "you don't have one — we can build it from your listing"
+            }
+          />
+          <Counter
             href="/app/performance"
             label="Performance"
             detail={

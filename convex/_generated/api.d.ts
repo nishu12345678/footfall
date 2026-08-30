@@ -20,6 +20,7 @@ import type * as http from "../http.js";
 import type * as lists from "../lists.js";
 import type * as performance from "../performance.js";
 import type * as posts from "../posts.js";
+import type * as site from "../site.js";
 
 import type {
   ApiFromModules,
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   lists: typeof lists;
   performance: typeof performance;
   posts: typeof posts;
+  site: typeof site;
 }>;
 
 /**

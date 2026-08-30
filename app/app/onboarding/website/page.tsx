@@ -6,29 +6,44 @@ import { api } from "@/convex/_generated/api";
 import { Steps } from "@/components/steps";
 import { Working } from "@/components/working";
 
+type Check = { id: string; label: string; passed: boolean; detail: string };
+
 export default function WebsiteStepPage() {
   const data = useQuery(api.site.mine);
   const generate = useAction(api.site.generateSite);
+  const review = useAction(api.site.reviewExistingSite);
 
   const [building, setBuilding] = useState(false);
+  const [auditing, setAuditing] = useState(false);
+  const [audit, setAudit] = useState<{
+    url: string;
+    checks: Check[];
+    advice: string[];
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const started = useRef(false);
 
-  // A shop with no website is exactly who this is for, so we build it
-  // without being asked. Shops that already have one are offered it.
+  // Two different jobs depending on what the shop already has: build one for
+  // a shop with no website, or tell a shop that has one what it's missing.
   useEffect(() => {
     if (!data || started.current) return;
-    if (data.site) {
-      started.current = true;
+    started.current = true;
+
+    if (data.business.website) {
+      setAuditing(true);
+      void review({})
+        .then(setAudit)
+        .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+        .finally(() => setAuditing(false));
       return;
     }
-    if (data.business.website) return; // they have one; let them choose
-    started.current = true;
+    if (data.site) return;
+
     setBuilding(true);
     void generate({})
       .catch((e) => setError(e instanceof Error ? e.message : String(e)))
       .finally(() => setBuilding(false));
-  }, [data, generate]);
+  }, [data, generate, review]);
 
   async function build() {
     setBuilding(true);
@@ -62,21 +77,112 @@ export default function WebsiteStepPage() {
   }
 
   const { business, site } = data;
+  const hasOwnSite = Boolean(business.website);
+  const failed = audit?.checks.filter((c) => !c.passed) ?? [];
+  const passed = audit?.checks.filter((c) => c.passed) ?? [];
 
+  /* ------------------------- they already have one ---------------------- */
+  if (hasOwnSite) {
+    return (
+      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
+        <Steps current={5} />
+
+        <div className="mt-7 flex-1">
+          <h1 className="text-[1.75rem]">your website</h1>
+          <p className="mt-2 break-all text-[13px] font-mono text-ink-soft">
+            {business.website}
+          </p>
+          <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+            You already have a site, so we won&rsquo;t make you another one.
+            Here&rsquo;s what it&rsquo;s missing that would help people nearby
+            find you.
+          </p>
+
+          {auditing ? (
+            <div className="mt-6">
+              <Working label="Reading your website" />
+            </div>
+          ) : null}
+
+          {audit ? (
+            <>
+              <div className="mt-6 flex items-baseline justify-between gap-3">
+                <h2 className="font-display text-[15px] font-bold">
+                  {failed.length === 0
+                    ? "Nothing missing"
+                    : `${failed.length} thing${failed.length === 1 ? "" : "s"} to fix`}
+                </h2>
+                <span className="flex-none font-mono text-[10px] text-muted">
+                  {passed.length}/{audit.checks.length} passing
+                </span>
+              </div>
+
+              <ul className="mt-3 space-y-2">
+                {[...failed, ...passed].map((check, i) => (
+                  <li
+                    key={check.id}
+                    className={`rounded-[12px] border p-3 ${
+                      check.passed
+                        ? "border-rule bg-paper-2"
+                        : "border-pin bg-pin-soft"
+                    }`}
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <span
+                        aria-hidden
+                        className={`mt-0.5 flex-none font-mono text-[12px] ${
+                          check.passed ? "text-open" : "text-pin"
+                        }`}
+                      >
+                        {check.passed ? "✓" : "✕"}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[14px] font-semibold leading-snug">
+                          {check.label}
+                        </span>
+                        {!check.passed ? (
+                          <span className="mt-1 block text-[13px] leading-snug text-ink-soft">
+                            {audit.advice[i] ?? check.detail}
+                          </span>
+                        ) : null}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+
+          {error ? (
+            <p
+              role="alert"
+              className="mt-5 break-words rounded-[12px] border border-pin bg-pin-soft px-3.5 py-2.5 font-mono text-[12px] leading-snug"
+            >
+              {error}
+            </p>
+          ) : null}
+        </div>
+
+        <a href="/app/onboarding/others" className="btn btn-primary mt-8 w-full">
+          next
+        </a>
+      </main>
+    );
+  }
+
+  /* --------------------------- no website yet --------------------------- */
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
       <Steps current={5} />
 
       <div className="mt-7 flex-1">
         <h1 className="text-[1.75rem]">
-          {site ? "your website is live" : "we're making you a website"}
+          {site ? "your website is live" : "we’re making you a website"}
         </h1>
         <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
           {site
             ? "Built from your Google listing, so your name, address, phone and hours match Google exactly. That match is one of the few things you fully control that Google actually rewards."
-            : business.website
-              ? "You already have one. You can still make a simple page that matches your Google listing exactly — some owners send customers here instead."
-              : "One page with your services, hours, phone and directions — built from your Google listing. Nothing to write, nothing to host, no yearly fee."}
+            : "One page with your services, hours, phone and directions — built from your Google listing. Nothing to write, nothing to host, no yearly fee."}
         </p>
 
         {building ? (
@@ -102,14 +208,11 @@ export default function WebsiteStepPage() {
                   {site.headline}
                 </p>
                 {site.subhead ? (
-                  <p className="mt-1 text-[13px] text-ink-soft">
-                    {site.subhead}
-                  </p>
+                  <p className="mt-1 text-[13px] text-ink-soft">{site.subhead}</p>
                 ) : null}
                 <p className="mt-3 line-clamp-3 text-[13px] leading-relaxed text-ink-soft">
                   {site.about}
                 </p>
-
                 <ul className="mt-3 flex flex-wrap gap-1.5">
                   {site.services.slice(0, 4).map((s) => (
                     <li

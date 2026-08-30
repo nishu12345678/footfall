@@ -332,3 +332,188 @@ export const setPublished = mutation({
     await ctx.db.patch(site._id, { published });
   },
 });
+
+/* ---------------------------- existing sites -----------------------------
+   A shop that already has a website doesn't need a second one. What it
+   needs is to know what's missing from the one it has. The checks below are
+   deterministic — we look for the thing and report whether it's there —
+   with the model only used to phrase what to do about it.                 */
+
+export type SiteCheck = {
+  id: string;
+  label: string;
+  passed: boolean;
+  detail: string;
+};
+
+export const reviewExistingSite = action({
+  args: {},
+  handler: async (
+    ctx,
+  ): Promise<{ url: string; checks: SiteCheck[]; advice: string[] }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+
+    const business = await ctx.runQuery(internal.google.businessForUser, {
+      userId,
+    });
+    if (!business?.website) throw new Error("No website on file to look at.");
+
+    const key = process.env.FIRECRAWL_API_KEY;
+    if (!key) throw new Error("FIRECRAWL_API_KEY is not set.");
+
+    const res = await fetch("https://api.firecrawl.dev/v2/scrape", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        url: business.website,
+        formats: ["markdown", "html"],
+        onlyMainContent: false,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Couldn't read your website (${res.status}).`);
+    }
+
+    const data = await res.json();
+    const html: string = data?.data?.html ?? "";
+    const markdown: string = data?.data?.markdown ?? "";
+    const haystack = `${html}\n${markdown}`.toLowerCase();
+
+    const digits = (value?: string) => (value ?? "").replace(/\D/g, "");
+    const phoneDigits = digits(business.phone).slice(-10);
+    const pageDigits = haystack.replace(/\D/g, "");
+
+    const checks: SiteCheck[] = [
+      {
+        id: "phone",
+        label: "Your phone number is on the page",
+        passed: phoneDigits.length === 10 && pageDigits.includes(phoneDigits),
+        detail:
+          "Google cross-checks the phone on your site against your listing. A mismatch weakens both.",
+      },
+      {
+        id: "address",
+        label: "Your address is on the page",
+        passed: Boolean(
+          business.city && haystack.includes(business.city.toLowerCase()),
+        ),
+        detail:
+          "The same address as your Google listing, written the same way, is one of the strongest local signals.",
+      },
+      {
+        id: "schema",
+        label: "Search engines can read your business details",
+        passed: haystack.includes("localbusiness") || haystack.includes("schema.org"),
+        detail:
+          "LocalBusiness structured data tells Google your hours, address and phone directly instead of making it guess.",
+      },
+      {
+        id: "hours",
+        label: "Your opening hours are shown",
+        passed: /open|hours|timing|am\s*[-–]\s*|closed/i.test(markdown),
+        detail: "Wrong or missing hours is the fastest way to lose a walk-in.",
+      },
+      {
+        id: "map",
+        label: "There's a map or directions link",
+        passed:
+          haystack.includes("maps.google") ||
+          haystack.includes("goo.gl/maps") ||
+          haystack.includes("google.com/maps"),
+        detail: "People decide to visit when they can see how far away you are.",
+      },
+      {
+        id: "whatsapp",
+        label: "Customers can message you on WhatsApp",
+        passed: haystack.includes("wa.me") || haystack.includes("api.whatsapp"),
+        detail:
+          "Most enquiries from a phone start on WhatsApp, not a contact form.",
+      },
+      {
+        id: "reviews",
+        label: "You ask for Google reviews",
+        passed:
+          haystack.includes("writereview") ||
+          haystack.includes("g.page") ||
+          haystack.includes("review us"),
+        detail:
+          "A link to leave a review turns a happy customer into a ranking signal.",
+      },
+      {
+        id: "locality",
+        label: "Your locality appears in the copy",
+        passed: Boolean(
+          business.city &&
+            (markdown.toLowerCase().match(new RegExp(business.city.toLowerCase(), "g"))
+              ?.length ?? 0) >= 2,
+        ),
+        detail:
+          "People search a trade plus a place. If the place isn't on the page, you can't match the search.",
+      },
+    ];
+
+    const failed = checks.filter((c) => !c.passed);
+    if (failed.length === 0) {
+      return {
+        url: business.website,
+        checks,
+        advice: ["Your site covers the basics. Keep the listing itself active."],
+      };
+    }
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) return { url: business.website, checks, advice: [] };
+
+    const prompt = [
+      `Business: ${business.orgName}, a ${business.primaryCategory ?? "local business"} in ${business.city ?? "India"}.`,
+      `Their website: ${business.website}`,
+      "",
+      "These checks failed on their site:",
+      ...failed.map((f) => `- ${f.label}: ${f.detail}`),
+      "",
+      "Write one short instruction per failed check telling the owner what to do about it.",
+      "Rules: plain words a shopkeeper understands, no jargon, no SEO terminology.",
+      "One sentence each. Say what to add and where, not why it matters.",
+      'Reply as JSON only: {"items":["...","..."]}',
+    ].join("\n");
+
+    const ai = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0.4,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "You advise Indian shop owners on their websites. Practical and plain. Never use jargon.",
+          },
+          { role: "user", content: prompt },
+        ],
+      }),
+    });
+
+    let advice: string[] = [];
+    if (ai.ok) {
+      const payload = await ai.json();
+      try {
+        advice =
+          JSON.parse(payload?.choices?.[0]?.message?.content ?? "{}").items ?? [];
+      } catch {
+        advice = [];
+      }
+    }
+
+    return { url: business.website, checks, advice };
+  },
+});

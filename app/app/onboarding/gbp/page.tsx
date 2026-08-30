@@ -43,13 +43,20 @@ export default function GbpPage() {
   const toggleAttribute = useMutation(api.gbp.toggleAttribute);
   const complete = useMutation(api.gbp.complete);
   const suggestKeywords = useAction(api.gbp.suggestKeywords);
-  const researchKeywords = useAction(api.gbp.researchKeywords);
+  const researchKeywords = useAction(api.keywords.research);
 
   const [tab, setTab] = useState<Tab>("areas");
   const [draft, setDraft] = useState("");
   const [ideas, setIdeas] = useState<string[]>([]);
   const [researched, setResearched] = useState<
-    { term: string; score: number; why: string; topReviews?: number }[]
+    {
+      term: string;
+      score: number;
+      why: string;
+      demand: number;
+      source: string;
+      reviews?: number;
+    }[]
   >([]);
   const [thinking, setThinking] = useState(false);
   const [hours, setLocalHours] = useState<HourRow[]>(DEFAULT_HOURS);
@@ -279,7 +286,7 @@ export default function GbpPage() {
             <div className="mt-7 rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]">
               <div className="flex items-center justify-between gap-3">
                 <p className="font-display text-[14px] font-bold">
-                  Researched from Google
+                  Researched from Google Trends
                 </p>
                 <span className="flex gap-2">
                   <button
@@ -322,7 +329,14 @@ export default function GbpPage() {
                           <span aria-hidden className="text-pin">+ </span>
                           {r.term}
                         </button>
-                        <span className="flex-none rounded-full border border-ink px-1.5 py-0.5 font-mono text-[9px]">
+                        <span
+                          className={`flex-none rounded-full border px-1.5 py-0.5 font-mono text-[9px] ${
+                            r.demand > 0
+                              ? "border-open bg-open-soft text-open"
+                              : "border-rule text-muted"
+                          }`}
+                          title="demand x winnability"
+                        >
                           {r.score}
                         </span>
                       </div>
@@ -334,9 +348,10 @@ export default function GbpPage() {
                 </ul>
               ) : (
                 <p className="mt-2 text-[12px] leading-relaxed text-muted">
-                  Pulls what Google actually autocompletes for what you sell.
-                  &ldquo;+ competition&rdquo; also checks how strong the current
-                  top 3 are — slower, and uses more search credits.
+                  Finds what people in your state actually search for what you
+                  sell, ranked by Google Trends demand.
+                  &ldquo;+ competition&rdquo; also reads the map results to see
+                  how strong the current top 3 are — slower, more credits.
                 </p>
               )}
             </div>

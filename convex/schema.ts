@@ -25,6 +25,7 @@ export default defineSchema({
     locationName: v.optional(v.string()),
     streetAddress: v.optional(v.string()),
     city: v.optional(v.string()),
+    state: v.optional(v.string()),
     pinCode: v.optional(v.string()),
     phone: v.optional(v.string()),
     email: v.optional(v.string()),

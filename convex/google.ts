@@ -40,6 +40,7 @@ export type GoogleLocation = {
   title: string;
   address?: string;
   city?: string;
+  state?: string;
   pinCode?: string;
   phone?: string;
   website?: string;
@@ -238,6 +239,7 @@ export const listLocations = action({
                 .join(", ")
             : undefined,
           city: addr?.locality,
+          state: addr?.administrativeArea,
           pinCode: addr?.postalCode,
           phone: loc.phoneNumbers?.primaryPhone,
           website: loc.websiteUri,
@@ -265,6 +267,7 @@ export const createBusinessFromLocation = internalMutation({
       title: v.string(),
       address: v.optional(v.string()),
       city: v.optional(v.string()),
+      state: v.optional(v.string()),
       pinCode: v.optional(v.string()),
       phone: v.optional(v.string()),
       website: v.optional(v.string()),
@@ -290,6 +293,7 @@ export const createBusinessFromLocation = internalMutation({
         : location.title,
       streetAddress: location.address,
       city: location.city,
+      state: location.state,
       pinCode: location.pinCode,
       phone: location.phone,
       website: location.website,
@@ -330,6 +334,7 @@ export const linkLocation = action({
       title: v.string(),
       address: v.optional(v.string()),
       city: v.optional(v.string()),
+      state: v.optional(v.string()),
       pinCode: v.optional(v.string()),
       phone: v.optional(v.string()),
       website: v.optional(v.string()),
@@ -484,6 +489,7 @@ export const refreshLocation = action({
               .join(", ")
           : undefined,
         city: addr?.locality,
+        state: addr?.administrativeArea,
         pinCode: addr?.postalCode,
         phone: loc.phoneNumbers?.primaryPhone,
         website: loc.websiteUri,

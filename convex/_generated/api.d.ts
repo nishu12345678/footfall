@@ -17,6 +17,7 @@ import type * as dashboard from "../dashboard.js";
 import type * as gbp from "../gbp.js";
 import type * as google from "../google.js";
 import type * as http from "../http.js";
+import type * as keywords from "../keywords.js";
 import type * as lists from "../lists.js";
 import type * as performance from "../performance.js";
 import type * as posts from "../posts.js";
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   gbp: typeof gbp;
   google: typeof google;
   http: typeof http;
+  keywords: typeof keywords;
   lists: typeof lists;
   performance: typeof performance;
   posts: typeof posts;

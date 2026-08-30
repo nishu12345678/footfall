@@ -94,3 +94,13 @@ export const firstOwner = internalQuery({
       : null;
   },
 });
+
+/** Clears the photo cache so it can be re-pulled at a sensible size. */
+export const clearPhotos = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db.query("photos").collect();
+    for (const row of rows) await ctx.db.delete(row._id);
+    return rows.length;
+  },
+});

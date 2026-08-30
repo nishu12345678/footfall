@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
 import { Working } from "@/components/working";
 import type { Id } from "@/convex/_generated/dataModel";
+import { thumb } from "@/lib/images";
 
 function when(timestamp?: number) {
   if (!timestamp) return "";
@@ -109,8 +110,10 @@ export default function PostsPage() {
         {post.imageUrl && editing !== post._id ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={post.imageUrl}
+            src={thumb(post.imageUrl, 800)}
             alt=""
+            loading="lazy"
+            referrerPolicy="no-referrer"
             className={`mb-3 aspect-[4/3] w-full rounded-[10px] border border-rule object-cover ${
               muted ? "opacity-90" : ""
             }`}

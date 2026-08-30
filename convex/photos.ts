@@ -20,6 +20,16 @@ import type { Id } from "./_generated/dataModel";
  * Media lives on the legacy v4 endpoint, like posts.
  */
 
+/**
+ * Google serves its photos at whatever size the suffix asks for. The API
+ * hands back "=s0", which means the original — often two megabytes. Six of
+ * those on one screen reads to the owner as "the images are broken".
+ */
+function sized(url: string, width: number): string {
+  const base = url.replace(/=[sw]\d+(-[a-z0-9-]+)?$/i, "").replace(/=s0$/i, "");
+  return `${base}=w${width}`;
+}
+
 const V4_BASE = "https://mybusiness.googleapis.com/v4";
 
 function parentFor(business: {
@@ -108,7 +118,7 @@ export const syncForUser = internalAction({
     const items = (data.mediaItems ?? [])
       .filter((m: any) => m?.googleUrl || m?.thumbnailUrl)
       .map((m: any) => ({
-        url: String(m.googleUrl ?? m.thumbnailUrl),
+        url: sized(String(m.googleUrl ?? m.thumbnailUrl), 1600),
         caption: m.description ? String(m.description) : undefined,
       }));
 

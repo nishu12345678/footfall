@@ -206,7 +206,7 @@ export default function GbpPage() {
     setBusy(true);
     try {
       await complete({});
-      window.location.href = "/app/onboarding/others";
+      window.location.href = "/app/onboarding/website";
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setBusy(false);

@@ -113,7 +113,7 @@ export default function OthersPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
-      <Steps current={5} />
+      <Steps current={6} />
 
       <div className="mt-7 flex-1">
         <h1 className="text-[1.75rem]">your logo</h1>

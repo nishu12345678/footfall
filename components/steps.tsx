@@ -1,8 +1,15 @@
-/** The 5-step onboarding progress bar that sits above every setup screen. */
+/** The onboarding progress bar that sits above every setup screen. */
 export function Steps({ current }: { current: number }) {
-  const steps = ["Connect", "Location", "About", "GBP Info", "Others"];
+  const steps = [
+    "Connect",
+    "Location",
+    "About",
+    "GBP Info",
+    "Website",
+    "Finish",
+  ];
   return (
-    <ol className="flex items-start justify-between gap-1">
+    <ol className="flex items-start justify-between gap-0.5">
       {steps.map((label, i) => {
         const n = i + 1;
         const done = n < current;
@@ -21,7 +28,7 @@ export function Steps({ current }: { current: number }) {
               {done ? "✓" : n}
             </span>
             <span
-              className={`text-center text-[11px] leading-tight ${
+              className={`text-center text-[9px] leading-tight ${
                 active ? "font-semibold text-pin" : "text-muted"
               }`}
             >

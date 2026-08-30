@@ -4,6 +4,18 @@ import { useAction, useQuery } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
+import { Working } from "@/components/working";
+import dynamic from "next/dynamic";
+
+const RankMap = dynamic(
+  () => import("@/components/rank-map").then((m) => m.RankMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[268px] w-full animate-pulse rounded-[14px] border border-ink bg-paper-3" />
+    ),
+  },
+);
 
 const RANGES = [
   { days: 7, label: "7 days" },
@@ -42,6 +54,7 @@ export default function PerformancePage() {
   const data = useQuery(api.lists.performance);
   const syncMetrics = useAction(api.performance.syncMetrics);
   const checkRanks = useAction(api.performance.checkRanks);
+  const runGeoGrid = useAction(api.performance.runGeoGrid);
 
   const [days, setDays] = useState<number>(30);
   const [chart, setChart] = useState<Metric>("views");
@@ -50,6 +63,9 @@ export default function PerformancePage() {
   const [error, setError] = useState<string | null>(null);
   const [autoSyncing, setAutoSyncing] = useState(false);
   const autoRan = useRef(false);
+  const autoRanks = useRef(false);
+  const [gridFor, setGridFor] = useState<string | null>(null);
+  const [gridding, setGridding] = useState<string | null>(null);
 
   // Google's numbers cost nothing to read, so refresh them whenever the
   // screen is opened and the data has gone stale. Rank checks are NOT
@@ -66,6 +82,20 @@ export default function PerformancePage() {
       .catch((e) => setError(e instanceof Error ? e.message : String(e)))
       .finally(() => setAutoSyncing(false));
   }, [data, stale, syncMetrics]);
+
+  // The first rank check runs on its own — an empty ranking table teaches
+  // the owner nothing. After that it's manual, because each check spends
+  // one search per keyword.
+  useEffect(() => {
+    if (!data || autoRanks.current) return;
+    if (data.business.ranksCheckedAt) return;
+    if (data.keywords.length === 0) return;
+    autoRanks.current = true;
+    setBusy("ranks");
+    void checkRanks({})
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .finally(() => setBusy(null));
+  }, [data, checkRanks]);
 
   async function run(which: "metrics" | "ranks") {
     setBusy(which);
@@ -92,10 +122,27 @@ export default function PerformancePage() {
     }
   }
 
+  async function drawGrid(keyword: string) {
+    setGridding(keyword);
+    setError(null);
+    try {
+      await runGeoGrid({ keyword, size: 3, stepKm: 2 });
+      setGridFor(keyword);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setGridding(null);
+    }
+  }
+
   if (data === undefined) return <Loading />;
   if (data === null) return <NeedsConnect />;
 
-  const { business, metrics, keywords, competitors } = data;
+  const { business, metrics, keywords, competitors, grid } = data;
+  const shownGrid = gridFor
+    ? grid.filter((g) => g.keyword === gridFor)
+    : [];
+  const rankedCount = keywords.filter((k) => k.rank !== undefined).length;
 
   // Metrics are stored per day, so switching the range is instant — no
   // second call to Google unless the owner asks for one.
@@ -269,46 +316,87 @@ export default function PerformancePage() {
           <ul className="mt-3 divide-y divide-rule-soft border-y border-rule">
             {[...keywords]
               .sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999))
-              .map((kw, i) => {
+              .map((kw) => {
                 const moved =
                   kw.rank !== undefined && kw.previousRank !== undefined
                     ? kw.previousRank - kw.rank
                     : null;
+                const checked = kw.checkedAt !== undefined;
                 return (
-                  <li key={kw._id} className="flex items-center gap-3 py-3">
-                    <span className="w-5 flex-none font-mono text-[11px] text-muted">
-                      {i + 1}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-[14px]">
-                      {kw.term}
-                    </span>
-                    {moved !== null && moved !== 0 ? (
+                  <li key={kw._id} className="py-3">
+                    <div className="flex items-center gap-3">
+                      <span className="min-w-0 flex-1 truncate text-[14px]">
+                        {kw.term}
+                      </span>
+                      {moved !== null && moved !== 0 ? (
+                        <span
+                          className={`flex-none rounded-full px-1.5 py-0.5 font-mono text-[10px] ${
+                            moved > 0
+                              ? "bg-open-soft text-open"
+                              : "bg-pin-soft text-pin"
+                          }`}
+                        >
+                          {moved > 0 ? "▲" : "▼"} {Math.abs(moved)}
+                        </span>
+                      ) : null}
                       <span
-                        className={`flex-none rounded-full px-1.5 py-0.5 font-mono text-[10px] ${
-                          moved > 0
-                            ? "bg-open-soft text-open"
-                            : "bg-pin-soft text-pin"
+                        className={`flex-none rounded-full border px-2 py-0.5 font-display text-[13px] font-bold ${
+                          kw.rank === undefined
+                            ? "border-rule text-muted"
+                            : kw.rank <= 3
+                              ? "border-open bg-open-soft text-open"
+                              : kw.rank <= 10
+                                ? "border-star bg-star/20"
+                                : "border-pin bg-pin-soft text-pin"
                         }`}
                       >
-                        {moved > 0 ? "▲" : "▼"} {Math.abs(moved)}
+                        {checked ? (kw.rank ?? "not in top 20") : "—"}
                       </span>
+                    </div>
+
+                    {checked ? (
+                      <button
+                        type="button"
+                        onClick={() => void drawGrid(kw.term)}
+                        disabled={gridding !== null}
+                        className="mt-1.5 font-mono text-[10px] text-muted underline underline-offset-4 hover:text-pin disabled:opacity-50"
+                      >
+                        {gridding === kw.term
+                          ? "checking around you…"
+                          : gridFor === kw.term
+                            ? "hide the map"
+                            : "where do I rank around here?"}
+                      </button>
                     ) : null}
-                    <span
-                      className={`w-8 flex-none text-right font-display text-[15px] font-bold ${
-                        kw.rank === undefined ? "text-muted" : ""
-                      }`}
-                    >
-                      {kw.rank ?? "—"}
-                    </span>
+
+                    {gridFor === kw.term && shownGrid.length > 0 && business.lat && business.lng ? (
+                      <div className="mt-3">
+                        <RankMap
+                          lat={business.lat}
+                          lng={business.lng}
+                          keyword={kw.term}
+                          points={shownGrid.map((g) => ({
+                            lat: g.lat,
+                            lng: g.lng,
+                            rank: g.rank,
+                          }))}
+                        />
+                      </div>
+                    ) : null}
                   </li>
                 );
               })}
           </ul>
         )}
-        <p className="mt-2 font-mono text-[11px] leading-relaxed text-muted">
-          Lower is better. A dash means you weren&rsquo;t in the top 20 for that
-          search.
-        </p>
+        {keywords.length > 0 ? (
+          <p className="mt-3 rounded-[12px] border border-rule bg-paper-2 px-3.5 py-2.5 text-[13px] leading-relaxed text-ink-soft">
+            {business.ranksCheckedAt === undefined
+              ? "Checking where you rank right now…"
+              : rankedCount === 0
+                ? `You're not in the top 20 for any of these yet. That's normal for a listing with few reviews — the shops ranking above you have hundreds. Collecting reviews is the fastest way to change it.`
+                : `You appear in the top 20 for ${rankedCount} of ${keywords.length} searches. Lower is better.`}
+          </p>
+        ) : null}
       </section>
 
       {/* competitors */}

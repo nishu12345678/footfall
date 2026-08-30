@@ -61,7 +61,7 @@ export const performance = query({
     const business = await myBusiness(ctx);
     if (!business) return null;
 
-    const [metrics, keywords, competitors] = await Promise.all([
+    const [metrics, keywords, competitors, grid] = await Promise.all([
       ctx.db
         .query("metrics")
         .withIndex("by_business", (q) => q.eq("businessId", business._id))
@@ -74,6 +74,10 @@ export const performance = query({
         .query("competitors")
         .withIndex("by_business", (q) => q.eq("businessId", business._id))
         .collect(),
+      ctx.db
+        .query("rankGrid")
+        .withIndex("by_business", (q) => q.eq("businessId", business._id))
+        .collect(),
     ]);
 
     return {
@@ -81,6 +85,7 @@ export const performance = query({
       metrics: metrics.sort((a, b) => a.date.localeCompare(b.date)),
       keywords,
       competitors,
+      grid,
     };
   },
 });

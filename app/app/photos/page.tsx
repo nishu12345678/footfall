@@ -6,7 +6,7 @@ import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
 import { Working } from "@/components/working";
 import type { Id } from "@/convex/_generated/dataModel";
-import { thumb } from "@/lib/images";
+import { square } from "@/lib/images";
 
 export default function PhotosPage() {
   const data = useQuery(api.lists.photos);
@@ -170,7 +170,7 @@ export default function PhotosPage() {
                 {photo.url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={thumb(photo.url, 400)}
+                    src={square(photo.url, 400)}
                     alt=""
                     loading="lazy"
                     referrerPolicy="no-referrer"
@@ -221,7 +221,7 @@ export default function PhotosPage() {
                 {photo.url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={thumb(photo.url, 400)}
+                    src={square(photo.url, 400)}
                     alt={photo.caption ?? ""}
                     loading="lazy"
                     referrerPolicy="no-referrer"
@@ -245,7 +245,7 @@ export default function PhotosPage() {
                 {photo.url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={thumb(photo.url, 400)}
+                    src={square(photo.url, 400)}
                     alt=""
                     loading="lazy"
                     referrerPolicy="no-referrer"

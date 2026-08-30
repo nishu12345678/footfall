@@ -167,6 +167,45 @@ export const removePost = mutation({
 
 /* -------------------------------- writing ------------------------------- */
 
+/**
+ * Google's published specification for a post image:
+ *   recommended 1200 x 900, 4:3      (720 x 720 is the safe minimum)
+ *   JPG or PNG only, 10 KB to 5 MB
+ *   keep the subject in the central square, because Google crops
+ *   differently across Search and Maps
+ *
+ * Google's own CDN will do the crop for us: "=w1200-h900-c" returns exactly
+ * 1200x900, centre-cropped. Without it we were sending whatever shape the
+ * original happened to be.
+ */
+const POST_IMAGE_W = 1200;
+const POST_IMAGE_H = 900;
+
+function toPostImage(url: string): string {
+  if (!url.includes("googleusercontent.com")) return url;
+  const base = url.replace(/=[a-z0-9-]+$/i, "");
+  return `${base}=w${POST_IMAGE_W}-h${POST_IMAGE_H}-c`;
+}
+
+/** The media Google will accept, or nothing. */
+async function usableMedia(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, { method: "HEAD" });
+    if (!res.ok) return null;
+
+    const type = res.headers.get("content-type") ?? "";
+    if (!/image\/(jpe?g|png)/i.test(type)) return null;
+
+    const length = Number(res.headers.get("content-length") ?? 0);
+    // Google rejects anything under 10 KB or over 5 MB.
+    if (length && (length < 10_240 || length > 5 * 1024 * 1024)) return null;
+
+    return url;
+  } catch {
+    return null;
+  }
+}
+
 /** The angles a local SEO specialist rotates through, so posts don't repeat. */
 const ANGLES = [
   "what you sell, plainly, with the locality named",
@@ -366,8 +405,16 @@ export const pushToGoogle = internalAction({
       topicType: "STANDARD",
     };
     if (callToAction) payload.callToAction = callToAction;
+
+    // 1200x900 as Google recommends, and only if it meets their size and
+    // format rules — a rejected image fails the whole post.
     if (post.imageUrl) {
-      payload.media = [{ mediaFormat: "PHOTO", sourceUrl: post.imageUrl }];
+      const media = await usableMedia(toPostImage(post.imageUrl));
+      if (media) {
+        payload.media = [{ mediaFormat: "PHOTO", sourceUrl: media }];
+      } else {
+        console.log(`[gbp] skipping unusable image ${post.imageUrl}`);
+      }
     }
 
     const url = `${V4_BASE}/${parent}/localPosts`;
@@ -855,8 +902,13 @@ export const generatePostImage = internalAction({
         body: JSON.stringify({
           model: "gpt-image-1",
           prompt,
-          size: "1024x1024",
+          // Landscape, closest of the supported sizes to Google's 4:3.
+          // JPEG because Google takes JPG or PNG and a compressed JPEG
+          // comfortably clears their 5 MB ceiling.
+          size: "1536x1024",
           quality: "medium",
+          output_format: "jpeg",
+          output_compression: 85,
           n: 1,
         }),
       });
@@ -875,7 +927,7 @@ export const generatePostImage = internalAction({
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
 
       const storageId = await ctx.storage.store(
-        new Blob([bytes], { type: "image/png" }),
+        new Blob([bytes], { type: "image/jpeg" }),
       );
       return await ctx.runMutation(internal.posts.savePostImage, {
         postId,

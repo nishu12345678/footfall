@@ -55,7 +55,6 @@ export default function GbpPage() {
   const setHours = useMutation(api.gbp.setHours);
   const toggleAttribute = useMutation(api.gbp.toggleAttribute);
   const complete = useMutation(api.gbp.complete);
-  const suggestKeywords = useAction(api.gbp.suggestKeywords);
   const researchKeywords = useAction(api.keywords.research);
   const seedAreas = useMutation(api.gbp.seedServiceAreas);
   const nearbyAreas = useAction(api.gbp.nearbyAreas);
@@ -63,7 +62,6 @@ export default function GbpPage() {
 
   const [tab, setTab] = useState<Tab>("areas");
   const [draft, setDraft] = useState("");
-  const [ideas, setIdeas] = useState<string[]>([]);
   const [researched, setResearched] = useState<
     {
       term: string;
@@ -174,18 +172,6 @@ export default function GbpPage() {
     setError(null);
     try {
       setResearched(await researchKeywords({ deep }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setThinking(false);
-    }
-  }
-
-  async function getKeywordIdeas() {
-    setThinking(true);
-    setError(null);
-    try {
-      setIdeas(await suggestKeywords({}));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -508,50 +494,6 @@ export default function GbpPage() {
               )}
             </div>
 
-            <div className="mt-4 rounded-[14px] border border-rule bg-paper-2 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <p className="flex items-center gap-1.5 font-display text-[14px] font-bold">
-                  <span aria-hidden className="text-pin">
-                    ✦
-                  </span>
-                  AI suggested
-                </p>
-                <button
-                  type="button"
-                  onClick={() => void getKeywordIdeas()}
-                  disabled={thinking}
-                  className="font-mono text-[11px] underline underline-offset-4 hover:text-pin disabled:opacity-50"
-                >
-                  {thinking ? "thinking…" : ideas.length ? "suggest more" : "suggest for me"}
-                </button>
-              </div>
-
-              {ideas.length ? (
-                <ul className="mt-3 flex flex-wrap gap-2">
-                  {ideas.map((idea) => (
-                    <li key={idea}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void addKeyword({ term: idea });
-                          setIdeas((s) => s.filter((i) => i !== idea));
-                        }}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-rule bg-paper py-1.5 pl-2.5 pr-3 text-[13px] transition-colors hover:border-ink"
-                      >
-                        <span aria-hidden className="text-pin">
-                          +
-                        </span>
-                        {idea}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-2 text-[13px] leading-relaxed text-muted">
-                  Built from what you sell and where you serve.
-                </p>
-              )}
-            </div>
           </>
         ) : null}
 

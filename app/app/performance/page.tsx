@@ -31,6 +31,11 @@ const METRICS: { key: Metric; label: string }[] = [
   { key: "directions", label: "Directions" },
 ];
 
+/** Only a "near me" search changes with where the searcher is standing. */
+function isNearMe(term: string) {
+  return term.includes("near me") || term.includes("nearby");
+}
+
 function ago(timestamp?: number) {
   if (!timestamp) return "never";
   const mins = Math.floor((Date.now() - timestamp) / 60_000);
@@ -377,7 +382,7 @@ export default function PerformancePage() {
                       </div>
                     ) : null}
 
-                    {checked ? (
+                    {checked && isNearMe(kw.term) ? (
                       <button
                         type="button"
                         onClick={() => void drawGrid(kw.term)}
@@ -390,10 +395,20 @@ export default function PerformancePage() {
                             ? "hide the map"
                             : "where do I rank around here?"}
                       </button>
+                    ) : checked ? (
+                      <p className="mt-1.5 font-mono text-[10px] leading-snug text-muted">
+                        Names the city, so the result barely changes with where
+                        the searcher stands. Add the &ldquo;near me&rdquo; version
+                        to see it on a map.
+                      </p>
                     ) : null}
 
                     {gridFor === kw.term && shownGrid.length > 0 && business.lat && business.lng ? (
                       <div className="mt-3">
+                        <p className="mb-1.5 font-mono text-[10px] text-muted">
+                          Showing &ldquo;{kw.term}&rdquo; from several points
+                          around you
+                        </p>
                         <RankMap
                           lat={business.lat}
                           lng={business.lng}

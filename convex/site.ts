@@ -44,7 +44,7 @@ export const bySlug = query({
     const business = await ctx.db.get(site.businessId);
     if (!business) return null;
 
-    const [hours, areas, reviews] = await Promise.all([
+    const [hours, areas, reviews, photos, offerings] = await Promise.all([
       ctx.db
         .query("businessHours")
         .withIndex("by_business", (q) => q.eq("businessId", site.businessId))
@@ -57,8 +57,35 @@ export const bySlug = query({
         .query("reviews")
         .withIndex("by_business", (q) => q.eq("businessId", site.businessId))
         .order("desc")
-        .take(6),
+        .take(12),
+      ctx.db
+        .query("photos")
+        .withIndex("by_business", (q) => q.eq("businessId", site.businessId))
+        .take(12),
+      ctx.db
+        .query("offerings")
+        .withIndex("by_business", (q) => q.eq("businessId", site.businessId))
+        .collect(),
     ]);
+
+    const rated = reviews.filter((r) => r.rating > 0);
+    const rating =
+      rated.length > 0
+        ? Math.round(
+            (rated.reduce((total, r) => total + r.rating, 0) / rated.length) * 10,
+          ) / 10
+        : null;
+
+    // wa.me needs the full international number with no plus and no leading
+    // zero. "093191 02143" has to become "919319102143" or the link is dead.
+    const digits = (business.phone ?? "").replace(/\D/g, "");
+    const local = digits.replace(/^0+/, "");
+    const whatsapp =
+      local.length === 10
+        ? `91${local}`
+        : local.startsWith("91") && local.length === 12
+          ? local
+          : local || null;
 
     return {
       site,
@@ -66,6 +93,12 @@ export const bySlug = query({
       hours: hours.sort((a, b) => a.day - b.day),
       areas: areas.map((a) => a.name),
       reviews,
+      photos: photos.filter((p) => p.url),
+      offerings: offerings.map((o) => o.label),
+      rating,
+      reviewCount: rated.length,
+      whatsapp,
+      tel: local.length ? `+91${local.replace(/^91/, "")}` : null,
     };
   },
 });
@@ -236,9 +269,13 @@ export const generateSite = action({
       "  If asked about timings in an FAQ, say to check the Google listing or call.",
       "- Do NOT invent a menu, dish names, brands, or services you were not given.",
       "- about: 60-90 words.",
-      "- services: 4 to 6 items, each with a 20-35 word description.",
-      "- faqs: 4 questions a real customer would ask before visiting.",
-      "- metaTitle: under 60 characters, include the business name and city.",
+      "- services: 10 to 14 items, each with a 25-40 word description.",
+      "- every service must be something this business genuinely offers.",
+      "- do not pad the list with near-duplicates of the same thing.",
+      "- work the locality into some descriptions, naturally, as a reader would say it.",
+      "- faqs: 6 questions a real customer would ask before visiting.",
+      "- metaTitle: under 60 characters. Business name, then the trade, then the city.",
+      "- headline: name the trade and the locality, as someone searching would say it.",
       "- metaDescription: under 155 characters.",
       "",
       'Reply as JSON only: {"headline":"...","subhead":"...","about":"...",',
@@ -293,13 +330,13 @@ export const generateSite = action({
       services: Array.isArray(copy.services)
         ? copy.services
             .filter((s: any) => s?.name && s?.body)
-            .slice(0, 6)
+            .slice(0, 14)
             .map((s: any) => ({ name: String(s.name), body: String(s.body) }))
         : [],
       faqs: Array.isArray(copy.faqs)
         ? copy.faqs
             .filter((f: any) => f?.q && f?.a)
-            .slice(0, 6)
+            .slice(0, 8)
             .map((f: any) => ({ q: String(f.q), a: String(f.a) }))
         : [],
       metaTitle:

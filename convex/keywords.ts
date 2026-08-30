@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { action, internalQuery } from "./_generated/server";
+import { action, internalMutation, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
@@ -48,24 +48,76 @@ const STATE_CODES: Record<string, string> = {
 };
 
 const OTHER_CITIES = [
-  "delhi", "mumbai", "chennai", "kolkata", "bangalore", "bengaluru",
-  "hyderabad", "pune", "noida", "gurgaon", "gurugram", "lucknow", "jaipur",
-  "ahmedabad", "kannur", "kochi", "surat", "indore", "nagpur", "bhopal",
-  "patna", "ludhiana", "coimbatore", "vizag", "thane", "nashik",
+  "delhi",
+  "mumbai",
+  "chennai",
+  "kolkata",
+  "bangalore",
+  "bengaluru",
+  "hyderabad",
+  "pune",
+  "noida",
+  "gurgaon",
+  "gurugram",
+  "lucknow",
+  "jaipur",
+  "ahmedabad",
+  "kannur",
+  "kochi",
+  "surat",
+  "indore",
+  "nagpur",
+  "bhopal",
+  "patna",
+  "ludhiana",
+  "coimbatore",
+  "vizag",
+  "thane",
+  "nashik",
 ];
 
 /** Searches that mean "I want to buy", not "I want to read". */
 const INTENT_WORDS = [
-  "shop", "shops", "store", "showroom", "dealer", "dealers", "supplier",
-  "suppliers", "near me", "nearby", "price", "rate", "rates", "cost",
-  "buy", "sale", "wholesale", "best", "top", "service", "services",
+  "shop",
+  "shops",
+  "store",
+  "showroom",
+  "dealer",
+  "dealers",
+  "supplier",
+  "suppliers",
+  "near me",
+  "nearby",
+  "price",
+  "rate",
+  "rates",
+  "cost",
+  "buy",
+  "sale",
+  "wholesale",
+  "best",
+  "top",
+  "service",
+  "services",
 ];
 
 /** Searches that bring readers, not walk-ins. */
 const INFORMATIONAL = [
-  "how to", "what is", "why", "diy", "clean", "cleaning", "remove",
-  "repair guide", "meaning", "difference between", "vs", "images",
-  "photo", "wallpaper", "drawing", "hs code", "full form",
+  "how to",
+  "what is",
+  "why",
+  "diy",
+  "remove",
+  "repair guide",
+  "meaning",
+  "difference between",
+  "vs",
+  "images",
+  "photo",
+  "wallpaper",
+  "drawing",
+  "hs code",
+  "full form",
 ];
 
 /**
@@ -115,10 +167,12 @@ async function relatedQueries(seed: string, geo: string) {
   const rq = data?.related_queries ?? {};
   const out: { term: string; source: string }[] = [];
   for (const row of rq.top ?? []) {
-    if (row?.query) out.push({ term: String(row.query).toLowerCase(), source: "trending" });
+    if (row?.query)
+      out.push({ term: String(row.query).toLowerCase(), source: "trending" });
   }
   for (const row of rq.rising ?? []) {
-    if (row?.query) out.push({ term: String(row.query).toLowerCase(), source: "rising" });
+    if (row?.query)
+      out.push({ term: String(row.query).toLowerCase(), source: "rising" });
   }
   return out;
 }
@@ -324,7 +378,9 @@ async function refine(
 
   const data = await res.json();
   try {
-    const items = JSON.parse(data?.choices?.[0]?.message?.content ?? "{}").items;
+    const items = JSON.parse(
+      data?.choices?.[0]?.message?.content ?? "{}",
+    ).items;
     return (Array.isArray(items) ? items : [])
       .filter((i: any) => i?.term && i?.head)
       .map((i: any) => ({
@@ -388,6 +444,8 @@ export type Researched = {
   source: string;
   why: string;
   measured: string;
+  /** Already on the tracked list — the near-me phrases go on by themselves. */
+  added?: boolean;
 };
 
 export const research = action({
@@ -449,7 +507,8 @@ export const research = action({
       })
       .filter(([term]) => !INFORMATIONAL.some((w) => term.includes(w)))
       .filter(
-        ([term]) => !OTHER_CITIES.filter((x) => x !== city).some((w) => term.includes(w)),
+        ([term]) =>
+          !OTHER_CITIES.filter((x) => x !== city).some((w) => term.includes(w)),
       )
       .filter(
         ([term, source]) =>
@@ -548,7 +607,8 @@ export const research = action({
       const winnable =
         reviews === 0 ? 5 : Math.max(0, 10 - Math.log10(reviews + 1) * 3.5);
       const score =
-        Math.round((demandScore * 0.5 + winnable * 0.35 + intentBonus) * 10) / 10;
+        Math.round((demandScore * 0.5 + winnable * 0.35 + intentBonus) * 10) /
+        10;
 
       out.push({
         term,
@@ -561,10 +621,71 @@ export const research = action({
         score,
         why:
           `${demandWhy}. Top 3 average ${reviews} reviews — ` +
-          (reviews < 50 ? "beatable." : reviews < 200 ? "competitive." : "hard."),
+          (reviews < 50
+            ? "beatable."
+            : reviews < 200
+              ? "competitive."
+              : "hard."),
       });
     }
 
-    return out.sort((a, b) => b.score - a.score).slice(0, 15);
+    const ranked = out.sort((a, b) => b.score - a.score).slice(0, 15);
+
+    /*
+     * Track the proximity searches without waiting to be asked.
+     *
+     * "dentist near me" is what people actually type; "dentist in agra" is
+     * what agency reports are made of. Leaving the near-me phrases as
+     * suggestions meant a shop could finish setup tracking nothing but city
+     * phrases — which is the report we set out to replace. So the best of
+     * them go on the list automatically, and the owner can remove any.
+     */
+    const auto = ranked
+      .filter((r) => r.term.includes("near me") || r.term.includes("nearby"))
+      .slice(0, 6);
+
+    if (auto.length > 0) {
+      await ctx.runMutation(internal.keywords.saveTargeted, {
+        userId,
+        terms: auto.map((r) => r.term),
+      });
+      const added = new Set(auto.map((r) => r.term));
+      for (const row of ranked) if (added.has(row.term)) row.added = true;
+    }
+
+    return ranked;
+  },
+});
+
+/** Puts phrases on the tracked list, skipping any already there. */
+export const saveTargeted = internalMutation({
+  args: { userId: v.id("users"), terms: v.array(v.string()) },
+  handler: async (ctx, { userId, terms }) => {
+    const business = await ctx.db
+      .query("businesses")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (!business) return 0;
+
+    const existing = await ctx.db
+      .query("keywords")
+      .withIndex("by_business", (q) => q.eq("businessId", business._id))
+      .collect();
+    const have = new Set(existing.map((r) => r.term.toLowerCase()));
+
+    let saved = 0;
+    for (const term of terms) {
+      const trimmed = term.trim().toLowerCase();
+      if (!trimmed || have.has(trimmed)) continue;
+      have.add(trimmed);
+      await ctx.db.insert("keywords", {
+        businessId: business._id,
+        term: trimmed,
+        targeted: true,
+        nearMe: trimmed.includes("near me") || trimmed.includes("nearby"),
+      });
+      saved += 1;
+    }
+    return saved;
   },
 });

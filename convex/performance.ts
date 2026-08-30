@@ -86,12 +86,17 @@ export const syncMetricsForUser = internalAction({
   handler: async (
     ctx,
     { userId, days = 30 },
-  ): Promise<{ days: number; views: number; calls: number; directions: number }> => {
-
+  ): Promise<{
+    days: number;
+    views: number;
+    calls: number;
+    directions: number;
+  }> => {
     const business = await ctx.runQuery(internal.google.businessForUser, {
       userId,
     });
-    if (!business?.gbpLocationName) throw new Error("No Google listing linked.");
+    if (!business?.gbpLocationName)
+      throw new Error("No Google listing linked.");
 
     const token: string = await ctx.runAction(internal.google.accessTokenFor, {
       userId,
@@ -120,13 +125,20 @@ export const syncMetricsForUser = internalAction({
     const text = await res.text();
     if (!res.ok) {
       console.error(`[perf] ${res.status} ${text.slice(0, 400)}`);
-      throw new Error(`Google Performance API ${res.status}: ${text.slice(0, 180)}`);
+      throw new Error(
+        `Google Performance API ${res.status}: ${text.slice(0, 180)}`,
+      );
     }
 
     const data = JSON.parse(text || "{}");
     const byDate = new Map<
       string,
-      { views: number; calls: number; directions: number; websiteClicks: number }
+      {
+        views: number;
+        calls: number;
+        directions: number;
+        websiteClicks: number;
+      }
     >();
 
     for (const series of data.multiDailyMetricTimeSeries ?? []) {
@@ -137,13 +149,17 @@ export const syncMetricsForUser = internalAction({
           const key = dateKey(d.year, d.month, d.day);
           const value = Number(point.value ?? 0);
 
-          const row =
-            byDate.get(key) ??
-            { views: 0, calls: 0, directions: 0, websiteClicks: 0 };
+          const row = byDate.get(key) ?? {
+            views: 0,
+            calls: 0,
+            directions: 0,
+            websiteClicks: 0,
+          };
 
           if (IMPRESSION_METRICS.includes(metric)) row.views += value;
           else if (metric === "CALL_CLICKS") row.calls += value;
-          else if (metric === "BUSINESS_DIRECTION_REQUESTS") row.directions += value;
+          else if (metric === "BUSINESS_DIRECTION_REQUESTS")
+            row.directions += value;
           else if (metric === "WEBSITE_CLICKS") row.websiteClicks += value;
 
           byDate.set(key, row);
@@ -178,7 +194,10 @@ export const syncMetricsForUser = internalAction({
 /* ------------------------------ rank check ------------------------------ */
 
 function normalise(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 /** Position of this business in a SerpApi maps result, 1-based. */
@@ -294,10 +313,24 @@ export const saveCompetitors = internalMutation({
  * to whoever is asking. Measuring from the shop's own door tells the owner
  * nothing about the customer three kilometres away who is the whole point.
  */
+/**
+ * How far out to measure a "near me" search.
+ *
+ * Distance is one of Google's three local ranking factors, so a clinic in
+ * Civil Lines will never rank for "dentist near me" typed 30km away in
+ * Achhnera — and shouldn't. Measuring there just reports a failure that
+ * isn't one. We measure across the distance people actually travel for a
+ * local shop, not across the whole area the shop will serve.
+ */
+export function scanRadiusKm(serviceRadiusKm: number): number {
+  return Math.max(2, Math.min(serviceRadiusKm, 5));
+}
+
 function scanPoints(lat: number, lng: number, radiusKm: number) {
   const points: { lat: number; lng: number }[] = [{ lat, lng }];
   const dLat = (km: number) => km / 111;
-  const dLng = (km: number) => km / (111 * Math.cos((lat * Math.PI) / 180) || 1);
+  const dLng = (km: number) =>
+    km / (111 * Math.cos((lat * Math.PI) / 180) || 1);
 
   // Centre plus four compass points at the edge of the service area. Five
   // searches per keyword, which is enough to show the falloff without
@@ -323,7 +356,9 @@ export const checkRanksForUser = internalAction({
     if (!context) throw new Error("Connect your Google profile first.");
     if (context.lat === undefined || context.lng === undefined) {
       await ctx.runAction(internal.google.ensureCoordinates, { userId });
-      context = await ctx.runQuery(internal.performance.rankContext, { userId });
+      context = await ctx.runQuery(internal.performance.rankContext, {
+        userId,
+      });
     }
     if (!context || context.lat === undefined || context.lng === undefined) {
       throw new Error(
@@ -334,15 +369,20 @@ export const checkRanksForUser = internalAction({
       throw new Error("Add some keywords in setup first.");
     }
 
-    const radius = context.serviceRadiusKm ?? 15;
-    const points = scanPoints(context.lat, context.lng, radius);
+    const points = scanPoints(
+      context.lat,
+      context.lng,
+      scanRadiusKm(context.serviceRadiusKm ?? 15),
+    );
 
     // "near me" is what people type, so those are measured across the whole
     // area. City-name phrases are checked once, from the shop.
     // Cap the area scan so one press can't spend a month of credits.
     const MAX_AREA_KEYWORDS = 6;
     const nearMe = context.keywords
-      .filter((k: any) => k.term.includes("near me") || k.term.includes("nearby"))
+      .filter(
+        (k: any) => k.term.includes("near me") || k.term.includes("nearby"),
+      )
       .slice(0, MAX_AREA_KEYWORDS);
     const rest = context.keywords.filter(
       (k: any) => !k.term.includes("near me") && !k.term.includes("nearby"),
@@ -359,12 +399,12 @@ export const checkRanksForUser = internalAction({
     const rivals = new Map<
       string,
       {
-      name: string;
-      rating?: number;
-      reviewCount?: number;
-      category?: string;
-      positions: number[];
-    }
+        name: string;
+        rating?: number;
+        reviewCount?: number;
+        category?: string;
+        positions: number[];
+      }
     >();
 
     const collectRivals = (results: any[], selfName: string) => {
@@ -373,15 +413,13 @@ export const checkRanksForUser = internalAction({
         if (!title) continue;
         if (findRank([r], selfName) !== undefined) continue;
         const key = normalise(title);
-        const entry =
-          rivals.get(key) ??
-          {
-            name: title,
-            rating: r.rating,
-            reviewCount: r.reviews,
-            category: r.type ?? undefined,
-            positions: [] as number[],
-          };
+        const entry = rivals.get(key) ?? {
+          name: title,
+          rating: r.rating,
+          reviewCount: r.reviews,
+          category: r.type ?? undefined,
+          positions: [] as number[],
+        };
         if (typeof r.position === "number") entry.positions.push(r.position);
         rivals.set(key, entry);
       }
@@ -399,7 +437,8 @@ export const checkRanksForUser = internalAction({
         id: kw._id,
         rank: found.length ? Math.min(...found) : undefined,
         avgRank: found.length
-          ? Math.round((found.reduce((a, b) => a + b, 0) / found.length) * 10) / 10
+          ? Math.round((found.reduce((a, b) => a + b, 0) / found.length) * 10) /
+            10
           : undefined,
         coverageFound: found.length,
         coverageTotal: points.length,
@@ -430,7 +469,8 @@ export const checkRanksForUser = internalAction({
         averageRank:
           r.positions.length > 0
             ? Math.round(
-                (r.positions.reduce((a, b) => a + b, 0) / r.positions.length) * 10,
+                (r.positions.reduce((a, b) => a + b, 0) / r.positions.length) *
+                  10,
               ) / 10
             : undefined,
       }))
@@ -458,7 +498,11 @@ export const saveGrid = internalMutation({
     keyword: v.string(),
     runId: v.string(),
     points: v.array(
-      v.object({ lat: v.number(), lng: v.number(), rank: v.optional(v.number()) }),
+      v.object({
+        lat: v.number(),
+        lng: v.number(),
+        rank: v.optional(v.number()),
+      }),
     ),
   },
   handler: async (ctx, { businessId, keyword, runId, points }) => {
@@ -488,7 +532,11 @@ export const saveGrid = internalMutation({
  * calls per keyword per run.
  */
 export const runGeoGrid = action({
-  args: { keyword: v.string(), size: v.optional(v.number()), stepKm: v.optional(v.number()) },
+  args: {
+    keyword: v.string(),
+    size: v.optional(v.number()),
+    stepKm: v.optional(v.number()),
+  },
   handler: async (
     ctx,
     { keyword, size = 3, stepKm = 1.5 },
@@ -501,7 +549,9 @@ export const runGeoGrid = action({
     });
     if (!context || context.lat === undefined || context.lng === undefined) {
       await ctx.runAction(internal.google.ensureCoordinates, { userId });
-      context = await ctx.runQuery(internal.performance.rankContext, { userId });
+      context = await ctx.runQuery(internal.performance.rankContext, {
+        userId,
+      });
     }
     if (!context || context.lat === undefined || context.lng === undefined) {
       throw new Error(
@@ -511,8 +561,7 @@ export const runGeoGrid = action({
 
     const half = Math.floor(size / 2);
     const dLat = stepKm / 111;
-    const dLng =
-      stepKm / (111 * Math.cos((context.lat * Math.PI) / 180) || 1);
+    const dLng = stepKm / (111 * Math.cos((context.lat * Math.PI) / 180) || 1);
 
     const points: { lat: number; lng: number; rank?: number }[] = [];
 
@@ -567,7 +616,6 @@ export const rankContext = internalQuery({
   },
 });
 
-
 /* --------------------------- public wrappers ---------------------------- */
 
 export const syncMetrics = action({
@@ -575,7 +623,12 @@ export const syncMetrics = action({
   handler: async (
     ctx,
     { days },
-  ): Promise<{ days: number; views: number; calls: number; directions: number }> => {
+  ): Promise<{
+    days: number;
+    views: number;
+    calls: number;
+    directions: number;
+  }> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Sign in first.");
     return await ctx.runAction(internal.performance.syncMetricsForUser, {

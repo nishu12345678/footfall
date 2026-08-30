@@ -149,6 +149,10 @@ export default function GbpPage() {
     data.attributes.filter((a) => a.enabled).map((a) => a.key),
   );
 
+  // The near-me phrases put themselves on the list, so the research panel
+  // has to show what is already tracked rather than only what to add.
+  const tracked = new Set(data.keywords.map((k) => k.term.toLowerCase()));
+
   function patchHour(day: number, patch: Partial<HourRow>) {
     setLocalHours((rows) =>
       rows.map((r) => (r.day === day ? { ...r, ...patch } : r)),
@@ -462,16 +466,20 @@ export default function GbpPage() {
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          aria-label={`add ${r.term}`}
-                          onClick={() => {
-                            void addKeyword({ term: r.term });
-                            setResearched((s) =>
-                              s.filter((x) => x.term !== r.term),
-                            );
-                          }}
-                          className="grid h-7 w-7 flex-none place-items-center rounded-full border border-ink bg-pin font-mono text-[15px] leading-none text-paper-2 shadow-[2px_2px_0_var(--color-ink)] transition-transform active:translate-x-px active:translate-y-px active:shadow-none"
+                          aria-label={
+                            tracked.has(r.term)
+                              ? `${r.term} is tracked`
+                              : `add ${r.term}`
+                          }
+                          disabled={tracked.has(r.term)}
+                          onClick={() => void addKeyword({ term: r.term })}
+                          className={`grid h-7 w-7 flex-none place-items-center rounded-full border border-ink font-mono text-[15px] leading-none shadow-[2px_2px_0_var(--color-ink)] transition-transform active:translate-x-px active:translate-y-px active:shadow-none ${
+                            tracked.has(r.term)
+                              ? "bg-paper-2 text-pin shadow-none"
+                              : "bg-pin text-paper-2"
+                          }`}
                         >
-                          +
+                          {tracked.has(r.term) ? "✓" : "+"}
                         </button>
                         <span className="min-w-0 flex-1 text-[13px]">
                           {r.term}

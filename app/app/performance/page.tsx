@@ -158,7 +158,7 @@ export default function PerformancePage() {
     {
       key: "near",
       title: "When someone nearby searches",
-      note: "No city named — Google answers from where the customer is standing. This is most of the searches that walk through your door.",
+      note: `No city named — Google answers from where the customer is standing, so we check from five points up to ${Math.max(2, Math.min(business.serviceRadiusKm ?? 15, 5))}km out. This is most of the searches that walk through your door.`,
       rows: keywords.filter((k) => isNearMe(k.term)),
     },
     {
@@ -168,6 +168,10 @@ export default function PerformancePage() {
       rows: keywords.filter((k) => !isNearMe(k.term)),
     },
   ].filter((g) => g.rows.length > 0);
+
+  // We measure proximity searches across the distance people actually
+  // travel to a local shop, not the whole area the shop will serve.
+  const scanKm = Math.max(2, Math.min(business.serviceRadiusKm ?? 15, 5));
 
   // Metrics are stored per day, so switching the range is instant — no
   // second call to Google unless the owner asks for one.
@@ -464,8 +468,8 @@ export default function PerformancePage() {
             {business.ranksCheckedAt === undefined
               ? "Checking where you rank right now…"
               : rankedCount === 0
-                ? `You don't appear anywhere in your service area for these searches yet. That's normal for a listing with few reviews — the shops ranking above you have hundreds. Collecting reviews is the fastest way to change it.`
-                : `You show up somewhere in your service area for ${rankedCount} of ${keywords.length} searches. "Seen at 3/9 spots" means someone standing at 3 of the 9 places we checked would find you.`}
+                ? `You don't appear for any of these searches yet, anywhere within ${scanKm}km. That's normal for a listing with few reviews — the shops ranking above you have hundreds. Collecting reviews is the fastest way to change it.`
+                : `You show up for ${rankedCount} of ${keywords.length} searches somewhere within ${scanKm}km. "Seen at 3/5 spots" means someone standing at 3 of the 5 places we checked would find you.`}
           </p>
         ) : null}
       </section>

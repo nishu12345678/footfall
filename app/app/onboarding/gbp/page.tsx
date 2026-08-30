@@ -100,6 +100,20 @@ export default function GbpPage() {
     setHoursLoaded(true);
   }, [data, hoursLoaded]);
 
+  // Shop owners shouldn't have to press "research". Opening the tab does it.
+  useEffect(() => {
+    if (!data) return;
+    if (tab === "areas" && !autoRan.areas) {
+      setAutoRan((s) => ({ ...s, areas: true }));
+      void findAreas(radiusKm);
+    }
+    if (tab === "keywords" && !autoRan.keywords) {
+      setAutoRan((s) => ({ ...s, keywords: true }));
+      void runResearch(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, data]);
+
   if (data === undefined) {
     return (
       <main className="grid min-h-screen place-items-center px-6">
@@ -164,20 +178,6 @@ export default function GbpPage() {
       setThinking(false);
     }
   }
-
-  // Shop owners shouldn't have to press "research". Opening the tab does it.
-  useEffect(() => {
-    if (!data) return;
-    if (tab === "areas" && !autoRan.areas) {
-      setAutoRan((s) => ({ ...s, areas: true }));
-      void findAreas(radiusKm);
-    }
-    if (tab === "keywords" && !autoRan.keywords) {
-      setAutoRan((s) => ({ ...s, keywords: true }));
-      void runResearch(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, data]);
 
   async function next() {
     const order: Tab[] = ["areas", "keywords", "hours", "attributes"];

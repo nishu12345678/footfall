@@ -117,6 +117,13 @@ export const syncForUser = internalAction({
     const data = JSON.parse(text || "{}");
     const items = (data.mediaItems ?? [])
       .filter((m: any) => m?.googleUrl || m?.thumbnailUrl)
+      // Google's media list carries the owner's account picture alongside
+      // the shop's photos. Its URL sits under /a-/ or /a/, and a headshot
+      // on a post about root canals helps nobody.
+      .filter((m: any) => {
+        const url = String(m.googleUrl ?? m.thumbnailUrl);
+        return !/googleusercontent\.com\/a[-/]/.test(url);
+      })
       .map((m: any) => ({
         url: sized(String(m.googleUrl ?? m.thumbnailUrl), 1600),
         caption: m.description ? String(m.description) : undefined,
@@ -212,7 +219,9 @@ export const pushPhoto = internalAction({
     ctx,
     { photoId, userId },
   ): Promise<{ ok: boolean; error?: string }> => {
-    const photo = await ctx.runQuery(internal.photos.photoById, { id: photoId });
+    const photo = await ctx.runQuery(internal.photos.photoById, {
+      id: photoId,
+    });
     if (!photo?.url) return { ok: false, error: "That photo is gone." };
 
     const business = await ctx.runQuery(internal.google.businessForUser, {
@@ -257,10 +266,7 @@ export const pushPhoto = internalAction({
 
 export const publishPhoto = action({
   args: { id: v.id("photos") },
-  handler: async (
-    ctx,
-    { id },
-  ): Promise<{ ok: boolean; error?: string }> => {
+  handler: async (ctx, { id }): Promise<{ ok: boolean; error?: string }> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Sign in first.");
     return await ctx.runAction(internal.photos.pushPhoto, {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useAction, useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
 import { Working } from "@/components/working";
@@ -26,6 +26,7 @@ export default function PostsPage() {
   const data = useQuery(api.lists.posts);
   const writePost = useAction(api.posts.writePost);
   const planPosts = useAction(api.posts.planPosts);
+  const ensurePlan = useAction(api.posts.ensurePlan);
   const publishPost = useAction(api.posts.publishPost);
   const updateDraft = useMutation(api.posts.updateDraft);
   const removePost = useMutation(api.posts.removePost);
@@ -38,6 +39,21 @@ export default function PostsPage() {
   const [editText, setEditText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [filling, setFilling] = useState(false);
+  const asked = useRef(false);
+
+  // A fortnight of posts should already be waiting when the screen opens.
+  // Nothing here needs pressing; the list below is for looking at.
+  useEffect(() => {
+    if (!data || asked.current) return;
+    asked.current = true;
+    const pending = data.rows.filter((p) => p.status === "scheduled").length;
+    if (pending >= 7) return;
+    setFilling(true);
+    void ensurePlan({ want: 7 })
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .finally(() => setFilling(false));
+  }, [data, ensurePlan]);
 
   if (data === undefined) return <Loading />;
   if (data === null) return <NeedsConnect />;
@@ -108,16 +124,29 @@ export default function PostsPage() {
     return (
       <>
         {post.imageUrl && editing !== post._id ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={thumb(post.imageUrl, 800)}
-            alt=""
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            className={`mb-3 aspect-[4/3] w-full rounded-[10px] border border-rule object-cover ${
-              muted ? "opacity-90" : ""
-            }`}
-          />
+          <figure className="mb-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={thumb(post.imageUrl, 800)}
+              alt=""
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              className={`aspect-[4/3] w-full rounded-[10px] border border-rule object-cover ${
+                muted ? "opacity-90" : ""
+              }`}
+            />
+            {post.imageNote ? (
+              <figcaption className="mt-1.5 flex items-start gap-1.5 text-[11px] leading-snug text-muted">
+                <span
+                  aria-hidden
+                  className="mt-px flex-none font-mono text-[9px] uppercase tracking-wider"
+                >
+                  {post.imageSource === "listing" ? "yours" : "made"}
+                </span>
+                <span className="min-w-0">{post.imageNote}</span>
+              </figcaption>
+            ) : null}
+          </figure>
         ) : null}
 
         {editing === post._id ? (
@@ -191,15 +220,20 @@ export default function PostsPage() {
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="font-display text-[15px] font-bold">Coming up</h2>
           <span className="flex-none font-mono text-[10px] text-muted">
-            {scheduled.length} scheduled
+            {scheduled.length} written{filling ? " · adding more" : ""}
           </span>
         </div>
 
         {scheduled.length === 0 ? (
-          <p className="mt-3 rounded-[14px] border border-dashed border-rule px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
-            Nothing scheduled. Plan the next two weeks and they&rsquo;ll appear
-            here before they go out.
-          </p>
+          <div className="mt-3 rounded-[14px] border border-dashed border-rule px-4 py-8 text-center">
+            {filling ? (
+              <Working label="Writing your next two weeks of posts" />
+            ) : (
+              <p className="text-[13px] leading-relaxed text-muted">
+                Nothing scheduled yet. Finish setup and the plan writes itself.
+              </p>
+            )}
+          </div>
         ) : (
           <ul className="mt-3 space-y-3">
             {scheduled.map((post) => (
@@ -249,7 +283,9 @@ export default function PostsPage() {
                         disabled={publishing !== null}
                         className="btn btn-ghost btn-sm disabled:opacity-40"
                       >
-                        {publishing === post._id ? "publishing…" : "post it now"}
+                        {publishing === post._id
+                          ? "publishing…"
+                          : "post it now"}
                       </button>
                       <button
                         type="button"

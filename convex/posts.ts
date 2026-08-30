@@ -256,6 +256,8 @@ function pickImage(
   photos: string[],
   recentImages: string[],
 ): string | undefined {
+  // Never a profile picture, wherever it came from.
+  photos = photos.filter((p) => !/googleusercontent\.com\/a[-/]/.test(p));
   if (photos.length === 0) return undefined;
   const unused = photos.filter((p) => !recentImages.includes(p));
   const pool = unused.length > 0 ? unused : photos;
@@ -632,6 +634,8 @@ export const saveScheduled = internalMutation({
     title: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
     scheduledFor: v.number(),
+    imageSource: v.optional(v.string()),
+    imageNote: v.optional(v.string()),
   },
   handler: async (ctx, args) =>
     await ctx.db.insert("posts", {
@@ -782,6 +786,10 @@ export const planForUser = internalAction({
         title: topics[i].topic,
         imageUrl: image,
         scheduledFor: slots[i],
+        imageSource: image ? "listing" : undefined,
+        imageNote: image
+          ? "One of your own photos, already on your Google listing."
+          : undefined,
       });
 
       // No photo of their own to use, so make one that suits the trade.
@@ -897,10 +905,20 @@ function subjectFor(category: string | undefined, orgName: string): string {
 }
 
 export const savePostImage = internalMutation({
-  args: { postId: v.id("posts"), storageId: v.id("_storage") },
-  handler: async (ctx, { postId, storageId }) => {
+  args: {
+    postId: v.id("posts"),
+    storageId: v.id("_storage"),
+    note: v.optional(v.string()),
+  },
+  handler: async (ctx, { postId, storageId, note }) => {
     const url = await ctx.storage.getUrl(storageId);
-    if (url) await ctx.db.patch(postId, { imageUrl: url });
+    if (url) {
+      await ctx.db.patch(postId, {
+        imageUrl: url,
+        imageSource: "made",
+        imageNote: note,
+      });
+    }
     return url;
   },
 });
@@ -985,6 +1003,8 @@ export const generatePostImage = internalAction({
       return await ctx.runMutation(internal.posts.savePostImage, {
         postId,
         storageId,
+        // Say what the picture is, so the owner isn't guessing why it's there.
+        note: `Made for this post: ${subject}.`,
       });
     } catch (error) {
       console.error("[image] generation failed", error);
@@ -1054,5 +1074,41 @@ export const topUpPlans = internalAction({
       }
     }
     return { businesses: businesses.length, planned };
+  },
+});
+
+/**
+ * Makes sure a fortnight of posts is always sitting there, written and
+ * illustrated, before the owner opens the screen.
+ *
+ * The point of the product is that nothing needs pressing. A screen that
+ * says "plan the next two weeks" is a screen that has not done its job, so
+ * this runs on open and tops the plan back up to a week's worth.
+ */
+export const ensurePlan = action({
+  args: { want: v.optional(v.number()) },
+  handler: async (
+    ctx,
+    { want = 7 },
+  ): Promise<{ planned: number; pending: number }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+
+    const c = await ctx.runQuery(internal.posts.postContext, { userId });
+    if (!c) throw new Error("Connect your Google profile first.");
+
+    const pending: number[] = await ctx.runQuery(internal.posts.scheduledFor, {
+      businessId: c.business._id,
+    });
+    if (pending.length >= want) return { planned: 0, pending: pending.length };
+
+    const result = await ctx.runAction(internal.posts.planForUser, {
+      userId,
+      count: want - pending.length,
+    });
+    return {
+      planned: result.planned,
+      pending: pending.length + result.planned,
+    };
   },
 });

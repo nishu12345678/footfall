@@ -158,7 +158,7 @@ export default function PerformancePage() {
     {
       key: "near",
       title: "When someone nearby searches",
-      note: `No city named — Google answers from where the customer is standing, so we check from five points up to ${Math.max(2, Math.min(business.serviceRadiusKm ?? 15, 5))}km out. This is most of the searches that walk through your door.`,
+      note: `No city named — Google answers from where the customer is standing, so we check from five points up to ${Math.max(2, Math.min(business.scanRadiusKm ?? 5, business.serviceRadiusKm ?? 30))}km out.${business.radiusReason ? ` ${business.radiusReason}` : ""} This is most of the searches that walk through your door.`,
       rows: keywords.filter((k) => isNearMe(k.term)),
     },
     {
@@ -171,7 +171,10 @@ export default function PerformancePage() {
 
   // We measure proximity searches across the distance people actually
   // travel to a local shop, not the whole area the shop will serve.
-  const scanKm = Math.max(2, Math.min(business.serviceRadiusKm ?? 15, 5));
+  const scanKm = Math.max(
+    2,
+    Math.min(business.scanRadiusKm ?? 5, business.serviceRadiusKm ?? 30),
+  );
 
   // Metrics are stored per day, so switching the range is instant — no
   // second call to Google unless the owner asks for one.

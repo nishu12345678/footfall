@@ -58,6 +58,7 @@ export default function GbpPage() {
   const researchKeywords = useAction(api.keywords.research);
   const seedAreas = useMutation(api.gbp.seedServiceAreas);
   const nearbyAreas = useAction(api.gbp.nearbyAreas);
+  const tuneRadius = useAction(api.businesses.tuneRadius);
   const setServiceRadius = useMutation(api.gbp.setServiceRadius);
 
   const [tab, setTab] = useState<Tab>("areas");
@@ -118,6 +119,8 @@ export default function GbpPage() {
     if (tab === "areas" && !autoRan.areas) {
       setAutoRan((s) => ({ ...s, areas: true }));
       void findAreas(radiusKm);
+      // How far this trade is judged over — a clinic is not a tile showroom.
+      void tuneRadius({}).catch(() => {});
     }
     if (tab === "keywords" && !autoRan.keywords) {
       setAutoRan((s) => ({ ...s, keywords: true }));
@@ -362,6 +365,20 @@ export default function GbpPage() {
                 </p>
               )}
             </div>
+
+            {data.business.scanRadiusKm ? (
+              <div className="mt-4 rounded-[12px] border border-rule bg-paper-2 px-3.5 py-2.5">
+                <p className="text-[13px] font-semibold leading-snug">
+                  We&rsquo;ll measure your &ldquo;near me&rdquo; ranking across{" "}
+                  {data.business.scanRadiusKm}km
+                </p>
+                <p className="mt-1 text-[12px] leading-relaxed text-ink-soft">
+                  {data.business.radiusReason
+                    ? `${data.business.radiusReason} Ranking is measured over the distance customers actually travel, not the whole area you serve.`
+                    : "Measured over the distance customers actually travel, not the whole area you serve."}
+                </p>
+              </div>
+            ) : null}
 
             <p className="eyebrow mt-6">you serve</p>
             <ul className="mt-3 flex flex-wrap gap-2">

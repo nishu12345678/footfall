@@ -322,8 +322,12 @@ export const saveCompetitors = internalMutation({
  * isn't one. We measure across the distance people actually travel for a
  * local shop, not across the whole area the shop will serve.
  */
-export function scanRadiusKm(serviceRadiusKm: number): number {
-  return Math.max(2, Math.min(serviceRadiusKm, 5));
+export function scanRadiusKm(business: {
+  scanRadiusKm?: number;
+  serviceRadiusKm?: number;
+}): number {
+  const service = business.serviceRadiusKm ?? 30;
+  return Math.max(2, Math.min(business.scanRadiusKm ?? 5, service));
 }
 
 function scanPoints(lat: number, lng: number, radiusKm: number) {
@@ -369,11 +373,7 @@ export const checkRanksForUser = internalAction({
       throw new Error("Add some keywords in setup first.");
     }
 
-    const points = scanPoints(
-      context.lat,
-      context.lng,
-      scanRadiusKm(context.serviceRadiusKm ?? 15),
-    );
+    const points = scanPoints(context.lat, context.lng, scanRadiusKm(context));
 
     // "near me" is what people type, so those are measured across the whole
     // area. City-name phrases are checked once, from the shop.
@@ -611,6 +611,7 @@ export const rankContext = internalQuery({
       lat: business.lat,
       lng: business.lng,
       serviceRadiusKm: business.serviceRadiusKm,
+      scanRadiusKm: business.scanRadiusKm,
       keywords: keywords.filter((k) => k.targeted),
     };
   },

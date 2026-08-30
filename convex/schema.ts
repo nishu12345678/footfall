@@ -51,6 +51,10 @@ export default defineSchema({
     // How far out this business realistically pulls customers from. Every
     // "near me" rank check is measured across this radius, not at the door.
     serviceRadiusKm: v.optional(v.number()),
+    // How far out we measure a "near me" search. A clinic is judged over a
+    // few kilometres, a tile showroom over a district.
+    scanRadiusKm: v.optional(v.number()),
+    radiusReason: v.optional(v.string()),
 
     // When we last pulled performance data and ran a rank check.
     metricsSyncedAt: v.optional(v.number()),
@@ -179,6 +183,8 @@ export default defineSchema({
     body: v.string(),
     imageUrl: v.optional(v.string()),
     status: v.string(), // "draft" | "scheduled" | "published" | "failed"
+    imageSource: v.optional(v.string()), // "listing" | "made"
+    imageNote: v.optional(v.string()),
     scheduledFor: v.optional(v.number()),
     publishedAt: v.optional(v.number()),
     gbpPostName: v.optional(v.string()),

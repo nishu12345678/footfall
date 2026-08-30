@@ -298,13 +298,15 @@ function scanPoints(lat: number, lng: number, radiusKm: number) {
   const dLat = (km: number) => km / 111;
   const dLng = (km: number) => km / (111 * Math.cos((lat * Math.PI) / 180) || 1);
 
-  for (const fraction of [0.5, 1]) {
-    const km = radiusKm * fraction;
-    points.push({ lat: lat + dLat(km), lng });
-    points.push({ lat: lat - dLat(km), lng });
-    points.push({ lat, lng: lng + dLng(km) });
-    points.push({ lat, lng: lng - dLng(km) });
-  }
+  // Centre plus four compass points at the edge of the service area. Five
+  // searches per keyword, which is enough to show the falloff without
+  // burning a month of search credits on one button press. The per-keyword
+  // geo-grid does the denser 3x3 when the owner asks for it.
+  const km = radiusKm;
+  points.push({ lat: lat + dLat(km), lng });
+  points.push({ lat: lat - dLat(km), lng });
+  points.push({ lat, lng: lng + dLng(km) });
+  points.push({ lat, lng: lng - dLng(km) });
   return points;
 }
 
@@ -336,9 +338,11 @@ export const checkRanksForUser = internalAction({
 
     // "near me" is what people type, so those are measured across the whole
     // area. City-name phrases are checked once, from the shop.
-    const nearMe = context.keywords.filter((k: any) =>
-      k.term.includes("near me") || k.term.includes("nearby"),
-    );
+    // Cap the area scan so one press can't spend a month of credits.
+    const MAX_AREA_KEYWORDS = 6;
+    const nearMe = context.keywords
+      .filter((k: any) => k.term.includes("near me") || k.term.includes("nearby"))
+      .slice(0, MAX_AREA_KEYWORDS);
     const rest = context.keywords.filter(
       (k: any) => !k.term.includes("near me") && !k.term.includes("nearby"),
     );

@@ -22,6 +22,14 @@ crons.daily(
   internal.posts.postDaily,
 );
 
+// One photo a day reads like a shop someone is running. Thirty at once
+// reads like a one-off.
+crons.daily(
+  "publish queued photo",
+  { hourUTC: 11, minuteUTC: 30 }, // 17:00 IST
+  internal.photos.publishDaily,
+);
+
 crons.weekly(
   "check keyword ranks",
   { dayOfWeek: "monday", hourUTC: 2, minuteUTC: 0 }, // 07:30 IST Monday

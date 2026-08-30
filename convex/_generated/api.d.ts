@@ -21,6 +21,7 @@ import type * as http from "../http.js";
 import type * as keywords from "../keywords.js";
 import type * as lists from "../lists.js";
 import type * as performance from "../performance.js";
+import type * as photos from "../photos.js";
 import type * as posts from "../posts.js";
 import type * as site from "../site.js";
 
@@ -44,6 +45,7 @@ declare const fullApi: ApiFromModules<{
   keywords: typeof keywords;
   lists: typeof lists;
   performance: typeof performance;
+  photos: typeof photos;
   posts: typeof posts;
   site: typeof site;
 }>;

@@ -34,7 +34,8 @@ export const postContext = internalQuery({
       .first();
     if (!business) return null;
 
-    const [offerings, specialties, keywords, areas, recent] = await Promise.all([
+    const [offerings, specialties, keywords, areas, recent, photos] =
+      await Promise.all([
       ctx.db
         .query("offerings")
         .withIndex("by_business", (q) => q.eq("businessId", business._id))
@@ -56,6 +57,10 @@ export const postContext = internalQuery({
         .withIndex("by_business", (q) => q.eq("businessId", business._id))
         .order("desc")
         .take(6),
+      ctx.db
+        .query("photos")
+        .withIndex("by_business", (q) => q.eq("businessId", business._id))
+        .collect(),
     ]);
 
     return {
@@ -65,6 +70,8 @@ export const postContext = internalQuery({
       keywords: keywords.map((r) => r.term),
       areas: areas.map((r) => r.name),
       recent: recent.map((p) => p.body),
+      recentImages: recent.map((p) => p.imageUrl).filter(Boolean) as string[],
+      photos: photos.map((p) => p.url).filter(Boolean) as string[],
     };
   },
 });
@@ -95,6 +102,7 @@ export const saveDraft = internalMutation({
     businessId: v.id("businesses"),
     body: v.string(),
     title: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
     generatedBy: v.string(),
   },
   handler: async (ctx, args) =>
@@ -128,6 +136,7 @@ export const markPublished = internalMutation({
       type: "post",
       title: "New post published",
       detail: post.body.slice(0, 120),
+      imageUrl: post.imageUrl,
       createdAt: Date.now(),
     });
   },
@@ -168,6 +177,18 @@ const ANGLES = [
   "an invitation to call or visit with a simple next step",
 ];
 
+/**
+ * A picture for the post, preferring one we haven't used recently.
+ * A Google Business post with an image takes far more space in the feed
+ * than a text-only one.
+ */
+function pickImage(photos: string[], recentImages: string[]): string | undefined {
+  if (photos.length === 0) return undefined;
+  const unused = photos.filter((p) => !recentImages.includes(p));
+  const pool = unused.length > 0 ? unused : photos;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 export const draftBody = internalAction({
   args: { userId: v.id("users"), brief: v.optional(v.string()) },
   handler: async (ctx, { userId, brief }): Promise<string | null> => {
@@ -179,30 +200,50 @@ export const draftBody = internalAction({
 
     const angle = ANGLES[Math.floor(Math.random() * ANGLES.length)];
 
+    // The near-me phrases are the point of the whole post. They go in the
+    // body naturally, the way a shop owner would list what they stock.
+    const nearMe = c.keywords
+      .filter((k: string) => k.includes("near me") || k.includes("nearby"))
+      .slice(0, 6);
+    const cityTerms = c.keywords
+      .filter((k: string) => !k.includes("near me") && !k.includes("nearby"))
+      .slice(0, 3);
+
     const prompt = [
       `Business: ${c.business.orgName}`,
       c.business.primaryCategory ? `Category: ${c.business.primaryCategory}` : "",
       c.business.city ? `City: ${c.business.city}` : "",
+      c.business.streetAddress ? `Address: ${c.business.streetAddress}` : "",
       c.areas.length ? `Serves: ${c.areas.slice(0, 6).join(", ")}` : "",
       c.offerings.length ? `Sells: ${c.offerings.join(", ")}` : "",
       c.specialties.length ? `Known for: ${c.specialties.join(", ")}` : "",
-      c.keywords.length
-        ? `Search phrases to work in naturally: ${c.keywords.slice(0, 6).join(", ")}`
+      nearMe.length
+        ? `Search phrases customers type — work these into the body naturally: ${nearMe.join(", ")}`
         : "",
+      cityTerms.length ? `Also relevant: ${cityTerms.join(", ")}` : "",
       c.recent.length
-        ? `\nRecent posts — write something clearly different:\n- ${c.recent.join("\n- ")}`
+        ? `\nRecent posts — write something clearly different:\n- ${c.recent.map((r: string) => r.slice(0, 120)).join("\n- ")}`
         : "",
       brief ? `\nThe owner asked for: ${brief}` : `\nToday's angle: ${angle}`,
       "",
-      "Write one Google Business Profile post for this shop.",
+      "Write one Google Business Profile post for this shop, in this exact shape:",
+      "",
+      "1. A headline line: what this post is about, naming the business. No label, no markdown.",
+      "2. A blank line, then one opening paragraph of 40-60 words that names the locality and",
+      "   what someone searching nearby would be looking for.",
+      "3. A blank line, then 5 or 6 lines each starting with the ✔️ character and a space.",
+      "   Each line is one concrete thing the shop offers, 15-30 words, and between them they",
+      "   should work in the search phrases above the way a person would actually say them.",
+      "4. A blank line, then one closing line inviting the reader to visit or call.",
+      "",
       "Rules:",
-      "- 60 to 90 words. Under 1500 characters.",
-      "- Plain Indian English a shop owner would actually say. No corporate voice.",
-      "- Mention the locality naturally — this post is for people searching nearby.",
-      "- One concrete reason to visit.",
-      "- End with a simple invitation to visit or call.",
-      "- No hashtags. No emoji.",
-      "- Do NOT invent prices, discounts, opening hours, menu items, brands, or awards.",
+      "- Plain Indian English. Warm and factual. Never corporate, never breathless.",
+      "- 900 to 1300 characters in total. Never exceed 1450.",
+      "- Fit the search phrases into real sentences. Never list them, never repeat one twice,",
+      "  and never write something like 'visit our shop near me', which reads as nonsense.",
+      "- Do NOT invent prices, discounts, opening hours, offers, menu items, brands, awards,",
+      "  years in business, or customer numbers. Only describe what you were told above.",
+      "- No hashtags. No emoji other than the ✔️ bullets.",
       'Reply as JSON only: {"body":"..."}',
     ]
       .filter(Boolean)
@@ -238,7 +279,7 @@ export const draftBody = internalAction({
     try {
       const body = JSON.parse(data?.choices?.[0]?.message?.content ?? "{}").body;
       const text = String(body ?? "").trim();
-      return text ? text.slice(0, 1500) : null;
+      return text ? text.slice(0, 1450) : null;
     } catch {
       return null;
     }
@@ -263,6 +304,7 @@ export const writePost = action({
     const id: Id<"posts"> = await ctx.runMutation(internal.posts.saveDraft, {
       businessId: c.business._id,
       body,
+      imageUrl: pickImage(c.photos, c.recentImages),
       generatedBy: "ai",
     });
 
@@ -392,6 +434,7 @@ export const writeAndPublish = internalAction({
     const id: Id<"posts"> = await ctx.runMutation(internal.posts.saveDraft, {
       businessId: c.business._id,
       body,
+      imageUrl: pickImage(c.photos, c.recentImages),
       generatedBy: "ai",
     });
 

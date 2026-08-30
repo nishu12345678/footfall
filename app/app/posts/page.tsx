@@ -65,8 +65,8 @@ export default function PostsPage() {
     >
       <h1 className="text-[1.6rem]">posts</h1>
       <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
-        Google quietly rewards a listing that&rsquo;s alive. Write one, check
-        it, publish it.
+        Google quietly rewards a listing that&rsquo;s alive. Posts go out with
+        a photo from your listing — add photos first if you haven&rsquo;t.
       </p>
 
       <div className="mt-5 rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_4px_0_var(--color-ink)]">
@@ -116,6 +116,15 @@ export default function PostsPage() {
                 key={post._id}
                 className="rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]"
               >
+                {post.imageUrl && editing !== post._id ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={post.imageUrl}
+                    alt=""
+                    className="mb-3 aspect-[4/3] w-full rounded-[10px] border border-rule object-cover"
+                  />
+                ) : null}
+
                 {editing === post._id ? (
                   <textarea
                     value={editText}
@@ -223,6 +232,14 @@ export default function PostsPage() {
                       : ""}
                   </span>
                 </div>
+                {post.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={post.imageUrl}
+                    alt=""
+                    className="mt-2.5 aspect-[4/3] w-full rounded-[10px] border border-rule object-cover"
+                  />
+                ) : null}
                 <p className="mt-2.5 whitespace-pre-wrap text-[14px] leading-relaxed">
                   {post.body}
                 </p>

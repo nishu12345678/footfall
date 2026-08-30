@@ -36,32 +36,32 @@ export const postContext = internalQuery({
 
     const [offerings, specialties, keywords, areas, recent, photos] =
       await Promise.all([
-      ctx.db
-        .query("offerings")
-        .withIndex("by_business", (q) => q.eq("businessId", business._id))
-        .collect(),
-      ctx.db
-        .query("specialties")
-        .withIndex("by_business", (q) => q.eq("businessId", business._id))
-        .collect(),
-      ctx.db
-        .query("keywords")
-        .withIndex("by_business", (q) => q.eq("businessId", business._id))
-        .collect(),
-      ctx.db
-        .query("serviceAreas")
-        .withIndex("by_business", (q) => q.eq("businessId", business._id))
-        .collect(),
-      ctx.db
-        .query("posts")
-        .withIndex("by_business", (q) => q.eq("businessId", business._id))
-        .order("desc")
-        .take(6),
-      ctx.db
-        .query("photos")
-        .withIndex("by_business", (q) => q.eq("businessId", business._id))
-        .collect(),
-    ]);
+        ctx.db
+          .query("offerings")
+          .withIndex("by_business", (q) => q.eq("businessId", business._id))
+          .collect(),
+        ctx.db
+          .query("specialties")
+          .withIndex("by_business", (q) => q.eq("businessId", business._id))
+          .collect(),
+        ctx.db
+          .query("keywords")
+          .withIndex("by_business", (q) => q.eq("businessId", business._id))
+          .collect(),
+        ctx.db
+          .query("serviceAreas")
+          .withIndex("by_business", (q) => q.eq("businessId", business._id))
+          .collect(),
+        ctx.db
+          .query("posts")
+          .withIndex("by_business", (q) => q.eq("businessId", business._id))
+          .order("desc")
+          .take(6),
+        ctx.db
+          .query("photos")
+          .withIndex("by_business", (q) => q.eq("businessId", business._id))
+          .collect(),
+      ]);
 
     return {
       business,
@@ -206,6 +206,37 @@ async function usableMedia(url: string): Promise<string | null> {
   }
 }
 
+/**
+ * What a search phrase is actually about, without the proximity words.
+ *
+ * "root canal treatment near me" is a proximity search: Google answers it
+ * from where the searcher is standing and how close the shop is, not from
+ * whether the page says "near me". Writing the phrase into a post reads as
+ * nonsense to the customer and does nothing for the ranking. So we take the
+ * subject — root canal treatment — and write about that.
+ */
+function searchSubject(term: string): string {
+  return term
+    .replace(/\b(near me|nearby|near by|around me|closest|nearest)\b/gi, "")
+    .replace(/\bin\s+[a-z\s]+$/i, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+/** The distinct subjects behind a set of search phrases. */
+function subjectsOf(terms: string[], limit: number): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const term of terms) {
+    const subject = searchSubject(term);
+    if (!subject || seen.has(subject.toLowerCase())) continue;
+    seen.add(subject.toLowerCase());
+    out.push(subject);
+    if (out.length === limit) break;
+  }
+  return out;
+}
+
 /** The angles a local SEO specialist rotates through, so posts don't repeat. */
 const ANGLES = [
   "what you sell, plainly, with the locality named",
@@ -221,7 +252,10 @@ const ANGLES = [
  * A Google Business post with an image takes far more space in the feed
  * than a text-only one.
  */
-function pickImage(photos: string[], recentImages: string[]): string | undefined {
+function pickImage(
+  photos: string[],
+  recentImages: string[],
+): string | undefined {
   if (photos.length === 0) return undefined;
   const unused = photos.filter((p) => !recentImages.includes(p));
   const pool = unused.length > 0 ? unused : photos;
@@ -239,27 +273,23 @@ export const draftBody = internalAction({
 
     const angle = ANGLES[Math.floor(Math.random() * ANGLES.length)];
 
-    // The near-me phrases are the point of the whole post. They go in the
-    // body naturally, the way a shop owner would list what they stock.
-    const nearMe = c.keywords
-      .filter((k: string) => k.includes("near me") || k.includes("nearby"))
-      .slice(0, 6);
-    const cityTerms = c.keywords
-      .filter((k: string) => !k.includes("near me") && !k.includes("nearby"))
-      .slice(0, 3);
+    // What people are searching for, with the proximity words stripped.
+    // The post is written about the subject; being close is Google's job.
+    const subjects = subjectsOf(c.keywords, 6);
 
     const prompt = [
       `Business: ${c.business.orgName}`,
-      c.business.primaryCategory ? `Category: ${c.business.primaryCategory}` : "",
+      c.business.primaryCategory
+        ? `Category: ${c.business.primaryCategory}`
+        : "",
       c.business.city ? `City: ${c.business.city}` : "",
       c.business.streetAddress ? `Address: ${c.business.streetAddress}` : "",
       c.areas.length ? `Serves: ${c.areas.slice(0, 6).join(", ")}` : "",
       c.offerings.length ? `Sells: ${c.offerings.join(", ")}` : "",
       c.specialties.length ? `Known for: ${c.specialties.join(", ")}` : "",
-      nearMe.length
-        ? `Search phrases customers type — work these into the body naturally: ${nearMe.join(", ")}`
+      subjects.length
+        ? `What customers are searching for — write about these in the shop's own words: ${subjects.join(", ")}`
         : "",
-      cityTerms.length ? `Also relevant: ${cityTerms.join(", ")}` : "",
       c.recent.length
         ? `\nRecent posts — write something clearly different:\n- ${c.recent.map((r: string) => r.slice(0, 120)).join("\n- ")}`
         : "",
@@ -281,9 +311,9 @@ export const draftBody = internalAction({
       "- 600 to 900 characters in total. Never exceed 1000. Shorter reads better here.",
       "- NEVER put a phone number in the text. Google rejects posts containing them,",
       "  and the profile already carries a call button.",
-      "- Use AT MOST TWO of the search phrases, in real sentences, never repeated.",
-      "  Never write something like 'visit our shop near me' — that is nonsense to a reader,",
-      "  because 'near me' only makes sense from the searcher's side.",
+      "- Cover AT MOST TWO of those subjects, in the shop's own plain words.",
+      "- NEVER write 'near me', 'nearby', or 'near you' anywhere. Customers type",
+      "  it, shops don't say it, and Google decides who is near without being told.",
       "- Do NOT invent prices, discounts, opening hours, offers, menu items, brands, awards,",
       "  years in business, or customer numbers. Only describe what you were told above.",
       "- No ALL CAPS, no exclamation marks, no hashtags, no emoji besides the ✔️ bullets.",
@@ -314,13 +344,17 @@ export const draftBody = internalAction({
     });
 
     if (!res.ok) {
-      console.error(`[openai] ${res.status} ${(await res.text()).slice(0, 300)}`);
+      console.error(
+        `[openai] ${res.status} ${(await res.text()).slice(0, 300)}`,
+      );
       return null;
     }
 
     const data = await res.json();
     try {
-      const body = JSON.parse(data?.choices?.[0]?.message?.content ?? "{}").body;
+      const body = JSON.parse(
+        data?.choices?.[0]?.message?.content ?? "{}",
+      ).body;
       const text = String(body ?? "").trim();
       return text ? text.slice(0, 1000) : null;
     } catch {
@@ -341,7 +375,10 @@ export const writePost = action({
     const c = await ctx.runQuery(internal.posts.postContext, { userId });
     if (!c) throw new Error("Connect your Google profile first.");
 
-    const body = await ctx.runAction(internal.posts.draftBody, { userId, brief });
+    const body = await ctx.runAction(internal.posts.draftBody, {
+      userId,
+      brief,
+    });
     if (!body) throw new Error("Couldn't write a post just now. Try again.");
 
     const image = pickImage(c.photos, c.recentImages);
@@ -355,7 +392,8 @@ export const writePost = action({
     if (!image) {
       await ctx.runAction(internal.posts.generatePostImage, {
         postId: id,
-        topic: brief ?? `${c.business.orgName} in ${c.business.city ?? "India"}`,
+        topic:
+          brief ?? `${c.business.orgName} in ${c.business.city ?? "India"}`,
         category: c.business.primaryCategory,
         orgName: c.business.orgName,
         city: c.business.city,
@@ -560,7 +598,8 @@ function nextSlots(count: number, taken: number[]): number[] {
   const slots: number[] = [];
   const cursor = new Date();
   cursor.setUTCHours(POST_HOUR_UTC, 0, 0, 0);
-  if (cursor.getTime() <= Date.now()) cursor.setUTCDate(cursor.getUTCDate() + 1);
+  if (cursor.getTime() <= Date.now())
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
 
   for (let i = 0; i < 40 && slots.length < count; i++) {
     if (POST_DAYS.includes(cursor.getUTCDay())) {
@@ -609,7 +648,6 @@ export const planForUser = internalAction({
     ctx,
     { userId, count = 6 },
   ): Promise<{ planned: number; topics: string[] }> => {
-
     let c = await ctx.runQuery(internal.posts.postContext, { userId });
     if (!c) throw new Error("Connect your Google profile first.");
 
@@ -622,19 +660,19 @@ export const planForUser = internalAction({
       year: "numeric",
     });
     const season = indianSeason(now.getMonth());
-    const nearMe = c.keywords.filter(
-      (k: string) => k.includes("near me") || k.includes("nearby"),
-    );
+    const subjects = subjectsOf(c.keywords, 8);
 
     const brief = [
       `Business: ${c.business.orgName}`,
-      c.business.primaryCategory ? `Category: ${c.business.primaryCategory}` : "",
+      c.business.primaryCategory
+        ? `Category: ${c.business.primaryCategory}`
+        : "",
       c.business.city ? `City: ${c.business.city}` : "",
       c.areas.length ? `Serves: ${c.areas.slice(0, 6).join(", ")}` : "",
       c.offerings.length ? `Sells: ${c.offerings.join(", ")}` : "",
       c.specialties.length ? `Known for: ${c.specialties.join(", ")}` : "",
-      nearMe.length
-        ? `Searches to target across the plan: ${nearMe.join(", ")}`
+      subjects.length
+        ? `Subjects customers search for — spread these across the plan: ${subjects.join(", ")}`
         : "",
       c.recent.length
         ? `\nAlready posted about:\n- ${c.recent.map((r: string) => r.slice(0, 100)).join("\n- ")}`
@@ -694,7 +732,8 @@ export const planForUser = internalAction({
     let topics: { topic: string; targets?: string }[] = [];
     try {
       topics =
-        JSON.parse(payload?.choices?.[0]?.message?.content ?? "{}").topics ?? [];
+        JSON.parse(payload?.choices?.[0]?.message?.content ?? "{}").topics ??
+        [];
     } catch {
       throw new Error("The planner returned something we couldn't read.");
     }
@@ -832,7 +871,19 @@ function subjectFor(category: string | undefined, orgName: string): string {
     return "an Indian person with freshly styled hair, calm and happy, in a bright modern salon";
   if (has("cafe", "coffee", "restaurant", "food", "bakery", "sweet", "dhaba"))
     return "freshly made food and drink arranged on a clean table, warm light, a welcoming cafe interior behind";
-  if (has("tile", "marble", "granite", "stone", "sanitary", "hardware", "building", "cement", "paint"))
+  if (
+    has(
+      "tile",
+      "marble",
+      "granite",
+      "stone",
+      "sanitary",
+      "hardware",
+      "building",
+      "cement",
+      "paint",
+    )
+  )
     return "a bright showroom interior with tiles and stone samples displayed neatly in rows, a customer considering a sample";
   if (has("gym", "fitness", "yoga"))
     return "an Indian person mid-workout in a clean, well-lit gym";
@@ -914,7 +965,9 @@ export const generatePostImage = internalAction({
       });
 
       if (!res.ok) {
-        console.error(`[image] ${res.status} ${(await res.text()).slice(0, 200)}`);
+        console.error(
+          `[image] ${res.status} ${(await res.text()).slice(0, 200)}`,
+        );
         return null;
       }
 

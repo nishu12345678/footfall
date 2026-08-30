@@ -75,8 +75,8 @@ export function Relevance() {
           </ul>
         ) : (
           <p className="mt-2 text-[13px] leading-snug text-muted">
-            No extra categories. Google lets you add up to nine, and each one
-            is a search you become eligible for.
+            No extra categories. Google lets you add up to nine, and each one is
+            a search you become eligible for.
           </p>
         )}
       </div>
@@ -97,9 +97,9 @@ export function Relevance() {
             ))}
           </ul>
           <p className="mt-3 text-[12px] leading-relaxed text-ink-soft">
-            Add the ones you actually do, in Google Business Profile &rarr;
-            Edit profile &rarr; Category. Never claim work you don&rsquo;t do:
-            Google suspends listings for it.
+            Add the ones you actually do, in Google Business Profile &rarr; Edit
+            profile &rarr; Category. Never claim work you don&rsquo;t do: Google
+            suspends listings for it.
           </p>
         </div>
       ) : competitorsChecked > 0 ? (

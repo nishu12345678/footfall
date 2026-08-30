@@ -161,7 +161,9 @@ async function freshAccessToken(
   ctx: { runQuery: any; runMutation: any },
   userId: Id<"users">,
 ): Promise<string> {
-  const account = await ctx.runQuery(internal.google.accountForUser, { userId });
+  const account = await ctx.runQuery(internal.google.accountForUser, {
+    userId,
+  });
   if (!account) throw new Error("Google account is not connected.");
 
   // 60s of headroom so a call can't expire mid-flight.
@@ -237,7 +239,11 @@ export const listLocations = action({
           name: loc.name,
           title: loc.title ?? "Untitled listing",
           address: addr
-            ? [...(addr.addressLines ?? []), addr.locality, addr.administrativeArea]
+            ? [
+                ...(addr.addressLines ?? []),
+                addr.locality,
+                addr.administrativeArea,
+              ]
                 .filter(Boolean)
                 .join(", ")
             : undefined,
@@ -433,7 +439,11 @@ export const completeLink = internalAction({
       token: state,
     });
     if (!link) {
-      return { ok: false, returnTo: null, error: "That link expired. Try again." };
+      return {
+        ok: false,
+        returnTo: null,
+        error: "That link expired. Try again.",
+      };
     }
 
     const res = await fetch(TOKEN_URL, {
@@ -455,7 +465,8 @@ export const completeLink = internalAction({
       return {
         ok: false,
         returnTo: link.returnTo,
-        error: payload.error_description ?? payload.error ?? "Token exchange failed",
+        error:
+          payload.error_description ?? payload.error ?? "Token exchange failed",
       };
     }
 
@@ -501,7 +512,11 @@ export const refreshLocation = action({
         name: loc.name,
         title: loc.title ?? business.orgName,
         address: addr
-          ? [...(addr.addressLines ?? []), addr.locality, addr.administrativeArea]
+          ? [
+              ...(addr.addressLines ?? []),
+              addr.locality,
+              addr.administrativeArea,
+            ]
               .filter(Boolean)
               .join(", ")
           : undefined,
@@ -912,15 +927,14 @@ export const pushServicesForUser = internalAction({
 
 export const pushServices = action({
   args: {},
-  handler: async (
-    ctx,
-  ): Promise<{ pushed: number; error?: string }> => {
+  handler: async (ctx): Promise<{ pushed: number; error?: string }> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Sign in first.");
 
     const c = await ctx.runQuery(internal.google.serviceContext, { userId });
     if (!c) throw new Error("Connect your Google profile first.");
-    if (!c.business.gbpLocationName) throw new Error("No Google listing linked.");
+    if (!c.business.gbpLocationName)
+      throw new Error("No Google listing linked.");
     if (c.offerings.length === 0) {
       throw new Error("Add what you sell in setup first.");
     }

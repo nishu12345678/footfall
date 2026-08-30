@@ -72,7 +72,8 @@ export const bySlug = query({
     const rating =
       rated.length > 0
         ? Math.round(
-            (rated.reduce((total, r) => total + r.rating, 0) / rated.length) * 10,
+            (rated.reduce((total, r) => total + r.rating, 0) / rated.length) *
+              10,
           ) / 10
         : null;
 
@@ -249,7 +250,17 @@ export const generateSite = action({
       c.offerings.length ? `Sells: ${c.offerings.join(", ")}` : "",
       c.specialties.length ? `Known for: ${c.specialties.join(", ")}` : "",
       c.keywords.length
-        ? `Phrases people search: ${c.keywords.slice(0, 10).join(", ")}`
+        ? `Subjects people search for — cover these in plain words, and never` +
+          ` write "near me" or "nearby" on the page: ${c.keywords
+            .slice(0, 10)
+            .map((k: string) =>
+              k
+                .replace(/\b(near me|nearby|near by|around me)\b/gi, "")
+                .replace(/\s{2,}/g, " ")
+                .trim(),
+            )
+            .filter(Boolean)
+            .join(", ")}`
         : "",
       c.hasHours
         ? "Opening hours are on file and shown on the page separately."
@@ -445,7 +456,8 @@ export const reviewExistingSite = action({
       {
         id: "schema",
         label: "Search engines can read your business details",
-        passed: haystack.includes("localbusiness") || haystack.includes("schema.org"),
+        passed:
+          haystack.includes("localbusiness") || haystack.includes("schema.org"),
         detail:
           "LocalBusiness structured data tells Google your hours, address and phone directly instead of making it guess.",
       },
@@ -462,7 +474,8 @@ export const reviewExistingSite = action({
           haystack.includes("maps.google") ||
           haystack.includes("goo.gl/maps") ||
           haystack.includes("google.com/maps"),
-        detail: "People decide to visit when they can see how far away you are.",
+        detail:
+          "People decide to visit when they can see how far away you are.",
       },
       {
         id: "whatsapp",
@@ -486,8 +499,10 @@ export const reviewExistingSite = action({
         label: "Your locality appears in the copy",
         passed: Boolean(
           business.city &&
-            (markdown.toLowerCase().match(new RegExp(business.city.toLowerCase(), "g"))
-              ?.length ?? 0) >= 2,
+          (markdown
+            .toLowerCase()
+            .match(new RegExp(business.city.toLowerCase(), "g"))?.length ??
+            0) >= 2,
         ),
         detail:
           "People search a trade plus a place. If the place isn't on the page, you can't match the search.",
@@ -499,7 +514,9 @@ export const reviewExistingSite = action({
       return {
         url: business.website,
         checks,
-        advice: ["Your site covers the basics. Keep the listing itself active."],
+        advice: [
+          "Your site covers the basics. Keep the listing itself active.",
+        ],
       };
     }
 
@@ -545,7 +562,8 @@ export const reviewExistingSite = action({
       const payload = await ai.json();
       try {
         advice =
-          JSON.parse(payload?.choices?.[0]?.message?.content ?? "{}").items ?? [];
+          JSON.parse(payload?.choices?.[0]?.message?.content ?? "{}").items ??
+          [];
       } catch {
         advice = [];
       }

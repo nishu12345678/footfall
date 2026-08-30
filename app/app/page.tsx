@@ -12,6 +12,7 @@ export default function HomePage() {
   const refresh = useAction(api.google.refreshLocation);
 
   const [phone, setPhone] = useState("");
+  const [service, setService] = useState("");
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +20,11 @@ export default function HomePage() {
   if (data === undefined) return <Loading />;
   if (data === null) return <NeedsConnect />;
 
-  const { business, reviews, posts, photos, customers, actions, metrics } = data;
+  const { business, reviews, posts, photos, customers, actions, metrics } =
+    data;
+
+  // Default to the service nobody has written about yet.
+  const ask = service || data.reviewAsk.suggested || "";
   const digits = phone.replace(/\D/g, "");
 
   async function sendReviewLink() {
@@ -27,10 +32,14 @@ export default function HomePage() {
     setError(null);
     setNote(null);
     try {
-      await addCustomer({ phone: digits });
+      await addCustomer({ phone: digits, service: ask || undefined });
 
       if (business.reviewUri) {
-        const text = `Thanks for visiting ${business.orgName}! If we did a good job, would you leave us a quick Google review? It takes 30 seconds: ${business.reviewUri}`;
+        // Naming the service does the work here: Google reads what the
+        // review says, not just how many stars it carries.
+        const text = ask
+          ? `Thanks for visiting ${business.orgName}! If we did a good job, could you leave a quick Google review and mention the ${ask.toLowerCase()}? It helps other people nearby find us. Takes 30 seconds: ${business.reviewUri}`
+          : `Thanks for visiting ${business.orgName}! If we did a good job, would you leave us a quick Google review? It takes 30 seconds: ${business.reviewUri}`;
         window.open(
           `https://wa.me/91${digits.slice(-10)}?text=${encodeURIComponent(text)}`,
           "_blank",
@@ -42,6 +51,7 @@ export default function HomePage() {
         );
       }
       setPhone("");
+      setService("");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -102,7 +112,9 @@ export default function HomePage() {
             : "border-pin bg-pin-soft"
         }`}
       >
-        <p className="font-mono text-[11px] text-ink-soft">This week&rsquo;s reviews</p>
+        <p className="font-mono text-[11px] text-ink-soft">
+          This week&rsquo;s reviews
+        </p>
         <div className="mt-1 flex items-baseline justify-between gap-3">
           <p className="font-display text-[17px] font-bold leading-tight">
             {reviews.thisWeek > 0
@@ -133,18 +145,20 @@ export default function HomePage() {
         </p>
 
         <div className="mt-4 flex items-center justify-between gap-1 border-t border-rule-soft pt-3 text-center">
-          {["More customers", "More reviews", "Better ranking"].map((step, i) => (
-            <div key={step} className="flex flex-1 items-center gap-1">
-              <span className="flex-1 font-mono text-[9px] uppercase tracking-wide text-muted">
-                {step}
-              </span>
-              {i < 2 ? (
-                <span aria-hidden className="text-open">
-                  →
+          {["More customers", "More reviews", "Better ranking"].map(
+            (step, i) => (
+              <div key={step} className="flex flex-1 items-center gap-1">
+                <span className="flex-1 font-mono text-[9px] uppercase tracking-wide text-muted">
+                  {step}
                 </span>
-              ) : null}
-            </div>
-          ))}
+                {i < 2 ? (
+                  <span aria-hidden className="text-open">
+                    →
+                  </span>
+                ) : null}
+              </div>
+            ),
+          )}
         </div>
       </section>
 
@@ -175,6 +189,35 @@ export default function HomePage() {
             ▦
           </a>
         </form>
+
+        {data.reviewAsk.services.length > 0 ? (
+          <div className="mt-3">
+            <label
+              htmlFor="review-service"
+              className="font-mono text-[10px] uppercase tracking-wider text-muted"
+            >
+              Ask them to mention
+            </label>
+            <select
+              id="review-service"
+              value={ask}
+              onChange={(e) => setService(e.target.value)}
+              className="mt-1.5 w-full rounded-[12px] border border-ink bg-paper-2 px-3.5 py-3 text-[15px] outline-none"
+            >
+              <option value="">Nothing in particular</option>
+              {data.reviewAsk.services.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-[12px] leading-relaxed text-muted">
+              {data.reviewAsk.mentioned === 0
+                ? "None of your reviews name a service yet. Google reads what a review says, so a review that names the work is worth more than one that says “good service”."
+                : `${data.reviewAsk.mentioned} of the things you do are named in your reviews. We suggest the one nobody has written about.`}
+            </p>
+          </div>
+        ) : null}
 
         <button
           type="button"
@@ -335,7 +378,9 @@ export default function HomePage() {
 
       {/* ----------------------------- actions --------------------------- */}
       <section className="mt-2">
-        <h2 className="font-display text-[15px] font-bold">What we&rsquo;ve done</h2>
+        <h2 className="font-display text-[15px] font-bold">
+          What we&rsquo;ve done
+        </h2>
 
         {actions.length === 0 ? (
           <p className="mt-3 rounded-[14px] border border-dashed border-rule px-4 py-6 text-center text-[13px] leading-relaxed text-muted">
@@ -375,7 +420,8 @@ export default function HomePage() {
 
       {customers.total > 0 ? (
         <p className="mt-6 text-center font-mono text-[11px] text-muted">
-          {customers.total} customers saved · {customers.linksSent} review links sent
+          {customers.total} customers saved · {customers.linksSent} review links
+          sent
         </p>
       ) : null}
     </AppScreen>

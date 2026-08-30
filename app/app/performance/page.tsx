@@ -78,7 +78,9 @@ export default function PerformancePage() {
   // automatic here — each one spends a SerpApi search per keyword.
   const STALE_AFTER_MS = 30 * 60 * 1000;
   const syncedAt = data?.business.metricsSyncedAt;
-  const stale = data ? !syncedAt || Date.now() - syncedAt > STALE_AFTER_MS : false;
+  const stale = data
+    ? !syncedAt || Date.now() - syncedAt > STALE_AFTER_MS
+    : false;
 
   useEffect(() => {
     if (!data || autoRan.current || !stale) return;
@@ -145,10 +147,27 @@ export default function PerformancePage() {
   if (data === null) return <NeedsConnect />;
 
   const { business, metrics, keywords, competitors, grid } = data;
-  const shownGrid = gridFor
-    ? grid.filter((g) => g.keyword === gridFor)
-    : [];
+  const shownGrid = gridFor ? grid.filter((g) => g.keyword === gridFor) : [];
   const rankedCount = keywords.filter((k) => k.rank !== undefined).length;
+
+  // A proximity search and a city search are different questions. "Dentist
+  // near me" has a different answer on every street; "dentist in Agra" has
+  // roughly one answer for the whole city. Reporting them in one list makes
+  // a good number and a bad number look the same.
+  const groups = [
+    {
+      key: "near",
+      title: "When someone nearby searches",
+      note: "No city named — Google answers from where the customer is standing. This is most of the searches that walk through your door.",
+      rows: keywords.filter((k) => isNearMe(k.term)),
+    },
+    {
+      key: "city",
+      title: "When someone names the city",
+      note: "One answer for the whole city, so it barely moves with where the customer stands. Fewer people search this way.",
+      rows: keywords.filter((k) => !isNearMe(k.term)),
+    },
+  ].filter((g) => g.rows.length > 0);
 
   // Metrics are stored per day, so switching the range is instant — no
   // second call to Google unless the owner asks for one.
@@ -191,7 +210,9 @@ export default function PerformancePage() {
             onClick={() => setDays(r.days)}
             aria-pressed={days === r.days}
             className={`flex-1 rounded-full px-3 py-1.5 font-display text-[13px] font-semibold transition-colors ${
-              days === r.days ? "bg-ink text-paper-2" : "text-ink-soft hover:text-ink"
+              days === r.days
+                ? "bg-ink text-paper-2"
+                : "text-ink-soft hover:text-ink"
             }`}
           >
             {r.label}
@@ -203,7 +224,9 @@ export default function PerformancePage() {
         {rangeLabel ? <span>{rangeLabel}</span> : <span>no data in range</span>}
         <span aria-hidden>·</span>
         <span>
-          {autoSyncing ? "syncing now…" : `synced ${ago(business.metricsSyncedAt)}`}
+          {autoSyncing
+            ? "syncing now…"
+            : `synced ${ago(business.metricsSyncedAt)}`}
         </span>
       </p>
 
@@ -318,115 +341,124 @@ export default function PerformancePage() {
             No keywords yet. Add them in setup and we&rsquo;ll track your
             position weekly.
           </p>
-        ) : (
-          <ul className="mt-3 divide-y divide-rule-soft border-y border-rule">
-            {[...keywords]
-              .sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999))
-              .map((kw) => {
-                const moved =
-                  kw.rank !== undefined && kw.previousRank !== undefined
-                    ? kw.previousRank - kw.rank
-                    : null;
-                const checked = kw.checkedAt !== undefined;
-                return (
-                  <li key={kw._id} className="py-3">
-                    <div className="flex items-center gap-3">
-                      <span className="min-w-0 flex-1 truncate text-[14px]">
-                        {kw.term}
-                      </span>
-                      {moved !== null && moved !== 0 ? (
+        ) : null}
+
+        {groups.map((group) => (
+          <div key={group.key} className="mt-5">
+            <h3 className="font-display text-[13px] font-bold">
+              {group.title}
+            </h3>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted">
+              {group.note}
+            </p>
+            <ul className="mt-2 divide-y divide-rule-soft border-y border-rule">
+              {[...group.rows]
+                .sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999))
+                .map((kw) => {
+                  const moved =
+                    kw.rank !== undefined && kw.previousRank !== undefined
+                      ? kw.previousRank - kw.rank
+                      : null;
+                  const checked = kw.checkedAt !== undefined;
+                  return (
+                    <li key={kw._id} className="py-3">
+                      <div className="flex items-center gap-3">
+                        <span className="min-w-0 flex-1 truncate text-[14px]">
+                          {kw.term}
+                        </span>
+                        {moved !== null && moved !== 0 ? (
+                          <span
+                            className={`flex-none rounded-full px-1.5 py-0.5 font-mono text-[10px] ${
+                              moved > 0
+                                ? "bg-open-soft text-open"
+                                : "bg-pin-soft text-pin"
+                            }`}
+                          >
+                            {moved > 0 ? "▲" : "▼"} {Math.abs(moved)}
+                          </span>
+                        ) : null}
                         <span
-                          className={`flex-none rounded-full px-1.5 py-0.5 font-mono text-[10px] ${
-                            moved > 0
-                              ? "bg-open-soft text-open"
-                              : "bg-pin-soft text-pin"
+                          className={`flex-none rounded-full border px-2 py-0.5 font-display text-[13px] font-bold ${
+                            kw.rank === undefined
+                              ? "border-rule text-muted"
+                              : kw.rank <= 3
+                                ? "border-open bg-open-soft text-open"
+                                : kw.rank <= 10
+                                  ? "border-star bg-star/20"
+                                  : "border-pin bg-pin-soft text-pin"
                           }`}
                         >
-                          {moved > 0 ? "▲" : "▼"} {Math.abs(moved)}
+                          {checked ? (kw.rank ?? "nowhere") : "—"}
                         </span>
-                      ) : null}
-                      <span
-                        className={`flex-none rounded-full border px-2 py-0.5 font-display text-[13px] font-bold ${
-                          kw.rank === undefined
-                            ? "border-rule text-muted"
-                            : kw.rank <= 3
-                              ? "border-open bg-open-soft text-open"
-                              : kw.rank <= 10
-                                ? "border-star bg-star/20"
-                                : "border-pin bg-pin-soft text-pin"
-                        }`}
-                      >
-                        {checked ? (kw.rank ?? "nowhere") : "—"}
-                      </span>
-                    </div>
+                      </div>
 
-                    {checked && (kw.coverageTotal ?? 0) > 1 ? (
-                      <div className="mt-1.5">
-                        <div className="flex items-center gap-2">
-                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-paper-3">
-                            <div
-                              className={`h-full rounded-full ${
-                                (kw.coverageFound ?? 0) === 0
-                                  ? "bg-pin/30"
-                                  : "bg-open"
-                              }`}
-                              style={{
-                                width: `${Math.round(((kw.coverageFound ?? 0) / (kw.coverageTotal ?? 1)) * 100)}%`,
-                              }}
-                            />
+                      {checked && (kw.coverageTotal ?? 0) > 1 ? (
+                        <div className="mt-1.5">
+                          <div className="flex items-center gap-2">
+                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-paper-3">
+                              <div
+                                className={`h-full rounded-full ${
+                                  (kw.coverageFound ?? 0) === 0
+                                    ? "bg-pin/30"
+                                    : "bg-open"
+                                }`}
+                                style={{
+                                  width: `${Math.round(((kw.coverageFound ?? 0) / (kw.coverageTotal ?? 1)) * 100)}%`,
+                                }}
+                              />
+                            </div>
+                            <span className="flex-none font-mono text-[10px] text-muted">
+                              seen at {kw.coverageFound ?? 0}/{kw.coverageTotal}{" "}
+                              spots
+                              {kw.avgRank ? ` · avg ${kw.avgRank}` : ""}
+                            </span>
                           </div>
-                          <span className="flex-none font-mono text-[10px] text-muted">
-                            seen at {kw.coverageFound ?? 0}/{kw.coverageTotal} spots
-                            {kw.avgRank ? ` · avg ${kw.avgRank}` : ""}
-                          </span>
                         </div>
-                      </div>
-                    ) : null}
+                      ) : null}
 
-                    {checked && isNearMe(kw.term) ? (
-                      <button
-                        type="button"
-                        onClick={() => void drawGrid(kw.term)}
-                        disabled={gridding !== null}
-                        className="mt-1.5 font-mono text-[10px] text-muted underline underline-offset-4 hover:text-pin disabled:opacity-50"
-                      >
-                        {gridding === kw.term
-                          ? "checking around you…"
-                          : gridFor === kw.term
-                            ? "hide the map"
-                            : "where do I rank around here?"}
-                      </button>
-                    ) : checked ? (
-                      <p className="mt-1.5 font-mono text-[10px] leading-snug text-muted">
-                        Names the city, so the result barely changes with where
-                        the searcher stands. Add the &ldquo;near me&rdquo; version
-                        to see it on a map.
-                      </p>
-                    ) : null}
+                      {checked && isNearMe(kw.term) ? (
+                        <button
+                          type="button"
+                          onClick={() => void drawGrid(kw.term)}
+                          disabled={gridding !== null}
+                          className="mt-1.5 font-mono text-[10px] text-muted underline underline-offset-4 hover:text-pin disabled:opacity-50"
+                        >
+                          {gridding === kw.term
+                            ? "checking around you…"
+                            : gridFor === kw.term
+                              ? "hide the map"
+                              : "where do I rank around here?"}
+                        </button>
+                      ) : null}
 
-                    {gridFor === kw.term && shownGrid.length > 0 && business.lat && business.lng ? (
-                      <div className="mt-3">
-                        <p className="mb-1.5 font-mono text-[10px] text-muted">
-                          Showing &ldquo;{kw.term}&rdquo; from several points
-                          around you
-                        </p>
-                        <RankMap
-                          lat={business.lat}
-                          lng={business.lng}
-                          keyword={kw.term}
-                          points={shownGrid.map((g) => ({
-                            lat: g.lat,
-                            lng: g.lng,
-                            rank: g.rank,
-                          }))}
-                        />
-                      </div>
-                    ) : null}
-                  </li>
-                );
-              })}
-          </ul>
-        )}
+                      {gridFor === kw.term &&
+                      shownGrid.length > 0 &&
+                      business.lat &&
+                      business.lng ? (
+                        <div className="mt-3">
+                          <p className="mb-1.5 font-mono text-[10px] text-muted">
+                            Showing &ldquo;{kw.term}&rdquo; from several points
+                            around you
+                          </p>
+                          <RankMap
+                            lat={business.lat}
+                            lng={business.lng}
+                            keyword={kw.term}
+                            points={shownGrid.map((g) => ({
+                              lat: g.lat,
+                              lng: g.lng,
+                              rank: g.rank,
+                            }))}
+                          />
+                        </div>
+                      ) : null}
+                    </li>
+                  );
+                })}
+            </ul>
+          </div>
+        ))}
+
         {keywords.length > 0 ? (
           <p className="mt-3 rounded-[12px] border border-rule bg-paper-2 px-3.5 py-2.5 text-[13px] leading-relaxed text-ink-soft">
             {business.ranksCheckedAt === undefined

@@ -22,42 +22,85 @@ export const home = query({
 
     const id = business._id;
 
-    const [posts, photos, reviews, customers, actions, keywords, metrics] =
-      await Promise.all([
-        ctx.db
-          .query("posts")
-          .withIndex("by_business", (q) => q.eq("businessId", id))
-          .collect(),
-        ctx.db
-          .query("photos")
-          .withIndex("by_business", (q) => q.eq("businessId", id))
-          .collect(),
-        ctx.db
-          .query("reviews")
-          .withIndex("by_business", (q) => q.eq("businessId", id))
-          .collect(),
-        ctx.db
-          .query("customers")
-          .withIndex("by_business", (q) => q.eq("businessId", id))
-          .collect(),
-        ctx.db
-          .query("agentActions")
-          .withIndex("by_business", (q) => q.eq("businessId", id))
-          .order("desc")
-          .take(8),
-        ctx.db
-          .query("keywords")
-          .withIndex("by_business", (q) => q.eq("businessId", id))
-          .collect(),
-        ctx.db
-          .query("metrics")
-          .withIndex("by_business", (q) => q.eq("businessId", id))
-          .collect(),
-      ]);
+    const [
+      posts,
+      photos,
+      reviews,
+      customers,
+      actions,
+      keywords,
+      metrics,
+      offerings,
+    ] = await Promise.all([
+      ctx.db
+        .query("posts")
+        .withIndex("by_business", (q) => q.eq("businessId", id))
+        .collect(),
+      ctx.db
+        .query("photos")
+        .withIndex("by_business", (q) => q.eq("businessId", id))
+        .collect(),
+      ctx.db
+        .query("reviews")
+        .withIndex("by_business", (q) => q.eq("businessId", id))
+        .collect(),
+      ctx.db
+        .query("customers")
+        .withIndex("by_business", (q) => q.eq("businessId", id))
+        .collect(),
+      ctx.db
+        .query("agentActions")
+        .withIndex("by_business", (q) => q.eq("businessId", id))
+        .order("desc")
+        .take(8),
+      ctx.db
+        .query("keywords")
+        .withIndex("by_business", (q) => q.eq("businessId", id))
+        .collect(),
+      ctx.db
+        .query("metrics")
+        .withIndex("by_business", (q) => q.eq("businessId", id))
+        .collect(),
+      ctx.db
+        .query("offerings")
+        .withIndex("by_business", (q) => q.eq("businessId", id))
+        .collect(),
+    ]);
+
+    /*
+     * Which service to ask the next customer to mention.
+     *
+     * A review that says "root canal" is worth more than one that says
+     * "good service": Google reads review text, and a service named in a
+     * review is a service the shop is visibly known for. So we count how
+     * often each thing the shop sells already appears in its reviews, and
+     * point the owner at the one nobody has written about.
+     */
+    const services = offerings.filter((o) => o.selected).map((o) => o.label);
+    const reviewText = reviews
+      .map((r) => (r.comment ?? "").toLowerCase())
+      .join(" ");
+
+    const mentions = services.map((label) => {
+      const words = label
+        .toLowerCase()
+        .split(/[^a-z]+/)
+        .filter((w) => w.length > 3);
+      const count = words.length
+        ? reviews.filter((r) => {
+            const text = (r.comment ?? "").toLowerCase();
+            return words.every((w) => text.includes(w));
+          }).length
+        : 0;
+      return { label, count };
+    });
+
+    const leastMentioned = [...mentions].sort((a, b) => a.count - b.count)[0];
 
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const newestReview = reviews.reduce<number | null>(
-      (latest, r) => (latest === null || r.createdAt > latest ? r.createdAt : latest),
+      (latest, r) =>
+        latest === null || r.createdAt > latest ? r.createdAt : latest,
       null,
     );
 
@@ -77,7 +120,8 @@ export const home = query({
         daysSinceLastReview: newestReview
           ? Math.floor((Date.now() - newestReview) / 86_400_000)
           : null,
-        awaitingReply: reviews.filter((r) => r.replyStatus !== "published").length,
+        awaitingReply: reviews.filter((r) => r.replyStatus !== "published")
+          .length,
         repliedPercent: reviews.length
           ? Math.round((replied / reviews.length) * 100)
           : null,
@@ -94,6 +138,12 @@ export const home = query({
       customers: {
         total: customers.length,
         linksSent: customers.filter((c) => c.reviewLinkSentAt).length,
+      },
+      reviewAsk: {
+        services,
+        suggested: leastMentioned?.label ?? null,
+        mentioned: mentions.filter((m) => m.count > 0).length,
+        reviewsRead: reviewText.length > 0 ? reviews.length : 0,
       },
       keywordCount: keywords.length,
       metrics: last30.length
@@ -114,8 +164,12 @@ export const home = query({
  * Their number is the start of the customer list the shop never had.
  */
 export const addCustomer = mutation({
-  args: { phone: v.string(), name: v.optional(v.string()) },
-  handler: async (ctx, { phone, name }) => {
+  args: {
+    phone: v.string(),
+    name: v.optional(v.string()),
+    service: v.optional(v.string()),
+  },
+  handler: async (ctx, { phone, name, service }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Sign in first.");
 
@@ -153,7 +207,9 @@ export const addCustomer = mutation({
       businessId: business._id,
       type: "review_reply",
       title: "Review link sent",
-      detail: `To ${normalised.slice(-10)}`,
+      detail: service
+        ? `To ${normalised.slice(-10)}, asking about ${service}`
+        : `To ${normalised.slice(-10)}`,
       createdAt: Date.now(),
     });
 

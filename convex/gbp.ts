@@ -576,7 +576,9 @@ export const nearbyAreas = action({
   handler: async (
     ctx,
     { radiusKm = 20 },
-  ): Promise<{ name: string; km: number; kind: string }[]> => {
+  ): Promise<
+    { name: string; km: number; kind: string; lat: number; lng: number }[]
+  > => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Sign in first.");
 
@@ -656,6 +658,8 @@ export const nearbyAreas = action({
         name: String(e.tags.name),
         kind: String(e.tags.place),
         km: Math.round(distance(e.lat, e.lon) * 10) / 10,
+        lat: e.lat as number,
+        lng: e.lon as number,
       }))
       .filter((e: { name: string }) => {
         const key = e.name.toLowerCase();

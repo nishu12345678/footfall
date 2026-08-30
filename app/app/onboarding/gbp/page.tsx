@@ -5,6 +5,17 @@ import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { Steps } from "@/components/steps";
 import { Working } from "@/components/working";
+import dynamic from "next/dynamic";
+
+const AreaMap = dynamic(
+  () => import("@/components/area-map").then((m) => m.AreaMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[248px] w-full animate-pulse rounded-[14px] border border-ink bg-paper-3" />
+    ),
+  },
+);
 
 type Tab = "areas" | "keywords" | "hours" | "attributes";
 
@@ -68,7 +79,7 @@ export default function GbpPage() {
   const [hours, setLocalHours] = useState<HourRow[]>(DEFAULT_HOURS);
   const [hoursLoaded, setHoursLoaded] = useState(false);
   const [areaIdeas, setAreaIdeas] = useState<
-    { name: string; km: number; kind: string }[]
+    { name: string; km: number; kind: string; lat: number; lng: number }[]
   >([]);
   const [radiusKm, setRadiusKm] = useState(20);
   const [autoRan, setAutoRan] = useState<Record<string, boolean>>({});
@@ -234,6 +245,26 @@ export default function GbpPage() {
               The localities around you. We write these into your posts and
               pages so people nearby find you first.
             </p>
+
+            {data.business.lat && data.business.lng ? (
+              <div className="mt-5">
+                <AreaMap
+                  lat={data.business.lat}
+                  lng={data.business.lng}
+                  radiusKm={radiusKm}
+                  label={data.business.orgName}
+                  pins={areaIdeas.map((a) => ({
+                    name: a.name,
+                    km: a.km,
+                    lat: a.lat,
+                    lng: a.lng,
+                    added: data.serviceAreas.some(
+                      (s) => s.name.toLowerCase() === a.name.toLowerCase(),
+                    ),
+                  }))}
+                />
+              </div>
+            ) : null}
 
             <form
               className="mt-6 flex gap-2"

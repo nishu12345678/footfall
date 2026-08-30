@@ -265,6 +265,7 @@ export const saveCompetitors = internalMutation({
         rating: v.optional(v.number()),
         reviewCount: v.optional(v.number()),
         averageRank: v.optional(v.number()),
+        category: v.optional(v.string()),
       }),
     ),
   },
@@ -357,7 +358,13 @@ export const checkRanksForUser = internalAction({
 
     const rivals = new Map<
       string,
-      { name: string; rating?: number; reviewCount?: number; positions: number[] }
+      {
+      name: string;
+      rating?: number;
+      reviewCount?: number;
+      category?: string;
+      positions: number[];
+    }
     >();
 
     const collectRivals = (results: any[], selfName: string) => {
@@ -372,6 +379,7 @@ export const checkRanksForUser = internalAction({
             name: title,
             rating: r.rating,
             reviewCount: r.reviews,
+            category: r.type ?? undefined,
             positions: [] as number[],
           };
         if (typeof r.position === "number") entry.positions.push(r.position);
@@ -418,6 +426,7 @@ export const checkRanksForUser = internalAction({
         name: r.name,
         rating: r.rating,
         reviewCount: r.reviewCount,
+        category: r.category,
         averageRank:
           r.positions.length > 0
             ? Math.round(

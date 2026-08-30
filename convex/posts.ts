@@ -985,6 +985,17 @@ export const topUpPlans = internalAction({
           count: 6 - pending.length,
         });
         planned += result.planned;
+
+        // Keep the listing's services in step with what the owner sells.
+        // Google names services as a relevance signal, and this is the one
+        // place we already hold the answer.
+        try {
+          await ctx.runAction(internal.google.pushServicesForUser, {
+            userId: b.userId,
+          });
+        } catch (error) {
+          console.log(`[agent] service push failed for ${b.name}`, error);
+        }
       } catch (error) {
         console.error(`[agent] planning failed for ${b.name}`, error);
       }

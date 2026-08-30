@@ -3,6 +3,7 @@
 import { useAction, useQuery } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
+import { Relevance } from "@/components/relevance";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
 import { Working } from "@/components/working";
 import dynamic from "next/dynamic";
@@ -437,6 +438,8 @@ export default function PerformancePage() {
         ) : null}
       </section>
 
+      <Relevance />
+
       {/* competitors */}
       <section className="mt-7">
         <h2 className="font-display text-[15px] font-bold">
@@ -455,6 +458,7 @@ export default function PerformancePage() {
                   <span className="block truncate text-[14px]">{c.name}</span>
                   <span className="font-mono text-[11px] text-muted">
                     ★ {c.rating ?? "—"} · {c.reviewCount ?? 0} reviews
+                    {c.category ? ` · ${c.category}` : ""}
                   </span>
                 </span>
                 <span className="flex-none font-display text-[15px] font-bold">

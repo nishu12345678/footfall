@@ -37,6 +37,13 @@ export default defineSchema({
     gbpAccountName: v.optional(v.string()), // "accounts/123"
     gbpLocationName: v.optional(v.string()), // "locations/456"
     primaryCategory: v.optional(v.string()),
+    /** Google's own id for the category, e.g. "gcid:dental_clinic". The
+        services we push have to hang off one of these. */
+    primaryCategoryId: v.optional(v.string()),
+    additionalCategories: v.optional(
+      v.array(v.object({ id: v.string(), name: v.string() })),
+    ),
+    servicesPushedAt: v.optional(v.number()),
     // Google's own "write a review" short link, from location metadata.
     reviewUri: v.optional(v.string()),
     mapsUri: v.optional(v.string()),
@@ -238,6 +245,8 @@ export default defineSchema({
     rating: v.optional(v.number()),
     reviewCount: v.optional(v.number()),
     averageRank: v.optional(v.number()),
+    /** The Google category they list under — the top relevance signal. */
+    category: v.optional(v.string()),
     checkedAt: v.number(),
   }).index("by_business", ["businessId"]),
 

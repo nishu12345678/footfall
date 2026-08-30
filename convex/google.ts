@@ -6,9 +6,10 @@ import {
   internalQuery,
   mutation,
 } from "./_generated/server";
+import type { ActionCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 
 /**
  * Google Business Profile connection.
@@ -45,6 +46,8 @@ export type GoogleLocation = {
   phone?: string;
   website?: string;
   category?: string;
+  categoryId?: string;
+  extraCategories?: { id: string; name: string }[];
   lat?: number;
   lng?: number;
   reviewUri?: string;
@@ -244,6 +247,10 @@ export const listLocations = action({
           phone: loc.phoneNumbers?.primaryPhone,
           website: loc.websiteUri,
           category: loc.categories?.primaryCategory?.displayName,
+          categoryId: loc.categories?.primaryCategory?.name,
+          extraCategories: (loc.categories?.additionalCategories ?? []).map(
+            (c: any) => ({ id: String(c.name), name: String(c.displayName) }),
+          ),
           lat: loc.latlng?.latitude,
           lng: loc.latlng?.longitude,
           reviewUri: loc.metadata?.newReviewUri,
@@ -272,6 +279,10 @@ export const createBusinessFromLocation = internalMutation({
       phone: v.optional(v.string()),
       website: v.optional(v.string()),
       category: v.optional(v.string()),
+      categoryId: v.optional(v.string()),
+      extraCategories: v.optional(
+        v.array(v.object({ id: v.string(), name: v.string() })),
+      ),
       lat: v.optional(v.number()),
       lng: v.optional(v.number()),
       reviewUri: v.optional(v.string()),
@@ -302,6 +313,8 @@ export const createBusinessFromLocation = internalMutation({
       gbpAccountName: location.accountName,
       gbpLocationName: location.name,
       primaryCategory: location.category,
+      primaryCategoryId: location.categoryId,
+      additionalCategories: location.extraCategories,
       reviewUri: location.reviewUri,
       mapsUri: location.mapsUri,
       onboardingStep: 2,
@@ -339,6 +352,10 @@ export const linkLocation = action({
       phone: v.optional(v.string()),
       website: v.optional(v.string()),
       category: v.optional(v.string()),
+      categoryId: v.optional(v.string()),
+      extraCategories: v.optional(
+        v.array(v.object({ id: v.string(), name: v.string() })),
+      ),
       lat: v.optional(v.number()),
       lng: v.optional(v.number()),
       reviewUri: v.optional(v.string()),
@@ -494,6 +511,10 @@ export const refreshLocation = action({
         phone: loc.phoneNumbers?.primaryPhone,
         website: loc.websiteUri,
         category: loc.categories?.primaryCategory?.displayName,
+        categoryId: loc.categories?.primaryCategory?.name,
+        extraCategories: (loc.categories?.additionalCategories ?? []).map(
+          (c: any) => ({ id: String(c.name), name: String(c.displayName) }),
+        ),
         lat: loc.latlng?.latitude,
         lng: loc.latlng?.longitude,
         reviewUri: loc.metadata?.newReviewUri,
@@ -613,5 +634,338 @@ export const ensureCoordinates = internalAction({
     }
 
     return null;
+  },
+});
+
+/* --------------------------- services on google --------------------------
+   Google names categories, services, products and the description as what
+   it uses to judge relevance — the first of its three ranking factors. The
+   Business Profile itself is around a third of local pack ranking, and
+   testing reported by Search Engine Land found that filling in the services
+   list lifts both "dentist near me" and "dentist in agra" style rankings.
+
+   We already ask the owner what they sell in step 3 and then never tell
+   Google. This closes that gap.                                          */
+
+const INFO_BASE_SERVICES =
+  "https://mybusinessbusinessinformation.googleapis.com/v1";
+
+export const saveCategories = internalMutation({
+  args: {
+    businessId: v.id("businesses"),
+    primaryCategoryId: v.string(),
+    primaryCategory: v.optional(v.string()),
+    additionalCategories: v.array(
+      v.object({ id: v.string(), name: v.string() }),
+    ),
+  },
+  handler: async (ctx, { businessId, ...rest }) => {
+    await ctx.db.patch(businessId, rest);
+  },
+});
+
+type ServiceType = { serviceTypeId: string; displayName: string };
+
+/**
+ * Reads the location's category along with the services Google itself
+ * defines for that category.
+ *
+ * A dentist category carries 19 of these — "Root canals", "Teeth cleaning".
+ * They matter more than free text: Google understands a structured service
+ * and matches it to searches, whereas free-form is only a label on the
+ * profile. So we claim the structured ones wherever the shop's own wording
+ * lines up, and keep the rest as free text.
+ */
+async function categoryFor(
+  ctx: ActionCtx,
+  business: Doc<"businesses">,
+  token: string,
+): Promise<{ id: string; serviceTypes: ServiceType[] } | null> {
+  const res = await fetch(
+    `${INFO_BASE_SERVICES}/${business.gbpLocationName}?readMask=categories`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  if (!res.ok) {
+    console.error(`[gbp/categories] ${res.status} ${await res.text()}`);
+    return business.primaryCategoryId
+      ? { id: business.primaryCategoryId, serviceTypes: [] }
+      : null;
+  }
+
+  const body = await res.json();
+  const primary = body?.categories?.primaryCategory;
+  if (!primary?.name) return null;
+
+  const extras = (body.categories.additionalCategories ?? [])
+    .filter((c: { name?: string }) => c.name)
+    .map((c: { name: string; displayName?: string }) => ({
+      id: c.name,
+      name: c.displayName ?? c.name,
+    }));
+
+  await ctx.runMutation(internal.google.saveCategories, {
+    businessId: business._id,
+    primaryCategoryId: primary.name,
+    primaryCategory: primary.displayName ?? business.primaryCategory,
+    additionalCategories: extras,
+  });
+
+  const serviceTypes: ServiceType[] = (primary.serviceTypes ?? [])
+    .filter((s: ServiceType) => s.serviceTypeId && s.displayName)
+    .map((s: ServiceType) => ({
+      serviceTypeId: s.serviceTypeId,
+      displayName: s.displayName,
+    }));
+
+  return { id: primary.name, serviceTypes };
+}
+
+/** Which of Google's own service types each offering means, if any. */
+async function matchServiceTypes(
+  offerings: string[],
+  serviceTypes: ServiceType[],
+): Promise<Record<string, string>> {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key || serviceTypes.length === 0) return {};
+
+  const exact = new Map(
+    serviceTypes.map((s) => [s.displayName.toLowerCase(), s.serviceTypeId]),
+  );
+  const out: Record<string, string> = {};
+  const unresolved: string[] = [];
+  for (const label of offerings) {
+    const hit = exact.get(label.toLowerCase());
+    if (hit) out[label] = hit;
+    else unresolved.push(label);
+  }
+  if (unresolved.length === 0) return out;
+
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "user",
+            content: [
+              "Google defines these services for this business category:",
+              serviceTypes
+                .map((s) => `${s.serviceTypeId} = ${s.displayName}`)
+                .join("\n"),
+              "",
+              "A shop lists the following services in its own words:",
+              unresolved.map((o) => `- ${o}`).join("\n"),
+              "",
+              "For each of the shop's services, give the id of the Google",
+              "service that means the same thing. The wording will differ:",
+              "'Root Canal Treatment' is Google's 'Root canals', 'Oral",
+              "Check-ups' is 'Checkups', 'Dental Cleaning' is 'Teeth",
+              "cleaning'. Match on what the customer receives.",
+              "Do not match a genuinely different treatment, and do not use",
+              "the same Google service for two of the shop's services.",
+              "If nothing means the same thing, leave it out entirely.",
+              "",
+              'Reply with JSON: {"matches": {"<shop service>": "<id>"}}',
+            ].join("\n"),
+          },
+        ],
+      }),
+    });
+    if (!res.ok) return out;
+
+    const body = await res.json();
+    const matches = JSON.parse(
+      body.choices?.[0]?.message?.content ?? "{}",
+    ).matches;
+    // The model tends to drop Google's "job_type_id:" prefix, so accept
+    // either form and resolve back to the id Google actually wants.
+    const valid = new Map<string, string>();
+    for (const s of serviceTypes) {
+      valid.set(s.serviceTypeId, s.serviceTypeId);
+      valid.set(s.serviceTypeId.split(":").pop()!, s.serviceTypeId);
+    }
+
+    for (const [label, id] of Object.entries(matches ?? {})) {
+      if (typeof id !== "string" || !unresolved.includes(label)) continue;
+      const resolved = valid.get(id);
+      if (resolved) out[label] = resolved;
+    }
+  } catch (error) {
+    console.log("[gbp/services] match failed", error);
+  }
+  return out;
+}
+
+/** The serviceItems payload Google takes, structured wherever it can be. */
+function buildServiceItems(
+  offerings: string[],
+  categoryId: string,
+  matched: Record<string, string>,
+) {
+  const used = new Set<string>();
+  const items: Record<string, unknown>[] = [];
+
+  for (const label of offerings.slice(0, 30)) {
+    const typeId = matched[label];
+    // Google keeps one entry per structured service. A second offering that
+    // maps to the same one still goes up, as the shop's own wording — a
+    // re-root canal is not a root canal to the person searching for it.
+    if (typeId && !used.has(typeId)) {
+      used.add(typeId);
+      items.push({ structuredServiceItem: { serviceTypeId: typeId } });
+    } else {
+      items.push({
+        freeFormServiceItem: {
+          category: categoryId,
+          label: { displayName: label.slice(0, 120), languageCode: "en" },
+        },
+      });
+    }
+  }
+  return items;
+}
+
+export const markServicesPushed = internalMutation({
+  args: { businessId: v.id("businesses") },
+  handler: async (ctx, { businessId }) => {
+    await ctx.db.patch(businessId, { servicesPushedAt: Date.now() });
+  },
+});
+
+export const serviceContext = internalQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }) => {
+    const business = await ctx.db
+      .query("businesses")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (!business) return null;
+
+    const offerings = await ctx.db
+      .query("offerings")
+      .withIndex("by_business", (q) => q.eq("businessId", business._id))
+      .collect();
+
+    return {
+      business,
+      offerings: offerings.filter((o) => o.selected).map((o) => o.label),
+    };
+  },
+});
+
+/**
+ * Writes the shop's offerings onto its listing as free-form services.
+ *
+ * Google requires each service to hang off one of the location's own
+ * categories, so a listing with no category can't take them.
+ */
+export const pushServicesForUser = internalAction({
+  args: { userId: v.id("users") },
+  handler: async (
+    ctx,
+    { userId },
+  ): Promise<{ pushed: number; error?: string }> => {
+    const c = await ctx.runQuery(internal.google.serviceContext, { userId });
+    if (!c?.business.gbpLocationName) return { pushed: 0, error: "not linked" };
+    if (c.offerings.length === 0) return { pushed: 0, error: "no offerings" };
+
+    const token: string = await ctx.runAction(internal.google.accessTokenFor, {
+      userId,
+    });
+
+    const category = await categoryFor(ctx, c.business, token);
+    if (!category) return { pushed: 0, error: "listing has no category" };
+
+    const matched = await matchServiceTypes(c.offerings, category.serviceTypes);
+    const serviceItems = buildServiceItems(c.offerings, category.id, matched);
+
+    const res = await fetch(
+      `${INFO_BASE_SERVICES}/${c.business.gbpLocationName}?updateMask=serviceItems`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ serviceItems }),
+      },
+    );
+
+    const text = await res.text();
+    if (!res.ok) {
+      console.error(`[gbp/services] ${res.status} ${text.slice(0, 400)}`);
+      return { pushed: 0, error: `${res.status}: ${text.slice(0, 200)}` };
+    }
+
+    await ctx.runMutation(internal.google.markServicesPushed, {
+      businessId: c.business._id,
+    });
+    return { pushed: serviceItems.length };
+  },
+});
+
+export const pushServices = action({
+  args: {},
+  handler: async (
+    ctx,
+  ): Promise<{ pushed: number; error?: string }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+
+    const c = await ctx.runQuery(internal.google.serviceContext, { userId });
+    if (!c) throw new Error("Connect your Google profile first.");
+    if (!c.business.gbpLocationName) throw new Error("No Google listing linked.");
+    if (c.offerings.length === 0) {
+      throw new Error("Add what you sell in setup first.");
+    }
+
+    const token: string = await ctx.runAction(internal.google.accessTokenFor, {
+      userId,
+    });
+
+    const category = await categoryFor(ctx, c.business, token);
+    if (!category) {
+      throw new Error(
+        "Your listing has no category on Google, so services can't be attached. Set one in Google Business Profile first.",
+      );
+    }
+
+    // Structured where Google has a name for it, free text otherwise.
+    const matched = await matchServiceTypes(c.offerings, category.serviceTypes);
+    const serviceItems = buildServiceItems(c.offerings, category.id, matched);
+
+    const url =
+      `${INFO_BASE_SERVICES}/${c.business.gbpLocationName}` +
+      `?updateMask=serviceItems`;
+
+    const res = await fetch(url, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ serviceItems }),
+    });
+
+    const text = await res.text();
+    if (!res.ok) {
+      console.error(`[gbp/services] ${res.status} ${text.slice(0, 500)}`);
+      return {
+        pushed: 0,
+        error: `Google refused (${res.status}): ${text.slice(0, 220)}`,
+      };
+    }
+
+    await ctx.runMutation(internal.google.markServicesPushed, {
+      businessId: c.business._id,
+    });
+    console.log(`[gbp/services] wrote ${serviceItems.length} services`);
+    return { pushed: serviceItems.length };
   },
 });

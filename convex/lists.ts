@@ -89,3 +89,63 @@ export const performance = query({
     };
   },
 });
+
+/**
+ * What Google uses to judge relevance, and where this listing falls short.
+ *
+ * The primary category is the strongest relevance signal there is, and
+ * shops that outrank you are visibly using categories you don't have. This
+ * turns that into something the owner can act on.
+ */
+export const relevance = query({
+  args: {},
+  handler: async (ctx) => {
+    const business = await myBusiness(ctx);
+    if (!business) return null;
+
+    const [competitors, offerings] = await Promise.all([
+      ctx.db
+        .query("competitors")
+        .withIndex("by_business", (q) => q.eq("businessId", business._id))
+        .collect(),
+      ctx.db
+        .query("offerings")
+        .withIndex("by_business", (q) => q.eq("businessId", business._id))
+        .collect(),
+    ]);
+
+    const mine = new Set(
+      [
+        business.primaryCategory,
+        ...(business.additionalCategories ?? []).map((c) => c.name),
+      ]
+        .filter(Boolean)
+        .map((c) => (c as string).toLowerCase()),
+    );
+
+    // Count how many of the shops ranking above us use each category.
+    const counts = new Map<string, { name: string; used: number }>();
+    for (const rival of competitors) {
+      if (!rival.category) continue;
+      const key = rival.category.toLowerCase();
+      if (mine.has(key)) continue;
+      const entry = counts.get(key) ?? { name: rival.category, used: 0 };
+      entry.used += 1;
+      counts.set(key, entry);
+    }
+
+    const missing = [...counts.values()]
+      .sort((a, b) => b.used - a.used)
+      .slice(0, 5);
+
+    return {
+      business,
+      primaryCategory: business.primaryCategory ?? null,
+      extraCategories: business.additionalCategories ?? [],
+      competitorsChecked: competitors.length,
+      missingCategories: missing,
+      offeringCount: offerings.filter((o) => o.selected).length,
+      servicesPushedAt: business.servicesPushedAt ?? null,
+    };
+  },
+});

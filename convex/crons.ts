@@ -17,9 +17,13 @@ crons.daily(
 // Three posts a week, planned ahead. This runs every morning and publishes
 // whatever the plan says is due today — most mornings that is nothing.
 // Posting daily on a small local listing reads as automated.
+//
+// It has to run AFTER the slot hour, not before. Slots are 05:00 UTC; a run
+// at 04:00 saw nothing due and picked the post up the following morning
+// instead, so everything published a day late.
 crons.daily(
   "publish scheduled posts",
-  { hourUTC: 4, minuteUTC: 0 }, // 09:30 IST, as shops are opening
+  { hourUTC: 5, minuteUTC: 30 }, // 11:00 IST, half an hour after the slot
   internal.posts.publishDue,
 );
 

@@ -21,7 +21,19 @@ const spaceMono = Space_Mono({
   display: "swap",
 });
 
+/*
+ * The absolute address the shop sites live at.
+ *
+ * Every page under /s/ sets a canonical tag as a relative path. Next needs
+ * a base to turn those into real URLs, and with none it quietly uses
+ * http://localhost:3000 — a canonical pointing at localhost is worse than
+ * no canonical at all, and those are the only pages here meant to be
+ * indexed. Set NEXT_PUBLIC_SITE_URL to override it on a preview build.
+ */
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://footfall.zone";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "footfall — an ai that runs your google listing",
   description:
     "your google listing is where people nearby decide. footfall keeps it posting, replies to every review, collects new ones, and answers enquiries — so people walk in.",

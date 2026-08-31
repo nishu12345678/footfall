@@ -84,13 +84,15 @@ export const finishOnboarding = mutation({
       onboardingStep: 5,
       onboardingComplete: true,
       agentActive: true,
+      agentStartedAt: business.agentStartedAt ?? Date.now(),
     });
 
     await ctx.db.insert("agentActions", {
       businessId: business._id,
       type: "seo",
       title: "Setup complete — agent is running",
-      detail: "We'll start posting, replying to reviews and tracking your rank.",
+      detail:
+        "We'll start posting, replying to reviews and tracking your rank.",
       createdAt: Date.now(),
     });
   },
@@ -110,10 +112,7 @@ function absolute(src: string, base: string): string | null {
   }
 }
 
-async function scrapeForImages(
-  url: string,
-  key: string,
-): Promise<string[]> {
+async function scrapeForImages(url: string, key: string): Promise<string[]> {
   try {
     const res = await fetch("https://api.firecrawl.dev/v2/scrape", {
       method: "POST",
@@ -228,7 +227,9 @@ export const findLogoCandidates = action({
     }
 
     if (targets.length === 0) {
-      throw new Error("We couldn't find your business online to read a logo from.");
+      throw new Error(
+        "We couldn't find your business online to read a logo from.",
+      );
     }
 
     const all: string[] = [];
@@ -256,10 +257,12 @@ export const useLogoFromUrl = action({
     if (!userId) throw new Error("Sign in first.");
 
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`Could not download that image (${res.status}).`);
+    if (!res.ok)
+      throw new Error(`Could not download that image (${res.status}).`);
 
     const type = res.headers.get("content-type") ?? "image/png";
-    if (!type.startsWith("image/")) throw new Error("That link isn't an image.");
+    if (!type.startsWith("image/"))
+      throw new Error("That link isn't an image.");
 
     const blob = await res.blob();
     const storageId = await ctx.storage.store(blob);

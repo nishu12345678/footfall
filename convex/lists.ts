@@ -185,3 +185,72 @@ export const relevance = query({
     };
   },
 });
+
+/**
+ * The shop before us, and the shop with us.
+ *
+ * Local SEO work has no visible moment. The owner sees posts going out and
+ * has no idea whether any of it mattered. This is the one screen that
+ * answers that, so it compares like with like: however many days we have
+ * been running, against exactly that many days immediately before we
+ * started. A 30-day month against a 9-day fortnight would flatter us.
+ */
+export const impact = query({
+  args: {},
+  handler: async (ctx) => {
+    const business = await myBusiness(ctx);
+    if (!business) return null;
+
+    const startedAt = business.agentStartedAt ?? business._creationTime;
+    const metrics = await ctx.db
+      .query("metrics")
+      .withIndex("by_business", (q) => q.eq("businessId", business._id))
+      .collect();
+
+    if (metrics.length === 0) return { startedAt, ready: false, days: 0 };
+
+    const dayOf = (row: { date: string }) =>
+      Date.parse(`${row.date}T00:00:00Z`);
+
+    // Google's data lags a couple of days; don't count days it hasn't filled.
+    const latest = Math.max(...metrics.map(dayOf));
+    const elapsed = Math.floor((latest - startedAt) / 86_400_000) + 1;
+    const window = Math.min(Math.max(elapsed, 0), 90);
+
+    if (window < 7) {
+      return { startedAt, ready: false, days: Math.max(window, 0) };
+    }
+
+    const afterFrom = startedAt;
+    const beforeFrom = startedAt - window * 86_400_000;
+
+    const sum = (rows: typeof metrics) => ({
+      views: rows.reduce((t, r) => t + (r.views ?? 0), 0),
+      calls: rows.reduce((t, r) => t + (r.calls ?? 0), 0),
+      directions: rows.reduce((t, r) => t + (r.directions ?? 0), 0),
+    });
+
+    const before = sum(
+      metrics.filter((r) => dayOf(r) >= beforeFrom && dayOf(r) < afterFrom),
+    );
+    const after = sum(metrics.filter((r) => dayOf(r) >= afterFrom));
+
+    const change = (b: number, a: number) =>
+      b === 0 ? (a > 0 ? null : 0) : Math.round(((a - b) / b) * 100);
+
+    return {
+      startedAt,
+      ready: true,
+      days: window,
+      before,
+      after,
+      change: {
+        views: change(before.views, after.views),
+        calls: change(before.calls, after.calls),
+        directions: change(before.directions, after.directions),
+      },
+      // Nothing to compare against if Google had no data before we started.
+      hasBefore: before.views + before.calls + before.directions > 0,
+    };
+  },
+});

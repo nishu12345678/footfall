@@ -368,6 +368,15 @@ export const draftReply = internalAction({
       ? rawFirst.charAt(0).toUpperCase() + rawFirst.slice(1).toLowerCase()
       : "";
     const happy = review.rating >= 4;
+
+    // A four or five star review can still carry a complaint. Answering it
+    // as pure praise reads as not having read it.
+    const grumble =
+      happy &&
+      Boolean(review.comment) &&
+      /but |however|only issue|one problem|wish |waited|delay|expensive|costly|slow|late|rude|dirty/i.test(
+        review.comment ?? "",
+      );
     const medical = /dent|clinic|doctor|hospital|medical|physio|diagnost/i.test(
       c.business.primaryCategory ?? c.business.orgName,
     );
@@ -396,16 +405,22 @@ export const draftReply = internalAction({
       "- Plain Indian English, warm, in the owner's own voice. Never corporate.",
       firstName ? `- Open by name: ${firstName}.` : "- Do not invent a name.",
       review.comment
-        ? "- Refer to something specific they actually wrote. Do not summarise the whole review back at them."
-        : "- They wrote nothing, so keep it to two short lines. Padding an empty rating into a paragraph reads as fake.",
+        ? "- Repeat back the specific thing they praised or raised, in your own words. The next customer reads this reply, so their point is worth amplifying. Do not summarise the whole review."
+        : "- They wrote nothing, so keep it to two short lines. There is nothing to personalise, and padding an empty rating into a paragraph reads as fake.",
+      "- If they named a member of staff, name that person too and pass the thanks on.",
       review.comment
-        ? "- 50 to 75 words. Long enough to say something real, never padded."
+        ? happy
+          ? "- 50 to 75 words. Long enough to say something real, never padded."
+          : "- One paragraph, under 90 words. A short, calm reply reads as confident; an essay reads as defensive."
         : "- 20 to 35 words.",
       `- Name the business once, naturally. ${c.business.city ? `You may name ${c.business.city} once if it fits.` : ""}`,
       "- Never repeat a search phrase or stuff in service names. The reader is the next customer, not a search engine.",
       "- Do not invent prices, offers, timings, results, or anything you were not told.",
       medical
         ? "- IMPORTANT: this is a public page. Never introduce, confirm or add any clinical detail — a treatment, a condition, a procedure, an outcome — that the customer did not already write themselves. You may echo their own words back. You may not add to them."
+        : "",
+      grumble
+        ? "- They rated you well but raised something that fell short. Thank them for the rating AND answer the point they raised. Do not skip past it."
         : "",
       happy
         ? "- Thank them properly and invite them back once, briefly."
@@ -417,6 +432,7 @@ export const draftReply = internalAction({
             "- No marketing of any kind.",
           ].join("\n"),
       "- No hashtags, no emoji, no exclamation marks, no ALL CAPS.",
+      "- Google already labels this 'Response from the owner', so do not sign it or introduce yourself. Write as 'we'.",
       "- Reply with the message only. No greeting labels, no sign-off block.",
       "",
       'Reply with JSON: {"reply": "..."}',

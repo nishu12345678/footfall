@@ -68,6 +68,9 @@ export default defineSchema({
     onboardingStep: v.number(),
     onboardingComplete: v.boolean(),
     agentActive: v.boolean(),
+    // When the agent was first switched on. Everything before this date is
+    // the shop as it was; everything after is the shop with us running it.
+    agentStartedAt: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
     .index("by_gbp_location", ["gbpLocationName"]),

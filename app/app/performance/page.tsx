@@ -3,6 +3,7 @@
 import { useAction, useQuery } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
+import { Impact } from "@/components/impact";
 import { Relevance } from "@/components/relevance";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
 import { Working } from "@/components/working";
@@ -331,6 +332,8 @@ export default function PerformancePage() {
           days, so the most recent days often read zero.
         </p>
       ) : null}
+
+      <Impact />
 
       {/* keywords */}
       <section className="mt-7">

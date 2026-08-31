@@ -674,7 +674,9 @@ export const syncAllMetrics = internalAction({
       try {
         await ctx.runAction(internal.performance.syncMetricsForUser, {
           userId: b.userId,
-          days: 30,
+          // Six months, so the before-and-after comparison has a
+          // "before" to draw on. It is one API call either way.
+          days: 180,
         });
       } catch (error) {
         console.error(`[cron] metrics failed for ${b.name}`, error);

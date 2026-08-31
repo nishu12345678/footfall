@@ -1,3 +1,4 @@
+import { COMPANY } from "./company";
 /* ---------------------------------------------------------------------------
    footfall — every word on the landing page lives here.
    edit copy in this file. don't edit copy inside components.
@@ -12,7 +13,7 @@
 export const BRAND = {
   name: "footfall",
   tagline: "an ai that runs your google listing so people nearby walk in",
-  city: "thane",
+  city: "muzaffarnagar",
 };
 
 export const LINKS = {
@@ -36,7 +37,8 @@ export const HERO = {
   body: "instagram gets you likes from people three cities away. google gets you the person standing two streets away, holding their phone, deciding right now. we work on that one.",
   ctaPrimary: "check my listing — free",
   ctaSecondary: "see how it works",
-  support: "free to start. no contract. works with the google profile you already have.",
+  support:
+    "free to start. no contract. works with the google profile you already have.",
   scribbles: ["◎", "★★★★☆", "¯\\_(ツ)_/¯", "( ˘ ³˘)", "→ 2.1 km"],
 };
 
@@ -73,13 +75,29 @@ export const MAP_PACK = {
   title: "google maps · “salon near me”",
   query: "salon near me",
   before: [
-    { name: "glow unisex salon", rating: 4.4, reviews: 212, distance: "1.8 km" },
+    {
+      name: "glow unisex salon",
+      rating: 4.4,
+      reviews: 212,
+      distance: "1.8 km",
+    },
     { name: "the barber room", rating: 4.6, reviews: 388, distance: "2.4 km" },
     { name: "style lounge", rating: 4.2, reviews: 96, distance: "0.9 km" },
   ],
   after: [
-    { name: "glow unisex salon", rating: 4.4, reviews: 212, distance: "1.8 km" },
-    { name: "sharma hair studio", rating: 4.8, reviews: 141, distance: "0.4 km", you: true },
+    {
+      name: "glow unisex salon",
+      rating: 4.4,
+      reviews: 212,
+      distance: "1.8 km",
+    },
+    {
+      name: "sharma hair studio",
+      rating: 4.8,
+      reviews: 141,
+      distance: "0.4 km",
+      you: true,
+    },
     { name: "the barber room", rating: 4.6, reviews: 388, distance: "2.4 km" },
   ],
   beforeLabel: "you were here — page 1, position 7",
@@ -343,20 +361,19 @@ export const FOOTER = {
       title: "company",
       links: [
         { label: "faq", href: "#faq" },
-        { label: "privacy", href: "#" },
-        { label: "support", href: "mailto:hi@footfall.app" },
+        { label: "privacy policy", href: "/privacy" },
+        { label: "terms & conditions", href: "/terms" },
       ],
     },
     {
       title: "connect",
       links: [
-        { label: "whatsapp", href: "#" },
-        { label: "instagram", href: "#" },
-        { label: "linkedin", href: "#" },
+        { label: "email", href: `mailto:${COMPANY.email}` },
+        { label: "phone", href: `tel:${COMPANY.phoneHref}` },
+        { label: "linkedin", href: COMPANY.founder.linkedin },
       ],
     },
   ],
-  legal:
-    "*footfall is an independent product. it is not affiliated with, endorsed by, or a product of google.*",
+  legal: `*a product of ${COMPANY.legalName}. footfall is an independent product — it is not affiliated with, endorsed by, or a product of google.*`,
   copyright: `© ${BRAND.name}, 2026 · built in ${BRAND.city}`,
 };

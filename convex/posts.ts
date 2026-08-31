@@ -71,7 +71,13 @@ export const postContext = internalQuery({
       areas: areas.map((r) => r.name),
       recent: recent.map((p) => p.body),
       recentImages: recent.map((p) => p.imageUrl).filter(Boolean) as string[],
-      photos: photos.map((p) => p.url).filter(Boolean) as string[],
+      // Photos only. The same bucket now holds videos the owner uploaded,
+      // and a post image has to be a still: Google wants a JPG or PNG, and
+      // the headline is drawn onto it.
+      photos: photos
+        .filter((p) => p.mediaType !== "video")
+        .map((p) => p.url)
+        .filter(Boolean) as string[],
     };
   },
 });
@@ -299,9 +305,11 @@ export const draftBody = internalAction({
       "",
       "Write one Google Business Profile post for this shop, in this exact shape:",
       "",
-      "1. An opening line that carries the whole point of the post in under 90 characters.",
-      "   Google cuts the text off there on a phone, so the value has to land before it.",
-      "   No greeting, no preamble, no 'we are pleased to'. Say the useful thing first.",
+      "1. An opening line of 45 to 68 characters — a complete thought that stands",
+      "   on its own. Google cuts the text off around there on a phone, and this",
+      "   same line is printed onto the post's picture, so it must not run past",
+      "   its own ending. Count the characters. No greeting, no preamble, no",
+      "   'we are pleased to'. Say the useful thing first.",
       "2. A blank line, then one short paragraph of 30-45 words naming the locality and",
       "   what someone searching nearby is actually trying to find.",
       "3. A blank line, then 4 lines each starting with the ✔️ character and a space.",
@@ -391,15 +399,29 @@ export const writePost = action({
       generatedBy: "ai",
     });
 
+    let picture = image;
     if (!image) {
-      await ctx.runAction(internal.posts.generatePostImage, {
+      picture =
+        (await ctx.runAction(internal.posts.generatePostImage, {
+          postId: id,
+          topic:
+            brief ?? `${c.business.orgName} in ${c.business.city ?? "India"}`,
+          category: c.business.primaryCategory,
+          orgName: c.business.orgName,
+          city: c.business.city,
+          offerings: c.offerings,
+        })) ?? undefined;
+    }
+
+    // Same as the planned posts: the headline goes on the picture, which is
+    // the largest measured difference between a post that gets clicked and
+    // one that doesn't.
+    if (picture) {
+      await ctx.runAction(internal.postimage.addHeadline, {
         postId: id,
-        topic:
-          brief ?? `${c.business.orgName} in ${c.business.city ?? "India"}`,
-        category: c.business.primaryCategory,
-        orgName: c.business.orgName,
-        city: c.business.city,
-        offerings: c.offerings,
+        imageUrl: picture,
+        headline: headlineFor(body),
+        businessName: c.business.orgName,
       });
     }
 
@@ -793,14 +815,28 @@ export const planForUser = internalAction({
       });
 
       // No photo of their own to use, so make one that suits the trade.
+      let picture = image;
       if (!image) {
-        await ctx.runAction(internal.posts.generatePostImage, {
+        picture =
+          (await ctx.runAction(internal.posts.generatePostImage, {
+            postId,
+            topic: topics[i].topic,
+            category: c.business.primaryCategory,
+            orgName: c.business.orgName,
+            city: c.business.city,
+            offerings: c.offerings,
+          })) ?? undefined;
+      }
+
+      // A post whose picture carries text draws better than three times the
+      // clicks of one whose picture doesn't. This is the largest single
+      // effect measured on Google Posts, so every post gets it.
+      if (picture) {
+        await ctx.runAction(internal.postimage.addHeadline, {
           postId,
-          topic: topics[i].topic,
-          category: c.business.primaryCategory,
-          orgName: c.business.orgName,
-          city: c.business.city,
-          offerings: c.offerings,
+          imageUrl: picture,
+          headline: headlineFor(body),
+          businessName: c.business.orgName,
         });
       }
       planned += 1;
@@ -1112,3 +1148,51 @@ export const ensurePlan = action({
     };
   },
 });
+
+/** Swaps in the version of the picture that carries the headline. */
+export const attachHeadlineImage = internalMutation({
+  args: { postId: v.id("posts"), storageId: v.id("_storage") },
+  handler: async (ctx, { postId, storageId }) => {
+    const url = await ctx.storage.getUrl(storageId);
+    if (!url) return null;
+    const post = await ctx.db.get(postId);
+    await ctx.db.patch(postId, {
+      imageUrl: url,
+      imageNote:
+        post?.imageSource === "listing"
+          ? "Your own photo from the listing, with the headline over it."
+          : "Made for this post, with the headline over it.",
+    });
+    return url;
+  },
+});
+
+/**
+ * The line that goes on the picture.
+ *
+ * The post's own opening line is written to land in under 90 characters,
+ * which is already the shape a headline needs, so we take it rather than
+ * asking the model twice.
+ */
+export function headlineFor(body: string): string {
+  const first =
+    body
+      .split("\n")
+      .map((l) => l.trim())
+      .find(Boolean) ?? "";
+  const line = first.replace(/\s+/g, " ");
+  if (line.length <= 70) return line;
+
+  // Cut at a word, not through one — "how to reach us easil" was the first
+  // one that went out — then drop any trailing word that leaves the phrase
+  // hanging, so it doesn't end on "for all your".
+  const cut = line.slice(0, 70);
+  const lastSpace = cut.lastIndexOf(" ");
+  let out = lastSpace > 36 ? cut.slice(0, lastSpace) : cut;
+
+  const dangling =
+    /\s+(a|an|the|and|or|for|to|of|with|in|on|at|your|our|all|that|is|are)$/i;
+  while (dangling.test(out)) out = out.replace(dangling, "");
+
+  return out.replace(/[,;:\-–—]$/, "").trim();
+}

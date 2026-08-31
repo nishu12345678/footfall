@@ -150,8 +150,12 @@ export const generateUploadUrl = mutation({
 });
 
 export const savePhoto = mutation({
-  args: { storageId: v.id("_storage"), caption: v.optional(v.string()) },
-  handler: async (ctx, { storageId, caption }) => {
+  args: {
+    storageId: v.id("_storage"),
+    caption: v.optional(v.string()),
+    mediaType: v.optional(v.string()),
+  },
+  handler: async (ctx, { storageId, caption, mediaType }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Sign in first.");
 
@@ -164,6 +168,7 @@ export const savePhoto = mutation({
     const url = await ctx.storage.getUrl(storageId);
     return await ctx.db.insert("photos", {
       businessId: business._id,
+      mediaType: mediaType === "video" ? "video" : "photo",
       storageId,
       url: url ?? undefined,
       caption,
@@ -241,7 +246,7 @@ export const pushPhoto = internalAction({
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        mediaFormat: "PHOTO",
+        mediaFormat: photo.mediaType === "video" ? "VIDEO" : "PHOTO",
         locationAssociation: { category: "ADDITIONAL" },
         sourceUrl: photo.url,
         ...(photo.caption ? { description: photo.caption } : {}),

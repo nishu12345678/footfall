@@ -199,6 +199,7 @@ export default defineSchema({
     storageId: v.optional(v.id("_storage")),
     url: v.optional(v.string()),
     caption: v.optional(v.string()),
+    mediaType: v.optional(v.string()), // "photo" | "video"
     status: v.string(), // "bucket" | "scheduled" | "published"
     publishedAt: v.optional(v.number()),
   }).index("by_business", ["businessId"]),

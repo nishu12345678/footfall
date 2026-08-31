@@ -46,12 +46,35 @@ export const reviews = query({
   handler: async (ctx) => {
     const business = await myBusiness(ctx);
     if (!business) return null;
-    const rows = await ctx.db
+
+    // Ordered by when the customer wrote it, not when we happened to pull
+    // it in — a sync inserts a hundred at once and their insert order says
+    // nothing about which review is newest.
+    const all = await ctx.db
       .query("reviews")
       .withIndex("by_business", (q) => q.eq("businessId", business._id))
-      .order("desc")
-      .take(50);
-    return { business, rows };
+      .collect();
+
+    const sorted = [...all].sort((a, b) => b.createdAt - a.createdAt);
+    const replied = all.filter((r) => r.replyText).length;
+
+    return {
+      business,
+      rows: sorted.slice(0, 50),
+      summary: {
+        total: all.length,
+        average: all.length
+          ? Math.round(
+              (all.reduce((t, r) => t + r.rating, 0) / all.length) * 10,
+            ) / 10
+          : null,
+        replied,
+        awaiting: all.length - replied,
+        fiveStar: all.filter((r) => r.rating === 5).length,
+        lowRated: all.filter((r) => r.rating <= 3).length,
+        newest: sorted[0]?.createdAt ?? null,
+      },
+    };
   },
 });
 

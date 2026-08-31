@@ -1,11 +1,13 @@
 import { v } from "convex/values";
 import {
   action,
+  internalAction,
   internalMutation,
   internalQuery,
 } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import type { Id } from "./_generated/dataModel";
 
 /**
  * Reviews from the Google Business Profile.
@@ -68,14 +70,12 @@ export const saveReviews = internalMutation({
   },
 });
 
-export const syncFromGoogle = action({
-  args: {},
+export const syncForUser = internalAction({
+  args: { userId: v.id("users") },
   handler: async (
     ctx,
+    { userId },
   ): Promise<{ added: number; total: number; average: number | null }> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
-
     const business = await ctx.runQuery(internal.google.businessForUser, {
       userId,
     });
@@ -90,16 +90,45 @@ export const syncFromGoogle = action({
     const locationId = business.gbpLocationName.replace(/^locations\//, "");
     const parent = `${business.gbpAccountName}/locations/${locationId}`;
 
-    const res = await fetch(`${V4_BASE}/${parent}/reviews?pageSize=50`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const text = await res.text();
-    if (!res.ok) {
-      console.error(`[gbp/reviews] ${res.status} ${text.slice(0, 400)}`);
-      throw new Error(`Google refused (${res.status}): ${text.slice(0, 200)}`);
+    // Google pages these 50 at a time. A clinic with 300 reviews is exactly
+    // the shop that needs them all, so walk the pages rather than taking
+    // the first one and calling it the total.
+    const raw: any[] = [];
+    let pageToken: string | undefined;
+    let reported: number | null = null;
+
+    for (let page = 0; page < 12; page++) {
+      const url =
+        `${V4_BASE}/${parent}/reviews?pageSize=50` +
+        (pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : "");
+
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        console.error(`[gbp/reviews] ${res.status} ${text.slice(0, 400)}`);
+        if (page > 0) break; // keep what we already have
+        throw new Error(
+          `Google refused (${res.status}): ${text.slice(0, 200)}`,
+        );
+      }
+
+      const page_ = JSON.parse(text || "{}");
+      if (reported === null && typeof page_.totalReviewCount === "number") {
+        reported = page_.totalReviewCount;
+      }
+      raw.push(...(page_.reviews ?? []));
+
+      pageToken = page_.nextPageToken;
+      if (!pageToken) break;
     }
 
-    const data = JSON.parse(text || "{}");
+    console.log(
+      `[gbp/reviews] pulled ${raw.length}${reported ? ` of ${reported}` : ""}`,
+    );
+
+    const data = { reviews: raw };
     const items = (data.reviews ?? [])
       .filter((r: any) => r?.name)
       .map((r: any) => ({
@@ -151,4 +180,44 @@ export const unrepliedFor = internalQuery({
         q.eq("businessId", businessId).eq("replyStatus", "none"),
       )
       .collect(),
+});
+
+/** What the owner presses, and what the page calls on open. */
+export const syncFromGoogle = action({
+  args: {},
+  handler: async (
+    ctx,
+  ): Promise<{ added: number; total: number; average: number | null }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+    return await ctx.runAction(internal.reviews.syncForUser, { userId });
+  },
+});
+
+/**
+ * Pulls every connected shop's reviews overnight.
+ *
+ * A review that arrives on Tuesday and is first seen on Friday is three
+ * days of silence the customer can read. Google's own guidance is to reply
+ * quickly, so we need them without waiting for the owner to open the app.
+ */
+export const syncAllReviews = internalAction({
+  args: {},
+  handler: async (ctx): Promise<{ businesses: number; added: number }> => {
+    const businesses: { userId: Id<"users">; name: string }[] =
+      await ctx.runQuery(internal.performance.connectedBusinesses, {});
+
+    let added = 0;
+    for (const b of businesses) {
+      try {
+        const r = await ctx.runAction(internal.reviews.syncForUser, {
+          userId: b.userId,
+        });
+        added += r.added;
+      } catch (error) {
+        console.error(`[agent] review sync failed for ${b.name}`, error);
+      }
+    }
+    return { businesses: businesses.length, added };
+  },
 });

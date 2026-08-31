@@ -14,6 +14,14 @@ crons.daily(
   internal.performance.syncAllMetrics,
 );
 
+// Reviews, nightly. They are the strongest thing a small shop can move,
+// and a reply that arrives three days late reads as three days of silence.
+crons.daily(
+  "sync gbp reviews",
+  { hourUTC: 1, minuteUTC: 45 }, // 07:15 IST
+  internal.reviews.syncAllReviews,
+);
+
 // Three posts a week, planned ahead. This runs every morning and publishes
 // whatever the plan says is due today — most mornings that is nothing.
 // Posting daily on a small local listing reads as automated.

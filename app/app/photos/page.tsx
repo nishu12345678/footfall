@@ -52,7 +52,7 @@ function dayLabel(date: Date): string {
 /** Checks a file against Google's stated limits before we upload it. */
 async function reject(file: File): Promise<string | null> {
   const isVideo = file.type.startsWith("video/");
-  const limitMb = isVideo ? 25 : 5;
+  const limitMb = isVideo ? 75 : 5;
   if (file.size > limitMb * 1024 * 1024) {
     return `${file.name} is over ${limitMb}MB.`;
   }
@@ -73,6 +73,9 @@ async function reject(file: File): Promise<string | null> {
 
   if (!/image\/(jpeg|png)$/.test(file.type)) {
     return `${file.name} isn't a JPG or PNG.`;
+  }
+  if (file.size < 10 * 1024) {
+    return `${file.name} is under 10KB, which Google treats as too small.`;
   }
 
   const size = await new Promise<{ w: number; h: number }>((resolve) => {
@@ -489,8 +492,8 @@ export default function PhotosPage() {
             </p>
             <ul className="mt-1.5 space-y-1 text-[13px] leading-relaxed">
               <li>JPG or PNG</li>
-              <li>At least 250 px on the shorter side</li>
-              <li>Up to 5 MB</li>
+              <li>At least 250 px on the shorter side, 720 px preferred</li>
+              <li>Between 10 KB and 5 MB</li>
             </ul>
           </div>
           <div>
@@ -500,7 +503,7 @@ export default function PhotosPage() {
             <ul className="mt-1.5 space-y-1 text-[13px] leading-relaxed">
               <li>Under 30 seconds</li>
               <li>720p HD or better</li>
-              <li>Up to 25 MB</li>
+              <li>Up to 75 MB</li>
             </ul>
           </div>
           <p className="text-[12.5px] leading-relaxed text-ink-soft">

@@ -1,11 +1,12 @@
 "use client";
 
-import { useAction, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
 import { Working } from "@/components/working";
 import { square } from "@/lib/images";
+import type { Id } from "@/convex/_generated/dataModel";
 
 function ago(timestamp: number): string {
   const days = Math.floor((Date.now() - timestamp) / 86_400_000);
@@ -33,10 +34,51 @@ function Stars({ rating }: { rating: number }) {
 export default function ReviewsPage() {
   const data = useQuery(api.lists.reviews);
   const syncFromGoogle = useAction(api.reviews.syncFromGoogle);
+  const approveReply = useAction(api.reviews.approveReply);
+  const rewriteReply = useAction(api.reviews.rewriteReply);
+  const discardDraft = useMutation(api.reviews.discardDraft);
 
   const pulled = useRef(false);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const [busy, setBusy] = useState<Id<"reviews"> | null>(null);
+  const [editing, setEditing] = useState<Id<"reviews"> | null>(null);
+  const [editText, setEditText] = useState("");
+
+  async function send(id: Id<"reviews">, text?: string) {
+    setBusy(id);
+    setError(null);
+    setNote(null);
+    try {
+      const r = await approveReply({ id, text });
+      if (r.ok) {
+        setNote("Reply is live on your listing.");
+        setEditing(null);
+      } else {
+        setError(r.error ?? "Google wouldn't take it.");
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function rewrite(id: Id<"reviews">) {
+    setBusy(id);
+    setError(null);
+    setNote(null);
+    try {
+      const text = await rewriteReply({ id });
+      if (text && editing === id) setEditText(text);
+      if (!text) setError("Couldn't write another one just now.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
 
   // Reviews are the thing the owner most wants to be current. Fetch on open.
   useEffect(() => {
@@ -52,6 +94,7 @@ export default function ReviewsPage() {
   if (data === null) return <NeedsConnect />;
 
   const { business, rows, summary } = data;
+  const held = rows.filter((r) => r.replyNeedsApproval && r.replyText);
 
   return (
     <AppScreen
@@ -94,17 +137,42 @@ export default function ReviewsPage() {
         </div>
 
         {summary.total > 0 ? (
-          <p
-            className={`mt-3.5 rounded-[10px] border px-3 py-2 text-[12.5px] leading-snug ${
-              summary.awaiting === 0
-                ? "border-open bg-open-soft"
-                : "border-star bg-star/20"
-            }`}
-          >
-            {summary.awaiting === 0
-              ? "Every review has a reply. Google reads replies, and so does the next customer."
-              : `${summary.awaiting} still without a reply. Replying is the cheapest trust signal you have.`}
-          </p>
+          <>
+            <div className="mt-3.5 flex gap-2">
+              <span className="flex-1 rounded-[10px] border border-rule bg-paper px-3 py-2">
+                <span className="block font-display text-[17px] font-bold leading-none">
+                  {summary.replyRate ?? 0}%
+                </span>
+                <span className="mt-1 block font-mono text-[9px] uppercase tracking-wider text-muted">
+                  replied
+                </span>
+              </span>
+              <span className="flex-1 rounded-[10px] border border-rule bg-paper px-3 py-2">
+                <span className="block font-display text-[17px] font-bold leading-none">
+                  {summary.medianReplyHours === null
+                    ? "—"
+                    : summary.medianReplyHours < 24
+                      ? `${summary.medianReplyHours}h`
+                      : `${Math.round(summary.medianReplyHours / 24)}d`}
+                </span>
+                <span className="mt-1 block font-mono text-[9px] uppercase tracking-wider text-muted">
+                  typical wait
+                </span>
+              </span>
+            </div>
+
+            <p
+              className={`mt-2.5 rounded-[10px] border px-3 py-2 text-[12.5px] leading-snug ${
+                summary.awaiting === 0
+                  ? "border-open bg-open-soft"
+                  : "border-star bg-star/20"
+              }`}
+            >
+              {summary.awaiting === 0
+                ? "Every review has a reply. We answer new ones within a few hours, on their own."
+                : `${summary.awaiting} still without a reply. Four stars and up we answer automatically; anything lower waits for you.`}
+            </p>
+          </>
         ) : null}
       </div>
 
@@ -121,6 +189,104 @@ export default function ReviewsPage() {
         >
           {error}
         </p>
+      ) : null}
+
+      {note ? (
+        <p className="mt-4 rounded-[12px] border border-open bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
+          {note}
+        </p>
+      ) : null}
+
+      {/* ------------------------ waiting for you ------------------------ */}
+      {held.length > 0 ? (
+        <section className="mt-7">
+          <h2 className="font-display text-[15px] font-bold">
+            Waiting for you to send
+          </h2>
+          <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-soft">
+            We&rsquo;ve written a reply to each of these. A low rating goes out
+            under your name only when you say so.
+          </p>
+
+          <ul className="mt-3 space-y-3">
+            {held.map((row) => (
+              <li
+                key={row._id}
+                className="rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]"
+              >
+                <div className="flex items-center gap-2">
+                  <Stars rating={row.rating} />
+                  <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
+                    {row.authorName ?? "A customer"}
+                  </span>
+                  <span className="flex-none font-mono text-[10px] text-muted">
+                    {ago(row.createdAt)}
+                  </span>
+                </div>
+
+                {row.comment ? (
+                  <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-ink-soft">
+                    {row.comment}
+                  </p>
+                ) : null}
+
+                {editing === row._id ? (
+                  <textarea
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    rows={6}
+                    className="mt-3 w-full resize-none rounded-[10px] border border-ink bg-paper p-3 text-[13px] leading-relaxed outline-none"
+                  />
+                ) : (
+                  <p className="mt-3 whitespace-pre-wrap rounded-[10px] border-l-2 border-star bg-paper px-3 py-2 text-[13px] leading-relaxed">
+                    {row.replyText}
+                  </p>
+                )}
+
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void send(
+                        row._id,
+                        editing === row._id ? editText : undefined,
+                      )
+                    }
+                    disabled={busy !== null}
+                    className="btn btn-primary btn-sm disabled:opacity-40"
+                  >
+                    {busy === row._id ? "sending…" : "send it"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditing(row._id);
+                      setEditText(row.replyText ?? "");
+                    }}
+                    className="btn btn-ghost btn-sm"
+                  >
+                    edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void rewrite(row._id)}
+                    disabled={busy !== null}
+                    className="btn btn-ghost btn-sm disabled:opacity-40"
+                  >
+                    write another
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void discardDraft({ id: row._id })}
+                    className="ml-auto font-mono text-[10px] text-muted underline underline-offset-4 hover:text-pin"
+                  >
+                    leave it
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       {/* ---------------------------- the list --------------------------- */}
@@ -189,6 +355,10 @@ export default function ReviewsPage() {
                     {row.replyText}
                   </p>
                 </div>
+              ) : row.replyError ? (
+                <p className="mt-3 break-words rounded-[10px] border border-pin bg-pin-soft px-3 py-2 font-mono text-[10px] leading-snug">
+                  {row.replyError}
+                </p>
               ) : (
                 <p className="mt-3 font-mono text-[10px] text-muted">
                   No reply yet.

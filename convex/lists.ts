@@ -63,6 +63,19 @@ export const reviews = query({
       rows: sorted.slice(0, 50),
       summary: {
         total: all.length,
+        // Answering three quarters of reviews, inside a day, is the shape
+        // the research points at. Show both so it can be aimed at.
+        replyRate: all.length ? Math.round((replied / all.length) * 100) : null,
+        medianReplyHours: (() => {
+          const gaps = all
+            .filter((r) => r.replyText && r.repliedAt)
+            .map((r) => ((r.repliedAt as number) - r.createdAt) / 3_600_000)
+            .filter((h) => h >= 0)
+            .sort((a, b) => a - b);
+          if (gaps.length === 0) return null;
+          return Math.round(gaps[Math.floor(gaps.length / 2)]);
+        })(),
+        held: all.filter((r) => r.replyNeedsApproval).length,
         average: all.length
           ? Math.round(
               (all.reduce((t, r) => t + r.rating, 0) / all.length) * 10,

@@ -213,8 +213,13 @@ export default defineSchema({
     comment: v.optional(v.string()),
     createdAt: v.number(),
     replyText: v.optional(v.string()),
-    replyStatus: v.string(), // "none" | "drafted" | "published"
+    replyStatus: v.string(), // "none" | "drafted" | "published" | "failed"
     repliedAt: v.optional(v.number()),
+    // A complaint is answered by a person. We write the draft; the owner
+    // reads it before anything is published under their name.
+    replyNeedsApproval: v.optional(v.boolean()),
+    replyDraftedAt: v.optional(v.number()),
+    replyError: v.optional(v.string()),
   })
     .index("by_business", ["businessId"])
     .index("by_business_reply", ["businessId", "replyStatus"]),

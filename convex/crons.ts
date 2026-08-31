@@ -14,11 +14,12 @@ crons.daily(
   internal.performance.syncAllMetrics,
 );
 
-// Reviews, nightly. They are the strongest thing a small shop can move,
-// and a reply that arrives three days late reads as three days of silence.
-crons.daily(
+// Reviews, every four hours. Replying inside a day is worth roughly a
+// position and a half in the local pack, and a shop owner cannot watch for
+// them. Four hours is the widest gap that still lands well inside the day.
+crons.interval(
   "sync gbp reviews",
-  { hourUTC: 1, minuteUTC: 45 }, // 07:15 IST
+  { hours: 4 },
   internal.reviews.syncAllReviews,
 );
 

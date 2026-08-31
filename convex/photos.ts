@@ -306,9 +306,26 @@ export const nextQueued = internalQuery({
  * Uploading thirty photos at once looks like a one-off. One a day looks
  * like a shop someone is running, which is the point.
  */
+/*
+ * Mon, Wed, Fri and Sat.
+ *
+ * Four a week is where the guidance lands: enough that Google keeps reading
+ * the profile as active, slow enough that a shop's library of thirty photos
+ * lasts the two months over which recency actually counts. A daily drip
+ * burned through the same library in half the time, and bursts are worse
+ * still — Google can stop accepting uploads from a profile for a fortnight
+ * when a batch looks like spam.
+ */
+const PHOTO_DAYS = [1, 3, 5, 6];
+
 export const publishDaily = internalAction({
   args: {},
   handler: async (ctx): Promise<{ published: number }> => {
+    // The run is 17:00 IST, so the UTC day and the shop's day agree.
+    if (!PHOTO_DAYS.includes(new Date().getUTCDay())) {
+      return { published: 0 };
+    }
+
     const businesses: { userId: Id<"users">; name: string }[] =
       await ctx.runQuery(internal.performance.connectedBusinesses, {});
 

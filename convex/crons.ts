@@ -27,8 +27,10 @@ crons.daily(
   internal.posts.publishDue,
 );
 
-// One photo a day reads like a shop someone is running. Thirty at once
-// reads like a one-off.
+// Four photos a week reads like a shop someone is running. Thirty at once
+// reads like a one-off, and Google can stop accepting uploads for a
+// fortnight over it. The run is daily; the action itself keeps to Mon,
+// Wed, Fri and Sat.
 crons.daily(
   "publish queued photo",
   { hourUTC: 11, minuteUTC: 30 }, // 17:00 IST

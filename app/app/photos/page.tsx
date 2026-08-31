@@ -8,18 +8,27 @@ import { Working } from "@/components/working";
 import type { Id } from "@/convex/_generated/dataModel";
 import { square } from "@/lib/images";
 
-/* The agent puts one item on the listing a day, at 17:00 IST. That makes
-   the queue a schedule: the first waiting photo goes up on the next run,
-   the second the day after, and so on. We show that rather than a pile. */
+/* The agent puts one item on the listing on Mon, Wed, Fri and Sat at 17:00
+   IST. That makes the queue a schedule: the first waiting photo goes up on
+   the next of those days, the second on the one after. We show that rather
+   than an undated pile. */
 const DROP_HOUR_IST = 17;
+const PHOTO_DAYS = [1, 3, 5, 6]; // matches convex/photos.ts
 
-function nextDropDate(): Date {
-  const now = new Date();
-  // 17:00 IST is 11:30 UTC.
-  const drop = new Date(now);
-  drop.setUTCHours(11, 30, 0, 0);
-  if (drop.getTime() <= now.getTime()) drop.setUTCDate(drop.getUTCDate() + 1);
-  return drop;
+/** The next `count` days the agent will actually publish on. */
+function dropDates(count: number): Date[] {
+  const cursor = new Date();
+  cursor.setUTCHours(11, 30, 0, 0); // 17:00 IST
+  if (cursor.getTime() <= Date.now()) {
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  const dates: Date[] = [];
+  for (let i = 0; i < 90 && dates.length < count; i++) {
+    if (PHOTO_DAYS.includes(cursor.getUTCDay())) dates.push(new Date(cursor));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return dates;
 }
 
 function mondayOf(date: Date): number {
@@ -130,14 +139,14 @@ export default function PhotosPage() {
     (a, b) => a._creationTime - b._creationTime,
   );
 
-  const drop = nextDropDate();
+  const dates = dropDates(upcoming.length);
   const weeks = new Map<
     number,
     { date: Date; item: (typeof rows)[number] }[]
   >();
   upcoming.forEach((item, i) => {
-    const date = new Date(drop);
-    date.setDate(date.getDate() + i);
+    const date = dates[i];
+    if (!date) return;
     const monday = mondayOf(date);
     const bucket = weeks.get(monday) ?? [];
     bucket.push({ date, item });
@@ -181,7 +190,7 @@ export default function PhotosPage() {
         setUploading(picked.length - done);
       }
       setNote(
-        `${done} added. We'll put one on your listing a day, so the profile never goes quiet.`,
+        `${done} added. Four go up a week, so the profile never goes quiet.`,
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -243,8 +252,8 @@ export default function PhotosPage() {
     >
       <h1 className="text-[1.6rem]">photos</h1>
       <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
-        Add everything once. We put one up a day so your listing always looks
-        like a shop someone is running.
+        Add everything once. We put four up a week &mdash; Mon, Wed, Fri and Sat
+        &mdash; so your listing always looks like a shop someone is running.
       </p>
 
       <input
@@ -293,11 +302,11 @@ export default function PhotosPage() {
             ],
             [
               "Upload in bulk and forget",
-              "Add everything you have in one go. We space them out for you.",
+              "Add everything you have in one go. We space them out for you — putting thirty up at once looks like spam, and Google can stop accepting uploads from a profile for a fortnight over it.",
             ],
             [
               "Your profile stays active",
-              "One a day, every day, without you opening the app.",
+              "Four a week, on Mon, Wed, Fri and Sat, without you opening the app.",
             ],
           ].map(([title, detail]) => (
             <li key={title} className="flex gap-2.5">
@@ -389,8 +398,8 @@ export default function PhotosPage() {
 
         {upcoming.length === 0 ? (
           <p className="mt-3 rounded-[14px] border border-dashed border-rule px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
-            Nothing scheduled. Add a batch and we&rsquo;ll spread them out, one
-            a day.
+            Nothing scheduled. Add a batch and we&rsquo;ll spread them out, four
+            a week.
           </p>
         ) : (
           <div className="mt-3 space-y-5">

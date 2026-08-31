@@ -8,11 +8,8 @@ import { resumeHref, resumeLabel } from "@/lib/onboarding";
 
 export default function HomePage() {
   const data = useQuery(api.dashboard.home);
-  const addCustomer = useMutation(api.dashboard.addCustomer);
   const refresh = useAction(api.google.refreshLocation);
 
-  const [phone, setPhone] = useState("");
-  const [service, setService] = useState("");
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -20,44 +17,7 @@ export default function HomePage() {
   if (data === undefined) return <Loading />;
   if (data === null) return <NeedsConnect />;
 
-  const { business, reviews, posts, photos, customers, actions, metrics } =
-    data;
-
-  // Default to the service nobody has written about yet.
-  const ask = service || data.reviewAsk.suggested || "";
-  const digits = phone.replace(/\D/g, "");
-
-  async function sendReviewLink() {
-    setBusy(true);
-    setError(null);
-    setNote(null);
-    try {
-      await addCustomer({ phone: digits, service: ask || undefined });
-
-      if (business.reviewUri) {
-        // Naming the service does the work here: Google reads what the
-        // review says, not just how many stars it carries.
-        const text = ask
-          ? `Thanks for visiting ${business.orgName}! If we did a good job, could you leave a quick Google review and mention the ${ask.toLowerCase()}? It helps other people nearby find us. Takes 30 seconds: ${business.reviewUri}`
-          : `Thanks for visiting ${business.orgName}! If we did a good job, would you leave us a quick Google review? It takes 30 seconds: ${business.reviewUri}`;
-        window.open(
-          `https://wa.me/91${digits.slice(-10)}?text=${encodeURIComponent(text)}`,
-          "_blank",
-        );
-        setNote("WhatsApp opened — press send.");
-      } else {
-        setNote(
-          "Saved. We don't have your Google review link yet — tap “refresh listing” below.",
-        );
-      }
-      setPhone("");
-      setService("");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
-  }
+  const { business, reviews, posts, photos, actions, metrics } = data;
 
   async function refreshListing() {
     setBusy(true);
@@ -162,97 +122,30 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ------------------------ review collection ---------------------- */}
-      <section className="mt-4">
-        <form
-          className="flex gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (digits.length >= 10 && !busy) void sendReviewLink();
-          }}
+      {note ? (
+        <p className="mt-4 rounded-[12px] border border-open bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
+          {note}
+        </p>
+      ) : null}
+      {error ? (
+        <p
+          role="alert"
+          className="mt-4 rounded-[12px] border border-pin bg-pin-soft px-3.5 py-2.5 text-[13px] leading-snug"
         >
-          <input
-            type="tel"
-            inputMode="numeric"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value.slice(0, 12))}
-            placeholder="Customer phone number"
-            className="min-w-0 flex-1 rounded-[12px] border border-ink bg-paper-2 px-3.5 py-3 text-[15px] outline-none placeholder:text-muted/50"
-          />
-          <a
-            href={business.reviewUri ?? "#"}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="open your review link"
-            className="grid w-12 flex-none place-items-center rounded-[12px] border border-ink bg-paper-2 text-[18px]"
-          >
-            ▦
-          </a>
-        </form>
+          {error}
+        </p>
+      ) : null}
 
-        {data.reviewAsk.services.length > 0 ? (
-          <div className="mt-3">
-            <label
-              htmlFor="review-service"
-              className="font-mono text-[10px] uppercase tracking-wider text-muted"
-            >
-              Ask them to mention
-            </label>
-            <select
-              id="review-service"
-              value={ask}
-              onChange={(e) => setService(e.target.value)}
-              className="mt-1.5 w-full rounded-[12px] border border-ink bg-paper-2 px-3.5 py-3 text-[15px] outline-none"
-            >
-              <option value="">Nothing in particular</option>
-              {data.reviewAsk.services.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1.5 text-[12px] leading-relaxed text-muted">
-              {data.reviewAsk.mentioned === 0
-                ? "None of your reviews name a service yet. Google reads what a review says, so a review that names the work is worth more than one that says “good service”."
-                : `${data.reviewAsk.mentioned} of the things you do are named in your reviews. We suggest the one nobody has written about.`}
-            </p>
-          </div>
-        ) : null}
-
+      {!business.reviewUri ? (
         <button
           type="button"
-          onClick={() => void sendReviewLink()}
-          disabled={digits.length < 10 || busy}
-          className="btn btn-primary mt-3 w-full disabled:opacity-40"
+          onClick={() => void refreshListing()}
+          disabled={busy}
+          className="mt-4 font-mono text-[11px] underline underline-offset-4 hover:text-pin"
         >
-          {busy ? "working…" : "send review link"}
+          refresh listing from google
         </button>
-
-        {note ? (
-          <p className="mt-3 rounded-[12px] border border-open bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
-            {note}
-          </p>
-        ) : null}
-        {error ? (
-          <p
-            role="alert"
-            className="mt-3 rounded-[12px] border border-pin bg-pin-soft px-3.5 py-2.5 text-[13px] leading-snug"
-          >
-            {error}
-          </p>
-        ) : null}
-
-        {!business.reviewUri ? (
-          <button
-            type="button"
-            onClick={() => void refreshListing()}
-            disabled={busy}
-            className="mt-3 font-mono text-[11px] underline underline-offset-4 hover:text-pin"
-          >
-            refresh listing from google
-          </button>
-        ) : null}
-      </section>
+      ) : null}
 
       {/* --------------------------- agent state ------------------------- */}
       <section className="mt-6 rounded-[14px] border border-ink bg-paper-2 shadow-[3px_4px_0_var(--color-ink)]">
@@ -417,13 +310,6 @@ export default function HomePage() {
           </ul>
         )}
       </section>
-
-      {customers.total > 0 ? (
-        <p className="mt-6 text-center font-mono text-[11px] text-muted">
-          {customers.total} customers saved · {customers.linksSent} review links
-          sent
-        </p>
-      ) : null}
     </AppScreen>
   );
 }

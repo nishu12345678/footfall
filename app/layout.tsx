@@ -34,6 +34,13 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://footfall.zone";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  // Proves to Google Search Console that we own the domain. Search Console
+  // verification is what lets footfall.zone be an authorised domain on the
+  // OAuth consent screen, so removing this tag would break the Google
+  // connection, not just the search reporting.
+  verification: {
+    google: "jLgYVhR1S5umFCcmwDTQSmnj2cIlqbivodfmdl7G-yQ",
+  },
   title: "footfall — an ai that runs your google listing",
   description:
     "your google listing is where people nearby decide. footfall keeps it posting, replies to every review, collects new ones, and answers enquiries — so people walk in.",

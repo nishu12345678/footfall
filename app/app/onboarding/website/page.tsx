@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { Steps } from "@/components/steps";
 import { Working } from "@/components/working";
+import { shopUrl } from "@/lib/site-host";
 
 type Check = { id: string; label: string; passed: boolean; detail: string };
 
@@ -235,7 +236,7 @@ export default function WebsiteStepPage() {
 
             <div className="mt-5 flex flex-wrap gap-2">
               <a
-                href={`/s/${site.slug}`}
+                href={shopUrl(site.slug)}
                 target="_blank"
                 rel="noreferrer"
                 className="btn btn-ghost btn-sm"

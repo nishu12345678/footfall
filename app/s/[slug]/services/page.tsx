@@ -9,6 +9,7 @@ import {
 } from "@/components/site-chrome";
 import { enquiryMessage, loadSite, whatsappLink } from "@/lib/site-data";
 import { breadcrumbs } from "@/lib/site-schema";
+import { shopUrl } from "@/lib/site-host";
 
 export async function generateMetadata({
   params,
@@ -27,7 +28,7 @@ export async function generateMetadata({
       .slice(0, 4)
       .map((s) => s.name)
       .join(", ")}.`.slice(0, 155),
-    alternates: { canonical: `/s/${slug}/services` },
+    alternates: { canonical: shopUrl(slug, "/services") },
   };
 }
 

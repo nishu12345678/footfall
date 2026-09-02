@@ -13,6 +13,7 @@ import {
   whatsappLink,
 } from "@/lib/site-data";
 import { breadcrumbs } from "@/lib/site-schema";
+import { shopUrl } from "@/lib/site-host";
 
 export async function generateMetadata({
   params,
@@ -31,7 +32,7 @@ export async function generateMetadata({
         0,
         155,
       ),
-    alternates: { canonical: `/s/${slug}/contact` },
+    alternates: { canonical: shopUrl(slug, "/contact") },
   };
 }
 

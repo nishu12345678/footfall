@@ -4,6 +4,7 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
+import { shopUrl } from "@/lib/site-host";
 
 export default function WebsitePage() {
   const data = useQuery(api.site.mine);
@@ -17,7 +18,7 @@ export default function WebsitePage() {
   if (data === null) return <NeedsConnect />;
 
   const { business, site } = data;
-  const url = site ? `${window.location.origin}/s/${site.slug}` : null;
+  const url = site ? shopUrl(site.slug) : null;
 
   async function build() {
     setBusy(true);
@@ -84,7 +85,7 @@ export default function WebsitePage() {
 
             <div className="mt-4 flex flex-wrap gap-2">
               <a
-                href={`/s/${site.slug}`}
+                href={shopUrl(site.slug)}
                 target="_blank"
                 rel="noreferrer"
                 className="btn btn-primary btn-sm"

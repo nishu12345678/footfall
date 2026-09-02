@@ -8,6 +8,7 @@ import {
 } from "@/components/site-chrome";
 import { loadSite } from "@/lib/site-data";
 import { breadcrumbs } from "@/lib/site-schema";
+import { shopUrl } from "@/lib/site-host";
 
 export async function generateMetadata({
   params,
@@ -21,7 +22,7 @@ export async function generateMetadata({
   return {
     title: `About ${data.business.orgName}${data.business.city ? ` — ${data.business.city}` : ""}`,
     description: data.site.about.slice(0, 155),
-    alternates: { canonical: `/s/${slug}/about` },
+    alternates: { canonical: shopUrl(slug, "/about") },
   };
 }
 

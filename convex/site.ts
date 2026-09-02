@@ -21,14 +21,41 @@ import { paidAction, paidMutation, paidQuery } from "./access";
  * people in that area actually search.
  */
 
+/**
+ * Hosts we will never hand to a shop, however it is named.
+ * Keep in step with RESERVED in next.config.ts.
+ */
+const RESERVED_SLUGS = new Set([
+  "www",
+  "app",
+  "api",
+  "admin",
+  "mail",
+  "static",
+  "cdn",
+  "dev",
+  "footfall",
+]);
+
+/**
+ * The slug is the shop's subdomain — <slug>.footfall.site — so it has to be
+ * a legal DNS label: lowercase, alphanumeric and hyphens, no leading or
+ * trailing hyphen, 63 characters at the outside.
+ */
 function slugify(...parts: (string | undefined)[]) {
-  return parts
+  const base = parts
     .filter(Boolean)
     .join(" ")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
+    .slice(0, 60)
+    .replace(/-+$/g, "");
+
+  if (!base) return "shop";
+  // A label may not start with a digit-only word that reads as an IP part,
+  // and it may never be one of ours.
+  return RESERVED_SLUGS.has(base) ? `${base}-shop` : base;
 }
 
 /* ------------------------------ public read ----------------------------- */
@@ -106,7 +133,7 @@ export const bySlug = query({
 });
 
 /** The owner's own view, published or not. */
-export const mine = paidQuery({
+export const mine = query({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
@@ -195,15 +222,29 @@ export const saveSite = internalMutation({
       return existing.slug;
     }
 
-    // Keep slugs unique without a race: append a short suffix if taken.
+    // Two shops can share a name in different towns, and the slug is now a
+    // public address, so it should still read like the business. Try -2, -3
+    // before falling back to something random.
+    const taken = async (candidate: string) =>
+      Boolean(
+        await ctx.db
+          .query("sites")
+          .withIndex("by_slug", (q) => q.eq("slug", candidate))
+          .first(),
+      );
+
     let slug = args.slug;
-    if (
-      await ctx.db
-        .query("sites")
-        .withIndex("by_slug", (q) => q.eq("slug", slug))
-        .first()
-    ) {
-      slug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
+    if (await taken(slug)) {
+      let found = false;
+      for (let n = 2; n <= 9; n++) {
+        const candidate = `${args.slug}-${n}`;
+        if (!(await taken(candidate))) {
+          slug = candidate;
+          found = true;
+          break;
+        }
+      }
+      if (!found) slug = `${args.slug}-${Math.random().toString(36).slice(2, 6)}`;
     }
 
     await ctx.db.insert("sites", {
@@ -217,7 +258,7 @@ export const saveSite = internalMutation({
       businessId: args.businessId,
       type: "seo",
       title: "Website created",
-      detail: `/s/${slug}`,
+      detail: `${slug}.footfall.site`,
       createdAt: Date.now(),
     });
 
@@ -227,7 +268,7 @@ export const saveSite = internalMutation({
 
 /* ------------------------------ generation ------------------------------ */
 
-export const generateSite = paidAction({
+export const generateSite = action({
   args: {},
   handler: async (ctx): Promise<{ slug: string }> => {
     const userId = await getAuthUserId(ctx);
@@ -360,7 +401,7 @@ export const generateSite = paidAction({
   },
 });
 
-export const setPublished = paidMutation({
+export const setPublished = mutation({
   args: { published: v.boolean() },
   handler: async (ctx, { published }) => {
     const userId = await getAuthUserId(ctx);

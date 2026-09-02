@@ -270,7 +270,7 @@ export const report = query({
         title: "You have no website",
         detail:
           "A listing without a website loses to one with a website almost every time, and there is nowhere for a customer to read what you charge before they walk in.",
-        fix: "footfall builds you one from your listing — a page for each service and locality, hosted, nothing for you to maintain.",
+        fix: "footfall builds you one free, at your own address on footfall.site — built from your listing, hosted, nothing to maintain.",
       });
     } else if (!siteCheck) {
       findings.push({

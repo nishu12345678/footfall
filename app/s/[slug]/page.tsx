@@ -15,6 +15,7 @@ import {
   whatsappLink,
 } from "@/lib/site-data";
 import { buildJsonLd } from "@/lib/site-schema";
+import { shopUrl } from "@/lib/site-host";
 
 export async function generateMetadata({
   params,
@@ -28,7 +29,7 @@ export async function generateMetadata({
   return {
     title: data.site.metaTitle,
     description: data.site.metaDescription.slice(0, 155),
-    alternates: { canonical: `/s/${data.site.slug}` },
+    alternates: { canonical: shopUrl(data.site.slug, "") },
     openGraph: {
       title: data.site.metaTitle,
       description: data.site.metaDescription.slice(0, 155),

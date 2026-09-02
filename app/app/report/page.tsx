@@ -4,6 +4,7 @@ import { useAction, useQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { PRICING } from "@/lib/content";
+import { shopHost, shopUrl } from "@/lib/site-host";
 
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
@@ -31,7 +32,10 @@ const TONE = {
 export default function ReportPage() {
   const report = useQuery(api.audit.report);
   const checkWebsite = useAction(api.audit.checkWebsite);
+  const generateSite = useAction(api.site.generateSite);
   const [checking, setChecking] = useState(false);
+  const [building, setBuilding] = useState(false);
+  const [built, setBuilt] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
   if (report === undefined) {
@@ -68,6 +72,19 @@ export default function ReportPage() {
 
   const critical = report.findings.filter((f) => f.severity === "critical");
   const yearly = PRICING.plans.find((p) => p.id === "yearly");
+
+  const build = async () => {
+    setBuilding(true);
+    setNote(null);
+    try {
+      const r = await generateSite({});
+      setBuilt(r.slug);
+    } catch (e) {
+      setNote(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBuilding(false);
+    }
+  };
 
   const runCheck = async () => {
     setChecking(true);
@@ -176,10 +193,33 @@ export default function ReportPage() {
         <section className="card mt-5 p-5">
           <h2 className="text-[18px] font-bold">You have no website</h2>
           <p className="mt-2 text-[16px] leading-relaxed text-ink-soft">
-            footfall can build you one from your listing — a page for each
-            service and locality, hosted, nothing for you to maintain. It is
-            included in your plan.
+            We can build you one right now from your Google listing — your
+            services, your area, your hours, and the words people search.
+            It is free, it is hosted, and there is nothing for you to
+            maintain.
           </p>
+          {built ? (
+            <p className="mt-4 rounded-xl bg-open-soft p-4 text-[16px] leading-relaxed">
+              Your website is live at{" "}
+              <a
+                href={shopUrl(built)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-open underline underline-offset-4"
+              >
+                {shopHost(built)}
+              </a>
+            </p>
+          ) : (
+            <button
+              type="button"
+              onClick={build}
+              disabled={building}
+              className="btn btn-primary mt-4 w-full disabled:opacity-60"
+            >
+              {building ? "Building your website…" : "Build my free website"}
+            </button>
+          )}
         </section>
       )}
 

@@ -3,6 +3,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 import {
   action,
+  internalAction,
   internalMutation,
   internalQuery,
   query,
@@ -342,6 +343,10 @@ export const report = query({
           100,
       ),
       websiteCheckedAt: siteCheck?.checkedAt ?? null,
+      /* Null means we have never read the listing from Google. The UI must
+         fetch before it shows any of this, or it will tell a shop with two
+         hundred posts that it has never posted. */
+      listingSyncedAt: business.listingSyncedAt ?? null,
     };
   },
 });
@@ -489,5 +494,66 @@ export const napForUser = internalQuery({
       city: business?.city ?? null,
       phone: business?.phone ?? null,
     };
+  },
+});
+
+
+/* ------------------------------ reading Google ---------------------------
+   The report is free, but it has to be true. That means reading the live
+   listing rather than reporting on whatever happens to be in our tables:
+   posts the owner made themselves, photos they uploaded, reviews left this
+   morning. A free report that invents problems is worse than no report. */
+
+export const stampSynced = internalMutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }) => {
+    const business = await ctx.db
+      .query("businesses")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (business) {
+      await ctx.db.patch(business._id, { listingSyncedAt: Date.now() });
+    }
+  },
+});
+
+/**
+ * Pulls posts, photos, reviews and performance from Google in one go.
+ *
+ * allSettled rather than all: a shop with no performance data yet should
+ * still get its posts and reviews read. One failing call must not cost the
+ * owner the whole report.
+ */
+export const syncListing = internalAction({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }): Promise<{ ok: boolean }> => {
+    const results = await Promise.allSettled([
+      ctx.runAction(internal.posts.syncFromGoogleForUser, { userId }),
+      ctx.runAction(internal.photos.syncForUser, { userId }),
+      ctx.runAction(internal.reviews.syncForUser, { userId }),
+      ctx.runAction(internal.performance.syncMetricsForUser, {
+        userId,
+        days: 30,
+      }),
+    ]);
+
+    for (const r of results) {
+      if (r.status === "rejected") {
+        console.error("[audit] a listing sync step failed", r.reason);
+      }
+    }
+
+    await ctx.runMutation(internal.audit.stampSynced, { userId });
+    return { ok: results.some((r) => r.status === "fulfilled") };
+  },
+});
+
+/** The free "read my listing" button. Free, because the report is free. */
+export const refresh = action({
+  args: {},
+  handler: async (ctx): Promise<{ ok: boolean }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+    return await ctx.runAction(internal.audit.syncListing, { userId });
   },
 });

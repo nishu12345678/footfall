@@ -379,6 +379,11 @@ export const linkLocation = action({
       { userId, location },
     );
 
+    // Read the listing straight away. Without this the owner lands on a
+    // report built from empty tables, which reads as "you have nothing"
+    // when the truth is "we have not looked yet".
+    await ctx.scheduler.runAfter(0, internal.audit.syncListing, { userId });
+
     return { businessId };
   },
 });

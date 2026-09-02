@@ -1197,3 +1197,138 @@ export function headlineFor(body: string): string {
 
   return out.replace(/[,;:\-–—]$/, "").trim();
 }
+
+/* --------------------------- reading Google back -------------------------
+   Everything above writes posts to Google. Nothing read them back, so the
+   posts table only ever held what footfall itself published — and a shop
+   that had been posting from the Google app for years looked, to us, like
+   a shop that had never posted at all. That made the free report wrong in
+   the one direction a report must never be wrong: alarming and false. */
+
+type GooglePost = {
+  name?: unknown;
+  summary?: unknown;
+  createTime?: unknown;
+  state?: unknown;
+  media?: unknown;
+};
+
+export const saveGooglePosts = internalMutation({
+  args: {
+    businessId: v.id("businesses"),
+    posts: v.array(
+      v.object({
+        gbpPostName: v.string(),
+        body: v.string(),
+        publishedAt: v.number(),
+        imageUrl: v.optional(v.string()),
+      }),
+    ),
+  },
+  handler: async (ctx, { businessId, posts }) => {
+    const existing = await ctx.db
+      .query("posts")
+      .withIndex("by_business", (q) => q.eq("businessId", businessId))
+      .collect();
+    const known = new Set(
+      existing.map((p) => p.gbpPostName).filter(Boolean) as string[],
+    );
+
+    let added = 0;
+    for (const post of posts) {
+      if (known.has(post.gbpPostName)) continue;
+      await ctx.db.insert("posts", {
+        businessId,
+        body: post.body,
+        imageUrl: post.imageUrl,
+        status: "published",
+        publishedAt: post.publishedAt,
+        gbpPostName: post.gbpPostName,
+        // Theirs, not ours. Worth keeping straight when we report on it.
+        generatedBy: "google",
+      });
+      added += 1;
+    }
+    return { added, total: existing.length + added };
+  },
+});
+
+/** Pulls the posts already on the listing, so the report counts reality. */
+export const syncFromGoogleForUser = internalAction({
+  args: { userId: v.id("users") },
+  handler: async (
+    ctx,
+    { userId },
+  ): Promise<{ added: number; total: number }> => {
+    const business = await ctx.runQuery(internal.google.businessForUser, {
+      userId,
+    });
+    if (!business?.gbpAccountName || !business.gbpLocationName) {
+      return { added: 0, total: 0 };
+    }
+
+    const token: string = await ctx.runAction(internal.google.accessTokenFor, {
+      userId,
+    });
+    const locationId = business.gbpLocationName.replace(/^locations\//, "");
+    const parent = `${business.gbpAccountName}/locations/${locationId}`;
+
+    const collected: GooglePost[] = [];
+    let pageToken: string | undefined;
+
+    // A long-running shop can have hundreds. Three pages is plenty to judge
+    // whether the listing is alive.
+    for (let page = 0; page < 3; page++) {
+      const url = new URL(`${V4_BASE}/${parent}/localPosts`);
+      url.searchParams.set("pageSize", "100");
+      if (pageToken) url.searchParams.set("pageToken", pageToken);
+
+      const res = await fetch(url.toString(), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        console.error(
+          `[gbp] GET localPosts -> ${res.status} ${(await res.text()).slice(0, 300)}`,
+        );
+        break;
+      }
+
+      const json = (await res.json()) as {
+        localPosts?: GooglePost[];
+        nextPageToken?: unknown;
+      };
+      collected.push(...(json.localPosts ?? []));
+      pageToken =
+        typeof json.nextPageToken === "string" ? json.nextPageToken : undefined;
+      if (!pageToken) break;
+    }
+
+    const rows = collected.flatMap((p) => {
+      const name = typeof p.name === "string" ? p.name : null;
+      const created =
+        typeof p.createTime === "string" ? Date.parse(p.createTime) : NaN;
+      if (!name || Number.isNaN(created)) return [];
+
+      // A rejected post is not a published one.
+      if (typeof p.state === "string" && p.state === "REJECTED") return [];
+
+      const media = Array.isArray(p.media) ? p.media : [];
+      const first = media[0] as { googleUrl?: unknown } | undefined;
+
+      return [
+        {
+          gbpPostName: name,
+          body: typeof p.summary === "string" ? p.summary : "",
+          publishedAt: created,
+          imageUrl:
+            typeof first?.googleUrl === "string" ? first.googleUrl : undefined,
+        },
+      ];
+    });
+
+    return await ctx.runMutation(internal.posts.saveGooglePosts, {
+      businessId: business._id,
+      posts: rows,
+    });
+  },
+});

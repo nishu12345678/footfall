@@ -56,6 +56,11 @@ export default defineSchema({
     scanRadiusKm: v.optional(v.number()),
     radiusReason: v.optional(v.string()),
 
+    // When we last read the listing itself from Google — posts, photos and
+    // reviews. Null means we have never looked, which is not the same as
+    // the shop having none, and the report must not confuse the two.
+    listingSyncedAt: v.optional(v.number()),
+
     // When we last pulled performance data and ran a rank check.
     metricsSyncedAt: v.optional(v.number()),
     ranksCheckedAt: v.optional(v.number()),

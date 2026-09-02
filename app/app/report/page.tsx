@@ -1,12 +1,20 @@
 "use client";
 
 import { useAction, useQuery } from "convex/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { PRICING } from "@/lib/content";
 import { shopHost, shopUrl } from "@/lib/site-host";
 
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+
+const fmtDate = (ms: number) =>
+  new Date(ms).toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 
 const TONE = {
   critical: {
@@ -33,10 +41,36 @@ export default function ReportPage() {
   const report = useQuery(api.audit.report);
   const checkWebsite = useAction(api.audit.checkWebsite);
   const generateSite = useAction(api.site.generateSite);
+  const refresh = useAction(api.audit.refresh);
+  const [reading, setReading] = useState(false);
+  const asked = useRef(false);
   const [checking, setChecking] = useState(false);
   const [building, setBuilding] = useState(false);
   const [built, setBuilt] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+
+  /* Read the live listing before showing anything. Reporting on empty
+     tables told a shop that had posted for years that it had never posted
+     — the one kind of wrong a free report cannot afford to be. */
+  useEffect(() => {
+    if (!report || !report.connected || report.listingSyncedAt) return;
+    if (asked.current) return;
+    asked.current = true;
+    setReading(true);
+    refresh({}).finally(() => setReading(false));
+  }, [report, refresh]);
+
+  const readNow = async () => {
+    setReading(true);
+    setNote(null);
+    try {
+      await refresh({});
+    } catch (e) {
+      setNote(e instanceof Error ? e.message : String(e));
+    } finally {
+      setReading(false);
+    }
+  };
 
   if (report === undefined) {
     return (
@@ -66,6 +100,29 @@ export default function ReportPage() {
         <a href="/app/connect" className="btn btn-primary mt-7 w-full">
           Connect Google Business Profile
         </a>
+      </main>
+    );
+  }
+
+  if (!report.listingSyncedAt) {
+    return (
+      <main className="mx-auto max-w-md px-5 py-16 text-center">
+        <p className="text-[19px] font-semibold">
+          Reading your Google listing…
+        </p>
+        <p className="mt-3 text-[16px] leading-relaxed text-muted">
+          We&rsquo;re pulling your real posts, photos and reviews from Google.
+          This takes a few seconds the first time.
+        </p>
+        {!reading ? (
+          <button
+            type="button"
+            onClick={readNow}
+            className="btn btn-primary mt-7 w-full"
+          >
+            Try again
+          </button>
+        ) : null}
       </main>
     );
   }
@@ -144,6 +201,20 @@ export default function ReportPage() {
           ))}
         </dl>
       </section>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-[14px] text-muted">
+          Read from Google on {fmtDate(report.listingSyncedAt)}
+        </p>
+        <button
+          type="button"
+          onClick={readNow}
+          disabled={reading}
+          className="text-[14px] font-semibold text-pin underline underline-offset-4 disabled:opacity-60"
+        >
+          {reading ? "Reading…" : "Refresh"}
+        </button>
+      </div>
 
       <ul className="mt-6 grid gap-3">
         {report.findings.map((f) => {

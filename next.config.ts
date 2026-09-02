@@ -3,15 +3,16 @@ import type { NextConfig } from "next";
 /**
  * Shop sites answer on their own subdomain.
  *
- * A shop's free site lives at <slug>.footfall.site and is served by the
+ * A shop's free site lives at <slug>.footfall.zone and is served by the
  * same /s/<slug> pages. This is a host rewrite rather than middleware on
  * purpose: middleware here is wired to Convex Auth, and a shop's website
  * must not depend on the auth system being up. A rewrite is pure routing.
  *
- * Reserved labels are excluded so www.footfall.site and friends can never
- * be claimed by a business called "WWW".
+ * The apex — footfall.zone itself — carries no subdomain label, so it never
+ * matches and the marketing page is untouched. Reserved labels are excluded
+ * so www and friends can never be claimed by an awkwardly named business.
  */
-const SITE_DOMAIN = (process.env.NEXT_PUBLIC_SITE_DOMAIN ?? "footfall.site")
+const SITE_DOMAIN = (process.env.NEXT_PUBLIC_SITE_DOMAIN ?? "footfall.zone")
   .replace(/\./g, "\\.");
 
 const RESERVED = ["www", "app", "api", "admin", "mail", "static", "cdn", "dev"];

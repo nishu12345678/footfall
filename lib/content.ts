@@ -236,7 +236,7 @@ export const REPORT = {
     {
       icon: "🌐",
       label: "Your website",
-      line: "We read it and list what it is missing. No website? We build you one free, at yourshop.footfall.site.",
+      line: "We read it and list what it is missing. No website? We build you one free, at yourshop.footfall.zone.",
     },
   ],
   freeLine: "Free, and it stays free.",
@@ -384,7 +384,7 @@ export const PRICING = {
       "Full Google listing health check",
       "Everything that is broken, ranked worst first",
       "Your website read and checked",
-      "A free one-page website at yourshop.footfall.site",
+      "A free one-page website at yourshop.footfall.zone",
       "What each fix is worth",
     ],
   },

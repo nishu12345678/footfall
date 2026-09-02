@@ -1,7 +1,7 @@
 /**
  * Where a shop's free site actually lives.
  *
- * The address is <slug>.footfall.site, served by the /s/<slug> pages through
+ * The address is <slug>.footfall.zone, served by the /s/<slug> pages through
  * the host rewrite in next.config.ts.
  *
  * It only switches over once NEXT_PUBLIC_SITE_DOMAIN is set. Until the DNS

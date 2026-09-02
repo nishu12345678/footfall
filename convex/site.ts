@@ -38,7 +38,7 @@ const RESERVED_SLUGS = new Set([
 ]);
 
 /**
- * The slug is the shop's subdomain — <slug>.footfall.site — so it has to be
+ * The slug is the shop's subdomain — <slug>.footfall.zone — so it has to be
  * a legal DNS label: lowercase, alphanumeric and hyphens, no leading or
  * trailing hyphen, 63 characters at the outside.
  */
@@ -258,7 +258,7 @@ export const saveSite = internalMutation({
       businessId: args.businessId,
       type: "seo",
       title: "Website created",
-      detail: `${slug}.footfall.site`,
+      detail: `${slug}.footfall.zone`,
       createdAt: Date.now(),
     });
 

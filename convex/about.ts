@@ -9,6 +9,7 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
+import { paidAction, paidMutation, paidQuery } from "./access";
 
 /**
  * Step 3 — what the shop actually sells, and what it's known for.
@@ -36,7 +37,7 @@ async function businessFor(ctx: {
 
 /* -------------------------------- read ---------------------------------- */
 
-export const list = query({
+export const list = paidQuery({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
@@ -65,7 +66,7 @@ export const list = query({
 
 /* ------------------------------- mutate --------------------------------- */
 
-export const add = mutation({
+export const add = paidMutation({
   args: { kind: v.string(), label: v.string(), source: v.string() },
   handler: async (ctx, { kind, label, source }) => {
     const businessId = await businessFor(ctx as never);
@@ -96,7 +97,7 @@ export const add = mutation({
   },
 });
 
-export const remove = mutation({
+export const remove = paidMutation({
   args: { kind: v.string(), id: v.string() },
   handler: async (ctx, { kind, id }) => {
     await businessFor(ctx as never);
@@ -106,7 +107,7 @@ export const remove = mutation({
   },
 });
 
-export const complete = mutation({
+export const complete = paidMutation({
   args: {},
   handler: async (ctx) => {
     const businessId = await businessFor(ctx as never);
@@ -236,7 +237,7 @@ async function webContext(
   return chunks.join("\n\n").slice(0, 7000);
 }
 
-export const suggest = action({
+export const suggest = paidAction({
   args: { kind: v.string() },
   handler: async (ctx, { kind }): Promise<string[]> => {
     const userId = await getAuthUserId(ctx);

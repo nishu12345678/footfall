@@ -9,8 +9,11 @@
  */
 
 import type * as about from "../about.js";
+import type * as access from "../access.js";
 import type * as admin from "../admin.js";
+import type * as audit from "../audit.js";
 import type * as auth from "../auth.js";
+import type * as billing from "../billing.js";
 import type * as branding from "../branding.js";
 import type * as businesses from "../businesses.js";
 import type * as crons from "../crons.js";
@@ -35,8 +38,11 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   about: typeof about;
+  access: typeof access;
   admin: typeof admin;
+  audit: typeof audit;
   auth: typeof auth;
+  billing: typeof billing;
   branding: typeof branding;
   businesses: typeof businesses;
   crons: typeof crons;

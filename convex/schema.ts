@@ -291,4 +291,54 @@ export default defineSchema({
     imageUrl: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_business", ["businessId"]),
+
+  /* ------------------------------- billing ---------------------------------
+     One row per purchase, so this table doubles as the receipt ledger.
+
+     Access is "does this user have a paid row whose expiresAt is still in
+     the future". There is no separate is_subscribed flag to drift out of
+     sync with what was actually paid. */
+
+  subscriptions: defineTable({
+    userId: v.id("users"),
+    plan: v.string(), // "monthly" | "yearly"
+    /** What Razorpay was actually asked for, in paise. Never trusted from
+        the browser — the server picks it from its own plan table. */
+    amountPaise: v.number(),
+    currency: v.string(),
+    razorpayOrderId: v.string(),
+    razorpayPaymentId: v.optional(v.string()),
+    /** "created" until the money is captured, then "paid". Only "paid"
+        rows grant access. */
+    status: v.string(),
+    paidAt: v.optional(v.number()),
+    startsAt: v.optional(v.number()),
+    expiresAt: v.optional(v.number()),
+    /** Which side confirmed it — the browser handing back a signature, or
+        Razorpay's webhook. Both can arrive; whichever lands first wins and
+        the other is ignored. Worth keeping when reconciling a dispute. */
+    confirmedBy: v.optional(v.string()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_order", ["razorpayOrderId"]),
+
+  /* ------------------------------ free report ------------------------------
+     What we found when we looked at the shop's website. Cached because it
+     costs a Firecrawl call, and a free user can ask for the report as often
+     as they like. */
+
+  websiteChecks: defineTable({
+    businessId: v.id("businesses"),
+    url: v.string(),
+    reachable: v.boolean(),
+    checkedAt: v.number(),
+    title: v.optional(v.string()),
+    description: v.optional(v.string()),
+    wordCount: v.optional(v.number()),
+    /** Does the page actually say where the shop is and how to ring it?
+        A site that names neither is invisible for "near me" searches. */
+    namesCity: v.optional(v.boolean()),
+    namesPhone: v.optional(v.boolean()),
+    error: v.optional(v.string()),
+  }).index("by_business", ["businessId"]),
 });

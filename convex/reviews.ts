@@ -9,6 +9,7 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
+import { paidAction, paidMutation } from "./access";
 
 /**
  * Reviews from the Google Business Profile.
@@ -194,7 +195,7 @@ export const unrepliedFor = internalQuery({
 });
 
 /** What the owner presses, and what the page calls on open. */
-export const syncFromGoogle = action({
+export const syncFromGoogle = paidAction({
   args: {},
   handler: async (
     ctx,
@@ -601,7 +602,7 @@ export const noteHeld = internalMutation({
 /* ---------------------------- what the owner does ----------------------- */
 
 /** Sends a held reply, with any edits the owner made. */
-export const approveReply = action({
+export const approveReply = paidAction({
   args: { id: v.id("reviews"), text: v.optional(v.string()) },
   handler: async (
     ctx,
@@ -623,7 +624,7 @@ export const approveReply = action({
 });
 
 /** Writes a different draft for the same review. */
-export const rewriteReply = action({
+export const rewriteReply = paidAction({
   args: { id: v.id("reviews") },
   handler: async (ctx, { id }): Promise<string | null> => {
     const userId = await getAuthUserId(ctx);
@@ -646,7 +647,7 @@ export const rewriteReply = action({
 });
 
 /** Puts a review back to unanswered, so nothing goes out. */
-export const discardDraft = mutation({
+export const discardDraft = paidMutation({
   args: { id: v.id("reviews") },
   handler: async (ctx, { id }) => {
     const userId = await getAuthUserId(ctx);
@@ -661,7 +662,7 @@ export const discardDraft = mutation({
 });
 
 /** The owner pressing "reply to everything waiting". */
-export const answerNow = action({
+export const answerNow = paidAction({
   args: {},
   handler: async (ctx): Promise<{ published: number; held: number }> => {
     const userId = await getAuthUserId(ctx);

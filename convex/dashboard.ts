@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { paidMutation, paidQuery } from "./access";
 
 /**
  * Everything the home screen shows, in one query.
@@ -8,7 +9,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
  * Counts are real. A fresh account reads zero, and the screen says so
  * plainly rather than dressing an empty account up as a busy one.
  */
-export const home = query({
+export const home = paidQuery({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
@@ -163,7 +164,7 @@ export const home = query({
  * Adds a customer and marks that we handed them the review link.
  * Their number is the start of the customer list the shop never had.
  */
-export const addCustomer = mutation({
+export const addCustomer = paidMutation({
   args: {
     phone: v.string(),
     name: v.optional(v.string()),

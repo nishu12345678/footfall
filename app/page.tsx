@@ -6,6 +6,7 @@ import { How } from "@/components/how";
 import { Nav } from "@/components/nav";
 import { Pricing } from "@/components/pricing";
 import { Proof } from "@/components/proof";
+import { Report } from "@/components/report";
 import { Start } from "@/components/start";
 import { Trades, TrustBar } from "@/components/trades";
 import { Vision } from "@/components/vision";
@@ -21,6 +22,9 @@ export default function Page() {
             before they reach the reasoning. */}
         <TrustBar />
         <Trades />
+        {/* The free report is the cheapest yes on the page, so it comes
+            before any argument about price. */}
+        <Report />
         <How />
         <Does />
         <Vision />

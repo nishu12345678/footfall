@@ -1,7 +1,13 @@
 import { v } from "convex/values";
-import { action, internalMutation, mutation, query } from "./_generated/server";
+import {
+  action,
+  internalMutation,
+  mutation,
+  query,
+} from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { paidAction, paidMutation, paidQuery } from "./access";
 
 /** The signed-in owner's business, or null if they haven't connected yet. */
 export const mine = query({
@@ -21,7 +27,7 @@ export const mine = query({
  * Step 2 — the owner confirms what Google already told us.
  * Everything here arrives pre-filled; they're reviewing, not typing.
  */
-export const updateLocation = mutation({
+export const updateLocation = paidMutation({
   args: {
     orgName: v.string(),
     locationName: v.optional(v.string()),
@@ -93,7 +99,7 @@ export const saveRadius = internalMutation({
  * Cheap, runs once, and falls back to the table above if the model is
  * unavailable or answers with something unreasonable.
  */
-export const tuneRadius = action({
+export const tuneRadius = paidAction({
   args: { force: v.optional(v.boolean()) },
   handler: async (
     ctx,

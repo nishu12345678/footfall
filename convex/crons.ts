@@ -54,6 +54,14 @@ crons.weekly(
   internal.posts.topUpPlans,
 );
 
+// Nothing auto-debits, so the only warning an owner gets that their plan
+// is about to lapse is this one.
+crons.daily(
+  "warn about plans running out",
+  { hourUTC: 4, minuteUTC: 0 }, // 09:30 IST
+  internal.billing.remindExpiring,
+);
+
 crons.weekly(
   "check keyword ranks",
   { dayOfWeek: "monday", hourUTC: 2, minuteUTC: 0 }, // 07:30 IST Monday

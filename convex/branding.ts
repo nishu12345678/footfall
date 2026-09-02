@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { action, internalMutation, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { paidAction, paidMutation, paidQuery } from "./access";
 
 /**
  * Step 5 — the logo we stamp on every post image, and the switch that turns
@@ -19,7 +20,7 @@ async function requireBusiness(ctx: any) {
   return business;
 }
 
-export const get = query({
+export const get = paidQuery({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
@@ -42,7 +43,7 @@ export const get = query({
 });
 
 /** Convex hands the browser a one-time URL to upload straight to storage. */
-export const generateUploadUrl = mutation({
+export const generateUploadUrl = paidMutation({
   args: {},
   handler: async (ctx) => {
     await requireBusiness(ctx);
@@ -50,7 +51,7 @@ export const generateUploadUrl = mutation({
   },
 });
 
-export const saveLogo = mutation({
+export const saveLogo = paidMutation({
   args: { storageId: v.id("_storage"), background: v.string() },
   handler: async (ctx, { storageId, background }) => {
     const business = await requireBusiness(ctx);
@@ -63,7 +64,7 @@ export const saveLogo = mutation({
   },
 });
 
-export const setLogoBackground = mutation({
+export const setLogoBackground = paidMutation({
   args: { background: v.string() },
   handler: async (ctx, { background }) => {
     const business = await requireBusiness(ctx);
@@ -75,7 +76,7 @@ export const setLogoBackground = mutation({
  * Finishes setup and switches the agent on. From here the product is
  * supposed to work without the owner opening it again.
  */
-export const finishOnboarding = mutation({
+export const finishOnboarding = paidMutation({
   args: {},
   handler: async (ctx) => {
     const business = await requireBusiness(ctx);
@@ -166,7 +167,7 @@ async function scrapeForImages(url: string, key: string): Promise<string[]> {
  * website we happen to have on file — a local business's real logo is often
  * on a listing site or a social page rather than a site they built.
  */
-export const findLogoCandidates = action({
+export const findLogoCandidates = paidAction({
   args: {},
   handler: async (ctx): Promise<string[]> => {
     const userId = await getAuthUserId(ctx);
@@ -247,7 +248,7 @@ export const findLogoCandidates = action({
  * Copies a chosen image into Convex storage, so the logo keeps working even
  * if the shop's website changes or goes down.
  */
-export const useLogoFromUrl = action({
+export const useLogoFromUrl = paidAction({
   args: { url: v.string(), background: v.optional(v.string()) },
   handler: async (
     ctx,

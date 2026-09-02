@@ -20,7 +20,7 @@ export function Start() {
           <p className="mx-auto mt-6 max-w-lg text-[19px] leading-relaxed text-white/85">
             Send us your business name and area. We&rsquo;ll pull up your Google
             listing, tell you exactly what&rsquo;s broken on it, and fix the
-            first three things free — today, while you watch.
+            first three things with you — today, while you watch.
           </p>
 
           <div className="mt-9 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">

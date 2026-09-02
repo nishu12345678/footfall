@@ -9,6 +9,7 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
+import { paidAction, paidMutation, paidQuery } from "./access";
 
 /**
  * Step 4 — the parts of the listing that decide whether anyone finds it:
@@ -50,7 +51,7 @@ async function requireBusiness(ctx: any) {
 
 /* -------------------------------- read ---------------------------------- */
 
-export const list = query({
+export const list = paidQuery({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
@@ -96,7 +97,7 @@ export const list = query({
 
 /* --------------------------- service areas ------------------------------ */
 
-export const addServiceArea = mutation({
+export const addServiceArea = paidMutation({
   args: { name: v.string() },
   handler: async (ctx, { name }) => {
     const business = await requireBusiness(ctx);
@@ -117,7 +118,7 @@ export const addServiceArea = mutation({
   },
 });
 
-export const removeServiceArea = mutation({
+export const removeServiceArea = paidMutation({
   args: { id: v.id("serviceAreas") },
   handler: async (ctx, { id }) => {
     await requireBusiness(ctx);
@@ -127,7 +128,7 @@ export const removeServiceArea = mutation({
 
 /* ------------------------------ keywords -------------------------------- */
 
-export const addKeyword = mutation({
+export const addKeyword = paidMutation({
   args: { term: v.string() },
   handler: async (ctx, { term }) => {
     const business = await requireBusiness(ctx);
@@ -149,7 +150,7 @@ export const addKeyword = mutation({
   },
 });
 
-export const removeKeyword = mutation({
+export const removeKeyword = paidMutation({
   args: { id: v.id("keywords") },
   handler: async (ctx, { id }) => {
     await requireBusiness(ctx);
@@ -202,7 +203,7 @@ export const keywordContext = internalQuery({
  * "hair spa thane west" — trade plus locality, which is what a local
  * business can realistically win.
  */
-export const suggestKeywords = action({
+export const suggestKeywords = paidAction({
   args: {},
   handler: async (ctx): Promise<string[]> => {
     const userId = await getAuthUserId(ctx);
@@ -280,7 +281,7 @@ export const suggestKeywords = action({
 
 /* -------------------------------- hours --------------------------------- */
 
-export const setHours = mutation({
+export const setHours = paidMutation({
   args: {
     hours: v.array(
       v.object({
@@ -336,7 +337,7 @@ export const saveSyncedHours = internalMutation({
 
 /* ------------------------------ attributes ------------------------------ */
 
-export const toggleAttribute = mutation({
+export const toggleAttribute = paidMutation({
   args: { key: v.string(), label: v.string(), enabled: v.boolean() },
   handler: async (ctx, { key, label, enabled }) => {
     const business = await requireBusiness(ctx);
@@ -362,7 +363,7 @@ export const toggleAttribute = mutation({
 
 /* ------------------------------- complete ------------------------------- */
 
-export const complete = mutation({
+export const complete = paidMutation({
   args: {},
   handler: async (ctx) => {
     const business = await requireBusiness(ctx);
@@ -443,7 +444,7 @@ async function competition(
   return { topReviews, rivals: results.length };
 }
 
-export const researchKeywords = action({
+export const researchKeywords = paidAction({
   args: { deep: v.optional(v.boolean()) },
   handler: async (ctx, { deep = false }): Promise<Researched[]> => {
     const userId = await getAuthUserId(ctx);
@@ -566,7 +567,7 @@ export const researchKeywords = action({
    address from Google, so those go in by themselves, and the localities
    around it are offered as suggestions to confirm.                        */
 
-export const seedServiceAreas = mutation({
+export const seedServiceAreas = paidMutation({
   args: {},
   handler: async (ctx): Promise<string[]> => {
     const business = await requireBusiness(ctx);
@@ -601,7 +602,7 @@ export const seedServiceAreas = mutation({
  * it. So this works on a radius the owner picks, and every name is a place
  * that actually exists on the map rather than something a model recalled.
  */
-export const setServiceRadius = mutation({
+export const setServiceRadius = paidMutation({
   args: { radiusKm: v.number() },
   handler: async (ctx, { radiusKm }) => {
     const business = await requireBusiness(ctx);
@@ -611,7 +612,7 @@ export const setServiceRadius = mutation({
   },
 });
 
-export const nearbyAreas = action({
+export const nearbyAreas = paidAction({
   args: { radiusKm: v.optional(v.number()) },
   handler: async (
     ctx,

@@ -9,6 +9,7 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
+import { paidAction, paidMutation, paidQuery } from "./access";
 
 /**
  * A free one-page website for shops that don't have one.
@@ -105,7 +106,7 @@ export const bySlug = query({
 });
 
 /** The owner's own view, published or not. */
-export const mine = query({
+export const mine = paidQuery({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
@@ -226,7 +227,7 @@ export const saveSite = internalMutation({
 
 /* ------------------------------ generation ------------------------------ */
 
-export const generateSite = action({
+export const generateSite = paidAction({
   args: {},
   handler: async (ctx): Promise<{ slug: string }> => {
     const userId = await getAuthUserId(ctx);
@@ -359,7 +360,7 @@ export const generateSite = action({
   },
 });
 
-export const setPublished = mutation({
+export const setPublished = paidMutation({
   args: { published: v.boolean() },
   handler: async (ctx, { published }) => {
     const userId = await getAuthUserId(ctx);
@@ -394,7 +395,7 @@ export type SiteCheck = {
   detail: string;
 };
 
-export const reviewExistingSite = action({
+export const reviewExistingSite = paidAction({
   args: {},
   handler: async (
     ctx,

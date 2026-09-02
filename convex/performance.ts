@@ -8,6 +8,7 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
+import { paidAction } from "./access";
 
 /**
  * The two jobs behind the Performance screen.
@@ -531,7 +532,7 @@ export const saveGrid = internalMutation({
  * owner can see how far their ranking reaches. 3x3 by default: 9 SerpApi
  * calls per keyword per run.
  */
-export const runGeoGrid = action({
+export const runGeoGrid = paidAction({
   args: {
     keyword: v.string(),
     size: v.optional(v.number()),
@@ -619,7 +620,7 @@ export const rankContext = internalQuery({
 
 /* --------------------------- public wrappers ---------------------------- */
 
-export const syncMetrics = action({
+export const syncMetrics = paidAction({
   args: { days: v.optional(v.number()) },
   handler: async (
     ctx,
@@ -639,7 +640,7 @@ export const syncMetrics = action({
   },
 });
 
-export const checkRanks = action({
+export const checkRanks = paidAction({
   args: {},
   handler: async (
     ctx,

@@ -10,7 +10,7 @@ export function Nav() {
             {PRICING.offer.heading}
           </span>
           <span className="hidden text-[14px] text-white/80 sm:inline">
-            — five local shops, set up by hand, free this week
+            — five local shops, set up by hand, this week
           </span>
           <a
             href={LINKS.cta}

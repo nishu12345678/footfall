@@ -10,6 +10,7 @@ import type { ActionCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Doc, Id } from "./_generated/dataModel";
+import { paidAction, paidMutation } from "./access";
 
 /**
  * Google Business Profile connection.
@@ -925,7 +926,7 @@ export const pushServicesForUser = internalAction({
   },
 });
 
-export const pushServices = action({
+export const pushServices = paidAction({
   args: {},
   handler: async (ctx): Promise<{ pushed: number; error?: string }> => {
     const userId = await getAuthUserId(ctx);

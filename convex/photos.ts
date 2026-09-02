@@ -9,6 +9,7 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
+import { paidAction, paidMutation } from "./access";
 
 /**
  * Photos on the Google Business Profile.
@@ -140,7 +141,7 @@ export const syncForUser = internalAction({
 
 /* ------------------------------- upload up ------------------------------ */
 
-export const generateUploadUrl = mutation({
+export const generateUploadUrl = paidMutation({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
@@ -149,7 +150,7 @@ export const generateUploadUrl = mutation({
   },
 });
 
-export const savePhoto = mutation({
+export const savePhoto = paidMutation({
   args: {
     storageId: v.id("_storage"),
     caption: v.optional(v.string()),
@@ -177,7 +178,7 @@ export const savePhoto = mutation({
   },
 });
 
-export const removePhoto = mutation({
+export const removePhoto = paidMutation({
   args: { id: v.id("photos") },
   handler: async (ctx, { id }) => {
     const userId = await getAuthUserId(ctx);
@@ -269,7 +270,7 @@ export const pushPhoto = internalAction({
   },
 });
 
-export const publishPhoto = action({
+export const publishPhoto = paidAction({
   args: { id: v.id("photos") },
   handler: async (ctx, { id }): Promise<{ ok: boolean; error?: string }> => {
     const userId = await getAuthUserId(ctx);
@@ -349,7 +350,7 @@ export const publishDaily = internalAction({
   },
 });
 
-export const syncFromGoogle = action({
+export const syncFromGoogle = paidAction({
   args: {},
   handler: async (ctx): Promise<{ added: number; total: number }> => {
     const userId = await getAuthUserId(ctx);

@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { action, internalMutation, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { paidAction } from "./access";
 
 /**
  * Keyword research for a local business.
@@ -448,7 +449,7 @@ export type Researched = {
   added?: boolean;
 };
 
-export const research = action({
+export const research = paidAction({
   args: { deep: v.optional(v.boolean()) },
   handler: async (ctx, { deep = false }): Promise<Researched[]> => {
     const userId = await getAuthUserId(ctx);

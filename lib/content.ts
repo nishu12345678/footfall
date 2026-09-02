@@ -38,7 +38,7 @@ export const LINKS = {
 export const NAV = [
   { label: "How it works", href: "#how" },
   { label: "Who it's for", href: "#trades" },
-  { label: "What it does", href: "#does" },
+  { label: "Free report", href: "#report" },
   { label: "Pricing", href: "#pricing" },
   { label: "FAQ", href: "#faq" },
 ];
@@ -47,10 +47,10 @@ export const HERO = {
   chip: "Built for Indian shops, clinics and salons",
   headline: "Get more customers from Google, without doing it yourself",
   sub: "footfall is an AI that runs your Google Business Profile — posting every week, replying to every review, and answering enquiries on WhatsApp while you run the shop.",
-  ctaPrimary: "Try now — free",
+  ctaPrimary: "Get my free report",
   ctaWhatsapp: "Talk on WhatsApp",
   support:
-    "Free to start · No contract · Works with your existing Google profile",
+    "Free report first · No card needed · Works with your existing Google profile",
   /* Small reassurances that sit under the buttons. These matter more
      than another paragraph to someone deciding whether to trust this. */
   trust: ["No agency retainer", "Setup takes 40 seconds", "Cancel any time"],
@@ -192,6 +192,60 @@ export const TRUST = [
   "English, Hindi or a mix — however your customers write",
 ];
 
+/* ------------------------------ free report ------------------------------
+   The entry point. Somebody who will never read a pricing page still wants
+   to know what is wrong with their own listing, and the report is the
+   honest way to show them. Every check listed here is one the product
+   actually runs — see convex/audit.ts. */
+
+export const REPORT = {
+  eyebrow: "Free report",
+  heading: "See what’s wrong with your listing — free",
+  sub: "Connect your Google profile and we’ll show you exactly what is costing you customers. No payment, no setup forms, and nothing gets published.",
+  steps: [
+    "Sign in with Google",
+    "Connect your Business Profile",
+    "Read your report",
+  ],
+  checks: [
+    {
+      icon: "📝",
+      label: "Posts",
+      line: "When you last posted, and how long Google has read your listing as dormant.",
+    },
+    {
+      icon: "⭐",
+      label: "Reviews",
+      line: "How many sit unanswered — and which of them are actively costing you walk-ins.",
+    },
+    {
+      icon: "📷",
+      label: "Photos",
+      line: "How far short you are of the count that moves calls and direction requests.",
+    },
+    {
+      icon: "🔍",
+      label: "Keywords",
+      line: "Whether you appear in the top 3 for anything people near you actually type.",
+    },
+    {
+      icon: "🕒",
+      label: "Hours & services",
+      line: "What is missing that leaves Google guessing what you sell and when you are open.",
+    },
+    {
+      icon: "🌐",
+      label: "Your website",
+      line: "We read it and list what it is missing. No website? We tell you what we would build.",
+    },
+  ],
+  freeLine: "Free, and it stays free.",
+  paidLine:
+    "On a plan, footfall fixes every one of these — every week, without you.",
+  cta: "Get my free report",
+  note: "About 40 seconds. Nothing is published and nothing on your listing changes.",
+};
+
 export const VISION = {
   eyebrow: "Why we built this",
   heading: "The money is going to the wrong screen",
@@ -250,7 +304,7 @@ export const DOES = {
       tag: "Posts",
       title: "It posts in your voice, every week",
       body: "Google quietly rewards a listing that is alive. We write and publish posts about your real services and real prices — offers, timings, new services, festival hours. You approve on WhatsApp, or let it run.",
-      detail: "1 post a month on Free · Unlimited on Pro",
+      detail: "Every week, on both plans",
     },
     {
       tag: "Reviews",
@@ -268,7 +322,7 @@ export const DOES = {
       tag: "Service pages",
       title: "It builds a page for each service you sell",
       body: "One page per service, per locality — “Hair spa in Thane West” — with your prices, your photos and your hours. These are the pages that catch searches your listing alone cannot reach.",
-      detail: "Included on Max · Hosted, nothing for you to maintain",
+      detail: "Hosted for you, nothing to maintain",
     },
   ],
 };
@@ -316,66 +370,66 @@ export const PROOF = {
 
 export const PRICING = {
   eyebrow: "Pricing",
-  heading: "Less than one week of your agency",
-  sub: "Three plans. Cancel from the app any time — no phone call.",
+  heading: "One plan. Two ways to pay.",
+  sub: "The report is free for everyone. A plan is what makes footfall actually do the work.",
   anchor:
-    "The freelancer posting on your Instagram charges ₹8,000–15,000 a month. This is the same money doing work you can see.",
-  yearlyDiscountLabel: "Save 20%",
+    "The freelancer posting on your Instagram charges ₹8,000–15,000 a month. This is the same work, done on the screen your customers actually search, for a fraction of it.",
+  launchNote:
+    "Launch pricing. It goes up once the first shops are running — whatever you start on is what you keep paying.",
+  free: {
+    name: "Free",
+    line: "The report on your listing. No card, no expiry.",
+    cta: "Get my free report",
+    features: [
+      "Full Google listing health check",
+      "Everything that is broken, ranked worst first",
+      "Your website read and checked",
+      "What each fix is worth",
+    ],
+  },
+  /* Prices are shown here and enforced in convex/billing.ts. If you change
+     one, change the other — the server never trusts an amount from the
+     browser. */
   plans: [
     {
-      id: "free",
-      name: "Free",
+      id: "monthly",
+      name: "Monthly",
       badge: "",
-      priceMonthly: 0,
-      priceYearly: 0,
-      line: "See the real state of your listing.",
-      best: "Best for finding out how bad it is",
-      cta: "Try now",
-      features: [
-        "Full listing health check",
-        "1 Google post a month",
-        "Review replies — drafted for you to paste",
-        "Your top 10 local keywords",
-      ],
+      price: 1999,
+      listPrice: 2499,
+      period: "month",
+      perMonth: 1999,
+      line: "Pay month to month.",
+      best: "Best for trying it through one season",
+      cta: "Start monthly",
     },
     {
-      id: "pro",
-      name: "Pro",
-      badge: "Most popular",
-      priceMonthly: 499,
-      priceYearly: 399,
-      line: "The listing runs itself.",
-      best: "Best for a shop that wants walk-ins",
-      cta: "Get Pro",
-      features: [
-        "Unlimited posts, published for you",
-        "Automatic review replies, in your voice",
-        "Review collection link + counter QR",
-        "WhatsApp enquiry replies, 24/7",
-        "Monthly calls & direction-request report",
-      ],
+      id: "yearly",
+      name: "Yearly",
+      badge: "Save ₹14,000",
+      price: 9999,
+      listPrice: 19999,
+      period: "year",
+      perMonth: 833,
+      line: "One payment, a full year.",
+      best: "Best for a shop that is staying",
+      cta: "Start yearly",
     },
-    {
-      id: "max",
-      name: "Max",
-      badge: "",
-      priceMonthly: 1499,
-      priceYearly: 1199,
-      line: "Everything, plus the pages.",
-      best: "Best for multiple services or branches",
-      cta: "Get Max",
-      features: [
-        "Everything in Pro",
-        "Service pages per locality",
-        "Up to 3 branches on one account",
-        "Competitor rank tracking each week",
-        "WhatsApp offers to past customers",
-      ],
-    },
+  ],
+  /* The same list on both plans, because it is the same product. */
+  features: [
+    "Google posts written and published every week",
+    "Every review answered, in your voice",
+    "Review collection link and counter QR code",
+    "WhatsApp enquiry replies, day and night",
+    "Your local keywords, refreshed every month",
+    "A service page for each thing you sell",
+    "Calls, direction requests and walk-ins, tracked",
+    "Approve on WhatsApp, or let it run by itself",
   ],
   offer: {
     heading: "First five shops",
-    body: "We're taking five local businesses this week and doing it with them, by hand, for free. You get the founder's phone number and every fix the same day. In return you tell us the truth about what's useless.",
+    body: "We’re taking five local businesses this week and doing it with them, by hand. You get the founder’s phone number and every fix the same day. In return you tell us the truth about what’s useless.",
     cta: "Take one of the five",
     note: "Open until the five are gone.",
   },
@@ -389,6 +443,10 @@ export const FAQ = {
     {
       q: "Will this work if I'm not good with computers?",
       a: "Yes. If you can use WhatsApp, you can use footfall. You sign in with Google once, and after that everything reaches you as a WhatsApp message you either approve or ignore. There is nothing to install and nothing to learn.",
+    },
+    {
+      q: "What do I get without paying?",
+      a: "The full report on your Google listing. Connect your profile and we show you what is broken — posts, unanswered reviews, missing photos, keywords you are not ranking for, hours and services that are not set, and what your website is missing. That part is free and stays free. A plan is what makes footfall go and fix it all, every week.",
     },
     {
       q: "What is footfall?",
@@ -408,7 +466,7 @@ export const FAQ = {
     },
     {
       q: "Will it post something embarrassing?",
-      a: "You decide. On Pro you can leave approvals on, and every post and review reply comes to you on WhatsApp before it goes live — one tap to approve, one tap to edit. Once you trust it, turn approvals off.",
+      a: "You decide. You can leave approvals on, and every post and review reply comes to you on WhatsApp before it goes live — one tap to approve, one tap to edit. Once you trust it, turn approvals off.",
     },
     {
       q: "How soon will I see more customers?",
@@ -432,7 +490,7 @@ export const FAQ = {
     },
     {
       q: "Can I cancel?",
-      a: "Yes, from inside the app, any time, with no phone call and no retention offer. You keep access until the end of the period you've paid for, and your listing stays yours — everything we published stays up.",
+      a: "Yes. Nothing auto-debits — you pay for a period and that period is what you get. If you don't pay again it simply stops, your report stays free, and everything we published stays up on your listing.",
     },
   ],
 };
@@ -444,7 +502,7 @@ export const FOOTER = {
       links: [
         { label: "How it works", href: "#how" },
         { label: "Who it's for", href: "#trades" },
-        { label: "What it does", href: "#does" },
+        { label: "Free report", href: "#report" },
         { label: "Pricing", href: "#pricing" },
         { label: "Try now", href: LINKS.cta },
       ],

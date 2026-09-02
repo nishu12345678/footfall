@@ -1,6 +1,7 @@
 import { query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { QueryCtx } from "./_generated/server";
+import { paidQuery } from "./access";
 
 /** Rows behind the Posts, Photos and Reviews tabs. */
 
@@ -13,7 +14,7 @@ async function myBusiness(ctx: QueryCtx) {
     .first();
 }
 
-export const posts = query({
+export const posts = paidQuery({
   args: {},
   handler: async (ctx) => {
     const business = await myBusiness(ctx);
@@ -27,7 +28,7 @@ export const posts = query({
   },
 });
 
-export const photos = query({
+export const photos = paidQuery({
   args: {},
   handler: async (ctx) => {
     const business = await myBusiness(ctx);
@@ -41,7 +42,7 @@ export const photos = query({
   },
 });
 
-export const reviews = query({
+export const reviews = paidQuery({
   args: {},
   handler: async (ctx) => {
     const business = await myBusiness(ctx);
@@ -91,7 +92,7 @@ export const reviews = query({
   },
 });
 
-export const performance = query({
+export const performance = paidQuery({
   args: {},
   handler: async (ctx) => {
     const business = await myBusiness(ctx);
@@ -133,7 +134,7 @@ export const performance = query({
  * shops that outrank you are visibly using categories you don't have. This
  * turns that into something the owner can act on.
  */
-export const relevance = query({
+export const relevance = paidQuery({
   args: {},
   handler: async (ctx) => {
     const business = await myBusiness(ctx);
@@ -195,7 +196,7 @@ export const relevance = query({
  * been running, against exactly that many days immediately before we
  * started. A 30-day month against a 9-day fortnight would flatter us.
  */
-export const impact = query({
+export const impact = paidQuery({
   args: {},
   handler: async (ctx) => {
     const business = await myBusiness(ctx);

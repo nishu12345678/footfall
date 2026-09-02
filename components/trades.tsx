@@ -79,7 +79,7 @@ export function Trades() {
           <div className="mt-10 flex flex-col items-center gap-5 text-center">
             <p className="text-[17px] text-muted">{TRADES.note}</p>
             <a href={LINKS.cta} className="btn btn-primary">
-              Try now — free
+              See your plan
             </a>
           </div>
         </Reveal>

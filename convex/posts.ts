@@ -9,6 +9,7 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
+import { paidAction, paidMutation } from "./access";
 
 /**
  * Writing and publishing Google Business Profile posts.
@@ -148,7 +149,7 @@ export const markPublished = internalMutation({
   },
 });
 
-export const updateDraft = mutation({
+export const updateDraft = paidMutation({
   args: { id: v.id("posts"), body: v.string() },
   handler: async (ctx, { id, body }) => {
     const userId = await getAuthUserId(ctx);
@@ -162,7 +163,7 @@ export const updateDraft = mutation({
   },
 });
 
-export const removePost = mutation({
+export const removePost = paidMutation({
   args: { id: v.id("posts") },
   handler: async (ctx, { id }) => {
     const userId = await getAuthUserId(ctx);
@@ -373,7 +374,7 @@ export const draftBody = internalAction({
   },
 });
 
-export const writePost = action({
+export const writePost = paidAction({
   args: { brief: v.optional(v.string()) },
   handler: async (
     ctx,
@@ -511,7 +512,7 @@ export const pushToGoogle = internalAction({
   },
 });
 
-export const publishPost = action({
+export const publishPost = paidAction({
   args: { id: v.id("posts") },
   handler: async (
     ctx,
@@ -1049,7 +1050,7 @@ export const generatePostImage = internalAction({
   },
 });
 
-export const planPosts = action({
+export const planPosts = paidAction({
   args: { count: v.optional(v.number()) },
   handler: async (
     ctx,
@@ -1121,7 +1122,7 @@ export const topUpPlans = internalAction({
  * says "plan the next two weeks" is a screen that has not done its job, so
  * this runs on open and tops the plan back up to a week's worth.
  */
-export const ensurePlan = action({
+export const ensurePlan = paidAction({
   args: { want: v.optional(v.number()) },
   handler: async (
     ctx,

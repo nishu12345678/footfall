@@ -12,20 +12,20 @@ export function Footer() {
             >
               <span
                 aria-hidden
-                className="grid h-6 w-6 place-items-center rounded-full border border-ink bg-pin text-[11px] text-paper-2"
+                className="grid h-6 w-6 place-items-center rounded-full border border-rule bg-pin text-[13px] text-paper-2"
               >
                 ◎
               </span>
               {BRAND.name}
             </a>
-            <p className="mt-3 max-w-[26ch] text-[14px] leading-relaxed text-ink-soft">
+            <p className="mt-3 max-w-[26ch] text-[16px] leading-relaxed text-ink-soft">
               {BRAND.tagline}
             </p>
           </div>
 
           {FOOTER.columns.map((col) => (
             <div key={col.title}>
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+              <p className="font-mono text-[12px] uppercase tracking-[0.16em] text-muted">
                 {col.title}
               </p>
               <ul className="mt-4 space-y-2.5">
@@ -33,7 +33,7 @@ export function Footer() {
                   <li key={link.label}>
                     <a
                       href={link.href}
-                      className="text-[14px] text-ink-soft transition-colors hover:text-pin"
+                      className="text-[16px] text-ink-soft transition-colors hover:text-pin"
                     >
                       {link.label}
                     </a>
@@ -45,10 +45,10 @@ export function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col gap-3 border-t border-rule pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="font-mono text-[10px] leading-relaxed text-muted">
+          <p className="font-mono text-[12px] leading-relaxed text-muted">
             {FOOTER.legal}
           </p>
-          <p className="font-mono text-[10px] text-muted">{FOOTER.copyright}</p>
+          <p className="font-mono text-[12px] text-muted">{FOOTER.copyright}</p>
         </div>
       </div>
     </footer>

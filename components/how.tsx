@@ -8,22 +8,22 @@ export function How() {
       <div className="mx-auto max-w-6xl">
         <Reveal>
           <SectionHead
-            eyebrow="how it works"
-            heading="three steps, and only the first one is yours"
-            sub="you do step one. we do step two. step three is the point."
+            eyebrow="How it works"
+            heading="Three steps, and only the first one is yours"
+            sub="You do step one. We do step two. Step three is the point."
           />
         </Reveal>
 
         <ol className="mt-12 grid gap-5 md:grid-cols-3">
           {STEPS.map((step, i) => (
             <Reveal key={step.n} delay={i * 90}>
-              <li className="relative h-full rounded-[14px] border border-ink bg-paper-2 p-6 shadow-[3px_4px_0_var(--color-ink)]">
-                <span className="font-mono text-[11px] text-pin">{step.n}</span>
+              <li className="relative h-full rounded-[16px] border border-rule bg-paper-2 p-6 shadow-card">
+                <span className="font-mono text-[13px] text-pin">{step.n}</span>
                 <h3 className="mt-3 text-[1.6rem]">{step.title}</h3>
-                <p className="mt-1 font-mono text-[11px] text-muted">
+                <p className="mt-1 font-mono text-[13px] text-muted">
                   {step.time}
                 </p>
-                <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">
+                <p className="mt-4 text-[17px] leading-relaxed text-ink-soft">
                   {step.body}
                 </p>
                 {i < STEPS.length - 1 ? (

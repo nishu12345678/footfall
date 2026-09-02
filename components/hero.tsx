@@ -7,83 +7,76 @@ export function Hero() {
   const { post, review, chat } = HERO_WINDOWS;
 
   return (
-    <section id="top" className="relative overflow-hidden px-5 pt-14 pb-20 sm:pt-20">
-      {/* loose marginalia, the way the reference scatters kaomoji */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute left-[6%] top-24 hidden select-none font-mono text-[13px] text-muted lg:block"
-      >
-        {HERO.scribbles[0]}
-      </span>
-      <span
-        aria-hidden
-        className="pointer-events-none absolute right-[8%] top-32 hidden select-none font-mono text-[13px] text-star lg:block"
-      >
-        {HERO.scribbles[1]}
-      </span>
-      <span
-        aria-hidden
-        className="pointer-events-none absolute left-[11%] top-[52%] hidden select-none font-mono text-[13px] text-muted xl:block"
-      >
-        {HERO.scribbles[2]}
-      </span>
-      <span
-        aria-hidden
-        className="pointer-events-none absolute right-[10%] top-[46%] hidden select-none font-mono text-[13px] text-muted xl:block"
-      >
-        {HERO.scribbles[4]}
-      </span>
-
+    <section
+      id="top"
+      className="relative overflow-hidden bg-gradient-to-b from-paper-2 to-white px-5 pt-14 pb-20 sm:pt-20"
+    >
       <div className="relative mx-auto max-w-6xl">
         <Reveal className="text-center">
           <p className="chip mx-auto">
-            <span className="h-1.5 w-1.5 rounded-full bg-open" aria-hidden />
+            <span className="h-2 w-2 rounded-full bg-open" aria-hidden />
             {HERO.chip}
           </p>
 
-          <h1 className="mt-7 text-[clamp(3.6rem,15vw,9.5rem)] leading-[0.85]">
+          {/* The headline is the promise, not the brand name. Nobody
+              searching for more customers is looking for a wordmark. */}
+          <h1 className="mx-auto mt-6 max-w-4xl text-[clamp(2.3rem,6vw,4rem)]">
             {HERO.headline}
           </h1>
 
-          <p className="mx-auto mt-5 max-w-xl font-display text-[clamp(1.05rem,2.6vw,1.45rem)] font-medium leading-snug text-ink">
+          <p className="mx-auto mt-6 max-w-2xl text-[clamp(1.05rem,2.2vw,1.3rem)] leading-relaxed text-ink-soft">
             {HERO.sub}
           </p>
 
-          <p className="mx-auto mt-5 max-w-lg text-[15px] leading-relaxed text-ink-soft">
-            {HERO.body}
-          </p>
-
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <div className="mt-9 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
             <a href={LINKS.cta} className="btn btn-primary">
-              <span aria-hidden>◎</span>
               {HERO.ctaPrimary}
             </a>
-            <a href={LINKS.secondary} className="btn btn-ghost">
-              {HERO.ctaSecondary}
+            <a
+              href={LINKS.whatsapp}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-whatsapp"
+            >
+              {HERO.ctaWhatsapp}
             </a>
           </div>
 
-          <p className="mt-4 font-mono text-[11px] text-muted">{HERO.support}</p>
+          <p className="mt-5 text-[15px] text-muted">{HERO.support}</p>
+
+          <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+            {HERO.trust.map((item) => (
+              <li
+                key={item}
+                className="flex items-center gap-2 text-[15px] font-medium text-ink-soft"
+              >
+                <span aria-hidden className="text-open">
+                  ✓
+                </span>
+                {item}
+              </li>
+            ))}
+          </ul>
         </Reveal>
 
-        {/* the collage. map pack is the centrepiece; the other three windows
-            are the work it does to get there. */}
+        {/* The map pack is the centrepiece — it is the entire promise in
+            one picture. The other two cards are the work that gets there. */}
         <div className="mt-16 grid items-start gap-5 lg:grid-cols-12">
           <Reveal delay={80} className="lg:col-span-4 lg:mt-10">
-            <WindowCard title={post.title} className="lg:-rotate-1">
-              <div className="p-4">
-                <p className="font-mono text-[10px] uppercase tracking-wider text-muted">
+            <WindowCard title={post.title} live>
+              <div className="p-5">
+                <p className="text-[13px] font-semibold uppercase tracking-wider text-muted">
                   {post.business}
                 </p>
-                <p className="mt-2 text-[14px] leading-relaxed text-ink">
+                <p className="mt-2 text-[16px] leading-relaxed text-ink">
                   {post.body}
                 </p>
-                <div className="mt-3 h-20 rounded-md border border-rule bg-paper-3">
-                  <div className="grid h-full place-items-center font-mono text-[10px] text-muted">
-                    photo from your profile
+                <div className="mt-3 h-24 rounded-lg border border-rule bg-paper-2">
+                  <div className="grid h-full place-items-center text-[13px] text-muted">
+                    Photo from your profile
                   </div>
                 </div>
-                <p className="mt-3 border-t border-rule-soft pt-2.5 font-mono text-[10px] text-open">
+                <p className="mt-4 border-t border-rule-soft pt-3 text-[13px] font-medium text-open">
                   ✓ {post.meta}
                 </p>
               </div>
@@ -96,34 +89,34 @@ export function Hero() {
 
           <div className="grid gap-5 lg:col-span-4 lg:mt-6">
             <Reveal delay={160}>
-              <WindowCard title={review.title} className="lg:rotate-1">
-                <div className="p-4">
-                  <div className="flex items-center gap-2">
+              <WindowCard title={review.title}>
+                <div className="p-5">
+                  <div className="flex items-center gap-2.5">
                     <span
                       aria-hidden
-                      className="grid h-7 w-7 place-items-center rounded-full border border-ink bg-star/25 font-display text-[12px] font-bold"
+                      className="grid h-9 w-9 place-items-center rounded-full bg-star/20 text-[15px] font-bold text-ink"
                     >
-                      p
+                      P
                     </span>
                     <span>
-                      <span className="block text-[13px] font-semibold">
+                      <span className="block text-[15px] font-semibold">
                         {review.author}
                       </span>
-                      <Stars n={review.stars} size={11} />
+                      <Stars n={review.stars} size={13} />
                     </span>
                   </div>
-                  <p className="mt-2.5 text-[13px] leading-relaxed text-ink-soft">
+                  <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
                     “{review.text}”
                   </p>
-                  <div className="mt-3 rounded-md border border-rule bg-paper-3 p-2.5">
-                    <p className="font-mono text-[9px] uppercase tracking-wider text-muted">
-                      owner reply
+                  <div className="mt-3 rounded-lg border border-rule bg-paper-2 p-3">
+                    <p className="text-[12px] font-semibold uppercase tracking-wider text-muted">
+                      Owner reply
                     </p>
-                    <p className="mt-1 text-[13px] leading-relaxed">
+                    <p className="mt-1 text-[15px] leading-relaxed">
                       {review.reply}
                     </p>
                   </div>
-                  <p className="mt-3 border-t border-rule-soft pt-2.5 font-mono text-[10px] text-open">
+                  <p className="mt-4 border-t border-rule-soft pt-3 text-[13px] font-medium text-open">
                     ✓ {review.meta}
                   </p>
                 </div>
@@ -132,14 +125,14 @@ export function Hero() {
 
             <Reveal delay={240}>
               <WindowCard title={chat.title}>
-                <div className="space-y-2 p-4">
-                  <p className="max-w-[85%] rounded-xl rounded-tl-sm border border-rule bg-paper-3 px-3 py-2 text-[13px] leading-relaxed">
+                <div className="space-y-2 p-5">
+                  <p className="max-w-[88%] rounded-2xl rounded-tl-sm bg-paper-3 px-3.5 py-2.5 text-[15px] leading-relaxed">
                     {chat.incoming}
                   </p>
-                  <p className="ml-auto max-w-[90%] rounded-xl rounded-tr-sm border border-open bg-open-soft px-3 py-2 text-[13px] leading-relaxed">
+                  <p className="ml-auto max-w-[92%] rounded-2xl rounded-tr-sm bg-open-soft px-3.5 py-2.5 text-[15px] leading-relaxed">
                     {chat.outgoing}
                   </p>
-                  <p className="border-t border-rule-soft pt-2.5 font-mono text-[10px] text-open">
+                  <p className="border-t border-rule-soft pt-3 text-[13px] font-medium text-open">
                     ✓ {chat.meta}
                   </p>
                 </div>

@@ -25,7 +25,7 @@ export function Does() {
               className={i === 0 ? "md:col-span-2" : ""}
             >
               <article
-                className={`h-full rounded-[14px] border border-ink bg-paper p-6 shadow-[3px_4px_0_var(--color-ink)] ${
+                className={`h-full rounded-[16px] border border-rule bg-paper p-6 shadow-card ${
                   i === 0 ? "md:p-8" : ""
                 }`}
               >
@@ -46,13 +46,13 @@ export function Does() {
                   {item.title}
                 </h3>
                 <p
-                  className={`mt-3 text-[15px] leading-relaxed text-ink-soft ${
+                  className={`mt-3 text-[17px] leading-relaxed text-ink-soft ${
                     i === 0 ? "md:max-w-2xl" : ""
                   }`}
                 >
                   {item.body}
                 </p>
-                <p className="mt-4 border-t border-rule-soft pt-3 font-mono text-[11px] text-muted">
+                <p className="mt-4 border-t border-rule-soft pt-3 font-mono text-[13px] text-muted">
                   {item.detail}
                 </p>
               </article>

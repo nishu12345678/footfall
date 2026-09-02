@@ -1,23 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Inter, Space_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-bricolage",
-  subsets: ["latin"],
-  display: "swap",
-});
-
+/*
+ * One family for the whole product.
+ *
+ * The page had three: a display face, a body face and a monospace for
+ * labels. Monospace labels read as "developer tool" to a shop owner, and
+ * the display face fought with Hindi-English mixed words. Inter carries
+ * all of it, and the extra weights are what give headings their authority
+ * instead of a second family.
+ */
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
-  display: "swap",
-});
-
-const spaceMono = Space_Mono({
-  variable: "--font-space-mono",
-  subsets: ["latin"],
-  weight: ["400", "700"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -41,28 +38,28 @@ export const metadata: Metadata = {
   verification: {
     google: "jLgYVhR1S5umFCcmwDTQSmnj2cIlqbivodfmdl7G-yQ",
   },
-  title: "footfall — an ai that runs your google listing",
+  title: "footfall — The AI that runs your Google listing",
   description:
-    "your google listing is where people nearby decide. footfall keeps it posting, replies to every review, collects new ones, and answers enquiries — so people walk in.",
+    "Your Google listing is where customers nearby decide. footfall posts every week, replies to every review, collects new ones and answers enquiries on WhatsApp — so people walk in. Built for Indian salons, clinics and shops.",
   openGraph: {
-    title: "footfall — an ai that runs your google listing",
+    title: "footfall — The AI that runs your Google listing",
     description:
-      "stop paying for instagram posts nobody sees. footfall works on the listing people actually search.",
+      "Stop paying for Instagram posts nobody sees. footfall works on the listing your customers actually search.",
     type: "website",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f6f2e9",
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${bricolage.variable} ${inter.variable} ${spaceMono.variable} h-full antialiased`}
+      className={`${inter.variable} h-full antialiased`}
     >
-      <body className="grain min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col">
         <div className="relative z-10 flex min-h-full flex-col">{children}</div>
       </body>
     </html>

@@ -7,6 +7,7 @@ import { Nav } from "@/components/nav";
 import { Pricing } from "@/components/pricing";
 import { Proof } from "@/components/proof";
 import { Start } from "@/components/start";
+import { Trades, TrustBar } from "@/components/trades";
 import { Vision } from "@/components/vision";
 
 export default function Page() {
@@ -15,9 +16,14 @@ export default function Page() {
       <Nav />
       <main>
         <Hero />
-        <Vision />
+        {/* Reassurance, then "this is for you", before any argument.
+            An owner decides whether the page is talking to them long
+            before they reach the reasoning. */}
+        <TrustBar />
+        <Trades />
         <How />
         <Does />
+        <Vision />
         <Proof />
         <Pricing />
         <Faq />

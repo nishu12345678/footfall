@@ -15,13 +15,13 @@ export function Vision() {
             {VISION.heading}
           </h2>
 
-          <div className="mt-6 space-y-4 text-[16px] leading-relaxed text-ink-soft">
+          <div className="mt-6 space-y-4 text-[18px] leading-relaxed text-ink-soft">
             {VISION.body.map((para, i) => (
               <p key={i}>{para}</p>
             ))}
           </div>
 
-          <p className="mt-6 border-l-2 border-pin pl-4 text-[15px] leading-relaxed text-ink">
+          <p className="mt-6 border-l-2 border-pin pl-4 text-[17px] leading-relaxed text-ink">
             {VISION.kicker}
           </p>
 
@@ -32,23 +32,23 @@ export function Vision() {
               <img
                 src={FOUNDER.photo}
                 alt={FOUNDER.name}
-                className="h-11 w-11 rounded-full border border-ink object-cover"
+                className="h-11 w-11 rounded-full border border-rule object-cover"
               />
             ) : (
               <span
                 aria-hidden
-                className="grid h-11 w-11 place-items-center rounded-full border border-ink bg-star/25 font-display text-[17px] font-bold"
+                className="grid h-11 w-11 place-items-center rounded-full border border-rule bg-star/25 font-display text-[19px] font-bold"
               >
                 {FOUNDER.initial}
               </span>
             )}
             <span>
-              <span className="block font-display text-[15px] font-bold">
+              <span className="block font-display text-[17px] font-bold">
                 {FOUNDER.name}, {FOUNDER.role}
               </span>
               <a
                 href={FOUNDER.href}
-                className="font-mono text-[11px] text-muted underline underline-offset-4 hover:text-pin"
+                className="font-mono text-[13px] text-muted underline underline-offset-4 hover:text-pin"
               >
                 {FOUNDER.handle}
               </a>
@@ -59,26 +59,26 @@ export function Vision() {
         {/* the argument, as two windows side by side */}
         <div className="grid content-start gap-5 sm:grid-cols-2 lg:mt-16">
           <Reveal delay={80}>
-            <WindowCard title="agency report · this month" className="sm:-rotate-1">
+            <WindowCard title="Agency report · this month" className="sm:-rotate-1">
               <div className="p-4">
                 <dl className="space-y-2.5">
                   {[
-                    ["reach", "12,400"],
-                    ["likes", "89"],
-                    ["posts made", "6"],
-                    ["you paid", "₹12,000"],
+                    ["Reach", "12,400"],
+                    ["Likes", "89"],
+                    ["Posts made", "6"],
+                    ["You paid", "₹12,000"],
                   ].map(([k, v]) => (
                     <div key={k} className="flex items-baseline justify-between gap-3">
-                      <dt className="font-mono text-[11px] text-muted">{k}</dt>
-                      <dd className="font-display text-[15px] font-bold">{v}</dd>
+                      <dt className="font-mono text-[13px] text-muted">{k}</dt>
+                      <dd className="font-display text-[17px] font-bold">{v}</dd>
                     </div>
                   ))}
                   <div className="flex items-baseline justify-between gap-3 border-t border-rule-soft pt-2.5">
-                    <dt className="font-mono text-[11px] text-pin">
-                      people who walked in
+                    <dt className="font-mono text-[13px] text-pin">
+                      People who walked in
                     </dt>
-                    <dd className="font-display text-[15px] font-bold text-pin">
-                      unknown
+                    <dd className="font-display text-[17px] font-bold text-pin">
+                      Unknown
                     </dd>
                   </div>
                 </dl>
@@ -87,29 +87,29 @@ export function Vision() {
           </Reveal>
 
           <Reveal delay={160}>
-            <WindowCard title="your google listing · right now" className="sm:mt-8 sm:rotate-1">
+            <WindowCard title="Your Google listing · right now" className="sm:mt-8 sm:rotate-1">
               <div className="p-4">
                 <ul className="space-y-2.5">
                   {[
-                    "last post — 8 months ago",
+                    "Last post — 8 months ago",
                     "3 reviews unanswered",
-                    "closing time is wrong",
-                    "no services listed",
+                    "Closing time is wrong",
+                    "No services listed",
                     "2 enquiries went cold this week",
                   ].map((line) => (
                     <li
                       key={line}
-                      className="flex items-start gap-2 text-[13px] leading-snug text-ink-soft"
+                      className="flex items-start gap-2 text-[15px] leading-snug text-ink-soft"
                     >
-                      <span className="mt-0.5 flex-none font-mono text-[11px] text-pin" aria-hidden>
+                      <span className="mt-0.5 flex-none font-mono text-[13px] text-pin" aria-hidden>
                         ✕
                       </span>
                       {line}
                     </li>
                   ))}
                 </ul>
-                <p className="mt-3 border-t border-rule-soft pt-2.5 font-mono text-[10px] text-muted">
-                  this is the screen people actually search
+                <p className="mt-3 border-t border-rule-soft pt-2.5 font-mono text-[12px] text-muted">
+                  This is the screen people actually search
                 </p>
               </div>
             </WindowCard>

@@ -16,6 +16,7 @@ import {
   paidMutation,
   type Owned,
 } from "./access";
+import { V4_BASE } from "./googleHosts";
 
 /**
  * Reviews from the Google Business Profile.
@@ -26,8 +27,6 @@ import {
  *
  * Reviews live on the legacy v4 endpoint, like posts and media.
  */
-
-const V4_BASE = "https://mybusiness.googleapis.com/v4";
 
 const STAR_VALUES: Record<string, number> = {
   ONE: 1,

@@ -39,10 +39,16 @@ export const GET = async (request: NextRequest) => {
       `${origin}/app/connect?error=${encodeURIComponent(reason)}`,
     );
 
+  // With the fake Google switched on there is no consent screen to visit:
+  // the callback is called straight away with a made-up code, and the
+  // backend exchanges it with the mock's own token endpoint. No Google
+  // Cloud project needed. See docs/local-testing.md.
+  const mocked = process.env.GOOGLE_MOCK_ENABLED === "1";
+
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
   const convexSite = process.env.NEXT_PUBLIC_CONVEX_SITE_URL;
-  if (!clientId || !convexUrl || !convexSite) {
+  if ((!clientId && !mocked) || !convexUrl || !convexSite) {
     return fail("Google or Convex is not configured.");
   }
 
@@ -66,6 +72,14 @@ export const GET = async (request: NextRequest) => {
       error instanceof Error ? error.message : "Could not start the link.",
     );
   }
+
+  if (mocked) {
+    const callback = new URL(`${convexSite}/google/callback`);
+    callback.searchParams.set("code", "mock-authorisation-code");
+    callback.searchParams.set("state", state);
+    return NextResponse.redirect(callback.toString());
+  }
+  if (!clientId) return fail("Google is not configured.");
 
   // Diagnostic: ?probe=1 asks for a basic scope instead of business.manage.
   const probe = request.nextUrl.searchParams.get("probe") === "1";

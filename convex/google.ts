@@ -11,6 +11,7 @@ import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { paidAction, paidMutation } from "./access";
+import { ACCOUNTS_URL, INFO_BASE, TOKEN_URL } from "./googleHosts";
 
 /**
  * Google Business Profile connection.
@@ -19,11 +20,6 @@ import { paidAction, paidMutation } from "./access";
  * your Google business listings". That single scope covers reading the
  * listing, publishing posts, and replying to reviews.
  */
-
-const TOKEN_URL = "https://oauth2.googleapis.com/token";
-const ACCOUNTS_URL =
-  "https://mybusinessaccountmanagement.googleapis.com/v1/accounts";
-const INFO_BASE = "https://mybusinessbusinessinformation.googleapis.com/v1";
 
 const LOCATION_READ_MASK = [
   "name",
@@ -668,9 +664,6 @@ export const ensureCoordinates = internalAction({
    We already ask the owner what they sell in step 3 and then never tell
    Google. This closes that gap.                                          */
 
-const INFO_BASE_SERVICES =
-  "https://mybusinessbusinessinformation.googleapis.com/v1";
-
 export const saveCategories = internalMutation({
   args: {
     businessId: v.id("businesses"),
@@ -703,7 +696,7 @@ async function categoryFor(
   token: string,
 ): Promise<{ id: string; serviceTypes: ServiceType[] } | null> {
   const res = await fetch(
-    `${INFO_BASE_SERVICES}/${business.gbpLocationName}?readMask=categories`,
+    `${INFO_BASE}/${business.gbpLocationName}?readMask=categories`,
     { headers: { Authorization: `Bearer ${token}` } },
   );
   if (!res.ok) {
@@ -907,7 +900,7 @@ export const pushServicesForUser = internalAction({
     const serviceItems = buildServiceItems(c.offerings, category.id, matched);
 
     const res = await fetch(
-      `${INFO_BASE_SERVICES}/${c.business.gbpLocationName}?updateMask=serviceItems`,
+      `${INFO_BASE}/${c.business.gbpLocationName}?updateMask=serviceItems`,
       {
         method: "PATCH",
         headers: {
@@ -961,7 +954,7 @@ export const pushServices = paidAction({
     const serviceItems = buildServiceItems(c.offerings, category.id, matched);
 
     const url =
-      `${INFO_BASE_SERVICES}/${c.business.gbpLocationName}` +
+      `${INFO_BASE}/${c.business.gbpLocationName}` +
       `?updateMask=serviceItems`;
 
     const res = await fetch(url, {

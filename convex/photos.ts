@@ -16,6 +16,7 @@ import {
   paidMutation,
   type Owned,
 } from "./access";
+import { V4_BASE } from "./googleHosts";
 
 /**
  * Photos on the Google Business Profile.
@@ -36,8 +37,6 @@ function sized(url: string, width: number): string {
   const base = url.replace(/=[sw]\d+(-[a-z0-9-]+)?$/i, "").replace(/=s0$/i, "");
   return `${base}=w${width}`;
 }
-
-const V4_BASE = "https://mybusiness.googleapis.com/v4";
 
 function parentFor(business: {
   gbpAccountName?: string;

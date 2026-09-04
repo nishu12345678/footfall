@@ -136,10 +136,59 @@ The script reads the secret from `RAZORPAY_WEBHOOK_SECRET` in your shell
 or from `.env.convex`, and the target from `NEXT_PUBLIC_CONVEX_SITE_URL`
 in `.env.local`. Both can be overridden with `--secret` and `--url`.
 
+### Webhook-only mode: the production path, live
+
+In production the browser hand-back and the webhook race, and either one
+grants the plan. To watch the webhook do it alone with a real test-mode
+payment, tell the backend to leave the grant to the webhook:
+
+```
+npx convex env set RAZORPAY_WEBHOOK_ONLY 1
+```
+
+Now pay on `/app/billing` as usual. Checkout succeeds, the backend
+verifies the signature, but the page stays put and shows the order and
+payment ids with "waiting for Razorpay's confirmation". The row is still
+`created`. Fire the webhook for that order yourself, either with the
+script or with raw curl shaped exactly like Razorpay's delivery:
+
+```
+SECRET='<RAZORPAY_WEBHOOK_SECRET>'
+ORDER='order_...'      # from the billing page
+PAYMENT='pay_...'      # from the billing page
+BODY=$(printf '{"entity":"event","account_id":"acc_test","event":"payment.captured","contains":["payment"],"payload":{"payment":{"entity":{"id":"%s","entity":"payment","amount":199900,"currency":"INR","status":"captured","order_id":"%s","method":"upi","captured":true}}},"created_at":%s}' "$PAYMENT" "$ORDER" "$(date +%s)")
+SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | sed 's/^.* //')
+curl -i -X POST http://127.0.0.1:3211/razorpay/webhook \
+  -H 'content-type: application/json' \
+  -H "x-razorpay-signature: $SIG" \
+  -H "x-razorpay-event-id: evt_local_$(date +%s)" \
+  --data-binary "$BODY"
+```
+
+The page flips to "Your plan is running" on its own the moment the row
+turns paid; it is a live query. Unset the switch afterwards:
+
+```
+npx convex env remove RAZORPAY_WEBHOOK_ONLY
+```
+
+Never set it on production. A paying customer would sit on the billing
+page until Razorpay's webhook arrived.
+
 If you would rather have Razorpay deliver real test-mode webhooks, expose
 port 3211 with a tunnel (ngrok, cloudflared) and register
 `https://<tunnel>/razorpay/webhook` under **Settings → Webhooks** in the
 Razorpay dashboard, in test mode, with the same secret.
+
+### Starting over
+
+`admin:wipe` clears every app table, including subscriptions, the auth
+tables, and file storage, so the next run begins at sign-in:
+
+```
+npx convex run admin:wipe '{"includeAuth": true}'
+curl -s -X POST http://127.0.0.1:3000/api/mock/google/_control/reset
+```
 
 ## Tests
 

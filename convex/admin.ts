@@ -25,6 +25,8 @@ const APP_TABLES = [
   "agentActions",
   "googleAccounts",
   "googleLinkTokens",
+  "subscriptions",
+  "websiteChecks",
   "businesses",
 ] as const;
 

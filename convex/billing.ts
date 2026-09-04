@@ -294,7 +294,10 @@ export const verifyPayment = action({
     razorpayPaymentId: v.string(),
     razorpaySignature: v.string(),
   },
-  handler: async (ctx, args): Promise<{ ok: boolean }> => {
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ ok: boolean; deferred?: boolean }> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Sign in first.");
 
@@ -307,6 +310,17 @@ export const verifyPayment = action({
     if (!safeEqual(expected, args.razorpaySignature)) {
       console.error("[billing] signature mismatch", args.razorpayOrderId);
       throw new Error("That payment could not be verified.");
+    }
+
+    // Local testing switch. With this set the browser verifies the payment
+    // but leaves the grant to the webhook, so the path Razorpay's servers
+    // take in production can be watched end to end on a laptop. Never set
+    // it on production: a paying customer would sit waiting for a webhook.
+    if (process.env.RAZORPAY_WEBHOOK_ONLY === "1") {
+      console.log(
+        `[billing] webhook-only mode: ${args.razorpayOrderId} verified, waiting for the webhook`,
+      );
+      return { ok: true, deferred: true };
     }
 
     await ctx.runMutation(internal.billing.markPaid, {

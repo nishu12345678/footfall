@@ -16,6 +16,7 @@ import {
   paidMutation,
   type Owned,
 } from "./access";
+import { V4_BASE } from "./googleHosts";
 
 /**
  * Writing and publishing Google Business Profile posts.
@@ -27,8 +28,6 @@ import {
  * The same two steps serve the owner pressing a button and the agent doing
  * it unattended: draftBody writes, pushToGoogle publishes.
  */
-
-const V4_BASE = "https://mybusiness.googleapis.com/v4";
 
 /* ------------------------------- context -------------------------------- */
 

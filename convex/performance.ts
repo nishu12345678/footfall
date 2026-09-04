@@ -9,6 +9,7 @@ import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
 import { paidAction } from "./access";
+import { PERF_BASE } from "./googleHosts";
 
 /**
  * The two jobs behind the Performance screen.
@@ -22,8 +23,6 @@ import { paidAction } from "./access";
  * No Google API returns "your rank for this keyword at this pin", which is
  * why ranking needs SerpApi and metrics don't.
  */
-
-const PERF_BASE = "https://businessprofileperformance.googleapis.com/v1";
 
 const IMPRESSION_METRICS = [
   "BUSINESS_IMPRESSIONS_DESKTOP_MAPS",

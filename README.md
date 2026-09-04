@@ -41,7 +41,12 @@ Owner-operators of local walk-in businesses serving roughly 5km around them. The
 npm install
 npm run dev      # http://localhost:3000
 npm run build    # production build
+npm test         # convex-test suites
 ```
+
+To run the whole product without a Google Business Profile or a real
+payment, see [docs/local-testing.md](docs/local-testing.md): it covers the
+fake Google, Razorpay test mode, and which keys each feature needs.
 
 ## Project structure
 

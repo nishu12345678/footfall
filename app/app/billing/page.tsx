@@ -35,6 +35,12 @@ export default function BillingPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  // Set only in local webhook-only mode (RAZORPAY_WEBHOOK_ONLY on the
+  // backend): the payment is verified but the grant is left to the webhook.
+  const [waiting, setWaiting] = useState<{
+    order: string;
+    payment: string;
+  } | null>(null);
 
   // Load Checkout once. It is a script tag rather than a package because
   // Razorpay requires their hosted copy — a bundled one is not supported.
@@ -92,11 +98,20 @@ export default function BillingPage() {
             razorpay_signature: string;
           }) => {
             try {
-              await verifyPayment({
+              const result = await verifyPayment({
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature,
               });
+              if (result.deferred) {
+                // `status` is a live query, so this page flips to "running"
+                // on its own the moment the webhook lands.
+                setWaiting({
+                  order: response.razorpay_order_id,
+                  payment: response.razorpay_payment_id,
+                });
+                return;
+              }
               router.push("/app");
             } catch (e) {
               setError(
@@ -167,7 +182,17 @@ export default function BillingPage() {
         </p>
       ) : null}
 
-      {!status.active ? (
+      {waiting && !status.active ? (
+        <p className="mt-5 rounded-xl border border-ink bg-paper-2 p-4 text-[16px] leading-relaxed text-ink">
+          Payment verified. Waiting for Razorpay&rsquo;s confirmation&hellip;
+          <br />
+          <span className="font-mono text-[12px] text-muted">
+            order {waiting.order} &middot; payment {waiting.payment}
+          </span>
+        </p>
+      ) : null}
+
+      {!status.active && !waiting ? (
         <div className="mt-7 grid gap-4">
           {PRICING.plans.map((plan) => {
             const featured = Boolean(plan.badge);

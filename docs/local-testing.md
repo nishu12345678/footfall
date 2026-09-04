@@ -22,6 +22,7 @@ notebook. `.env.local` is read by Next automatically.
 | `GOOGLE_MOCK_ENABLED=1` | `.env.local` | The fake Google at `/api/mock/google` | Route answers 404 |
 | `GOOGLE_API_MOCK_URL=http://127.0.0.1:3000/api/mock/google` | Convex | Backend talks to the fake Google | Backend calls the real Google APIs, which fail without a listing |
 | `SITE_URL=http://localhost:3000` | Convex | Where the OAuth callback sends the browser back | Lands on the wrong host |
+| `NEXT_PUBLIC_SITE_URL=http://localhost:3000` | `.env.local` | Shop links, the copy button and canonical tags point at your own host. `NEXT_PUBLIC_SITE_DOMAIN` can stay set; subdomain links are only used when the app is served from that domain. | Links point at production |
 | `RAZORPAY_KEY_ID` (`rzp_test_…`), `RAZORPAY_KEY_SECRET` | Convex | Paying for a plan in test mode | Billing page cannot create an order |
 | `RAZORPAY_WEBHOOK_SECRET` | Convex | The webhook path, real or faked | Webhook returns 500 |
 | `OPENAI_API_KEY` | Convex | Writing posts, review replies, keyword ideas, the shop site, post images | Those buttons error; everything else works |

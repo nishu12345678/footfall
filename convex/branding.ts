@@ -2,23 +2,12 @@ import { v } from "convex/values";
 import { action, internalMutation, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { paidAction, paidMutation, paidQuery } from "./access";
+import { ownedBusiness, paidAction, paidMutation, paidQuery } from "./access";
 
 /**
  * Step 5 — the logo we stamp on every post image, and the switch that turns
  * the agent on. This is the last thing between setup and the product working.
  */
-
-async function requireBusiness(ctx: any) {
-  const userId = await getAuthUserId(ctx);
-  if (!userId) throw new Error("Sign in first.");
-  const business = await ctx.db
-    .query("businesses")
-    .withIndex("by_user", (q: any) => q.eq("userId", userId))
-    .first();
-  if (!business) throw new Error("Connect your Google profile first.");
-  return business;
-}
 
 export const get = paidQuery({
   args: {},
@@ -46,7 +35,7 @@ export const get = paidQuery({
 export const generateUploadUrl = paidMutation({
   args: {},
   handler: async (ctx) => {
-    await requireBusiness(ctx);
+    await ownedBusiness(ctx);
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -54,7 +43,11 @@ export const generateUploadUrl = paidMutation({
 export const saveLogo = paidMutation({
   args: { storageId: v.id("_storage"), background: v.string() },
   handler: async (ctx, { storageId, background }) => {
-    const business = await requireBusiness(ctx);
+    const business = await ownedBusiness(ctx);
+    // A storage id can't be ownership-checked after the fact. That's fine:
+    // generateUploadUrl only ever hands a URL to its own caller, so the
+    // worst a stranger's id can do here is put their own upload on this
+    // business's logo.
     const url = await ctx.storage.getUrl(storageId);
     await ctx.db.patch(business._id, {
       logoUrl: url ?? undefined,
@@ -67,7 +60,7 @@ export const saveLogo = paidMutation({
 export const setLogoBackground = paidMutation({
   args: { background: v.string() },
   handler: async (ctx, { background }) => {
-    const business = await requireBusiness(ctx);
+    const business = await ownedBusiness(ctx);
     await ctx.db.patch(business._id, { logoBackground: background });
   },
 });
@@ -79,7 +72,7 @@ export const setLogoBackground = paidMutation({
 export const finishOnboarding = paidMutation({
   args: {},
   handler: async (ctx) => {
-    const business = await requireBusiness(ctx);
+    const business = await ownedBusiness(ctx);
 
     await ctx.db.patch(business._id, {
       onboardingStep: 5,

@@ -9,7 +9,13 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
-import { paidAction, paidMutation, paidQuery } from "./access";
+import {
+  ownedBusiness,
+  ownedRow,
+  paidAction,
+  paidMutation,
+  paidQuery,
+} from "./access";
 
 /**
  * Step 4 — the parts of the listing that decide whether anyone finds it:
@@ -37,17 +43,6 @@ export const ATTRIBUTE_CHOICES = [
   { key: "installation", label: "Installation service" },
   { key: "gst_invoice", label: "GST invoice provided" },
 ];
-
-async function requireBusiness(ctx: any) {
-  const userId = await getAuthUserId(ctx);
-  if (!userId) throw new Error("Sign in first.");
-  const business = await ctx.db
-    .query("businesses")
-    .withIndex("by_user", (q: any) => q.eq("userId", userId))
-    .first();
-  if (!business) throw new Error("Connect your Google profile first.");
-  return business;
-}
 
 /* -------------------------------- read ---------------------------------- */
 
@@ -100,7 +95,7 @@ export const list = paidQuery({
 export const addServiceArea = paidMutation({
   args: { name: v.string() },
   handler: async (ctx, { name }) => {
-    const business = await requireBusiness(ctx);
+    const business = await ownedBusiness(ctx);
     const trimmed = name.trim();
     if (!trimmed) return;
 
@@ -121,8 +116,8 @@ export const addServiceArea = paidMutation({
 export const removeServiceArea = paidMutation({
   args: { id: v.id("serviceAreas") },
   handler: async (ctx, { id }) => {
-    await requireBusiness(ctx);
-    await ctx.db.delete(id);
+    const { row } = await ownedRow(ctx, id);
+    await ctx.db.delete(row._id);
   },
 });
 
@@ -131,7 +126,7 @@ export const removeServiceArea = paidMutation({
 export const addKeyword = paidMutation({
   args: { term: v.string() },
   handler: async (ctx, { term }) => {
-    const business = await requireBusiness(ctx);
+    const business = await ownedBusiness(ctx);
     const trimmed = term.trim().toLowerCase();
     if (!trimmed) return;
 
@@ -153,8 +148,8 @@ export const addKeyword = paidMutation({
 export const removeKeyword = paidMutation({
   args: { id: v.id("keywords") },
   handler: async (ctx, { id }) => {
-    await requireBusiness(ctx);
-    await ctx.db.delete(id);
+    const { row } = await ownedRow(ctx, id);
+    await ctx.db.delete(row._id);
   },
 });
 
@@ -293,7 +288,7 @@ export const setHours = paidMutation({
     ),
   },
   handler: async (ctx, { hours }) => {
-    const business = await requireBusiness(ctx);
+    const business = await ownedBusiness(ctx);
 
     const existing = await ctx.db
       .query("businessHours")
@@ -340,7 +335,7 @@ export const saveSyncedHours = internalMutation({
 export const toggleAttribute = paidMutation({
   args: { key: v.string(), label: v.string(), enabled: v.boolean() },
   handler: async (ctx, { key, label, enabled }) => {
-    const business = await requireBusiness(ctx);
+    const business = await ownedBusiness(ctx);
 
     const existing = await ctx.db
       .query("attributes")
@@ -366,7 +361,7 @@ export const toggleAttribute = paidMutation({
 export const complete = paidMutation({
   args: {},
   handler: async (ctx) => {
-    const business = await requireBusiness(ctx);
+    const business = await ownedBusiness(ctx);
     await ctx.db.patch(business._id as Id<"businesses">, {
       onboardingStep: Math.max(business.onboardingStep, 5),
     });
@@ -570,7 +565,7 @@ export const researchKeywords = paidAction({
 export const seedServiceAreas = paidMutation({
   args: {},
   handler: async (ctx): Promise<string[]> => {
-    const business = await requireBusiness(ctx);
+    const business = await ownedBusiness(ctx);
 
     const existing = await ctx.db
       .query("serviceAreas")
@@ -605,7 +600,7 @@ export const seedServiceAreas = paidMutation({
 export const setServiceRadius = paidMutation({
   args: { radiusKm: v.number() },
   handler: async (ctx, { radiusKm }) => {
-    const business = await requireBusiness(ctx);
+    const business = await ownedBusiness(ctx);
     await ctx.db.patch(business._id, {
       serviceRadiusKm: Math.min(Math.max(radiusKm, 2), 50),
     });

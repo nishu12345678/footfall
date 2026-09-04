@@ -9,7 +9,15 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
-import { paidAction, paidMutation, paidQuery } from "./access";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
+import {
+  NOT_FOUND_MESSAGE,
+  ownedBusiness,
+  ownedRow,
+  paidAction,
+  paidMutation,
+  paidQuery,
+} from "./access";
 
 /**
  * Step 3 — what the shop actually sells, and what it's known for.
@@ -21,18 +29,10 @@ import { paidAction, paidMutation, paidQuery } from "./access";
 
 type Kind = "offerings" | "specialties";
 
-async function businessFor(ctx: {
-  auth: any;
-  db: any;
-}): Promise<Id<"businesses">> {
-  const userId = await getAuthUserId(ctx as never);
-  if (!userId) throw new Error("Sign in first.");
-  const business = await ctx.db
-    .query("businesses")
-    .withIndex("by_user", (q: any) => q.eq("userId", userId))
-    .first();
-  if (!business) throw new Error("Connect your Google profile first.");
-  return business._id;
+async function businessFor(
+  ctx: QueryCtx | MutationCtx,
+): Promise<Id<"businesses">> {
+  return (await ownedBusiness(ctx))._id;
 }
 
 /* -------------------------------- read ---------------------------------- */
@@ -69,7 +69,7 @@ export const list = paidQuery({
 export const add = paidMutation({
   args: { kind: v.string(), label: v.string(), source: v.string() },
   handler: async (ctx, { kind, label, source }) => {
-    const businessId = await businessFor(ctx as never);
+    const businessId = await businessFor(ctx);
     const table = kind === "specialties" ? "specialties" : "offerings";
 
     const trimmed = label.trim();
@@ -100,17 +100,19 @@ export const add = paidMutation({
 export const remove = paidMutation({
   args: { kind: v.string(), id: v.string() },
   handler: async (ctx, { kind, id }) => {
-    await businessFor(ctx as never);
     const table = kind === "specialties" ? "specialties" : "offerings";
-    const row = await ctx.db.get(id as Id<typeof table>);
-    if (row) await ctx.db.delete(row._id);
+    // The id arrives as a plain string; a malformed one is "not found" too.
+    const rowId = ctx.db.normalizeId(table, id);
+    if (!rowId) throw new Error(NOT_FOUND_MESSAGE);
+    const { row } = await ownedRow(ctx, rowId);
+    await ctx.db.delete(row._id);
   },
 });
 
 export const complete = paidMutation({
   args: {},
   handler: async (ctx) => {
-    const businessId = await businessFor(ctx as never);
+    const businessId = await businessFor(ctx);
     const business = await ctx.db.get(businessId);
     if (!business) return;
     await ctx.db.patch(businessId, {

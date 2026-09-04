@@ -8,6 +8,7 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
+import type { Doc, Id, TableNames } from "./_generated/dataModel";
 
 /**
  * The paywall.
@@ -91,3 +92,86 @@ export const paidAction = ((def: any) =>
   })) as typeof action;
 
 /* eslint-enable @typescript-eslint/no-explicit-any */
+
+/* ------------------------------- ownership -------------------------------
+
+   Every row a shop owns carries its businessId. A client-callable function
+   that takes a row id has to prove the row belongs to the caller's business
+   before it reads, changes or publishes it. Document ids reach the browser,
+   sit in logs and are guessable in bulk — "hard to guess" is not an
+   authorisation model.
+
+   A row that is missing and a row that is someone else's are refused with
+   the same message, so the API never confirms which ids exist.           */
+
+export const NOT_FOUND_MESSAGE = "Not found.";
+
+/** Tables whose rows belong to exactly one business. */
+export type OwnedTable = {
+  [T in TableNames]: Doc<T> extends { businessId: Id<"businesses"> }
+    ? T
+    : never;
+}[TableNames];
+
+/** What an ownership check hands back: the row and the business it's in. */
+export type Owned<T extends OwnedTable> = {
+  row: Doc<T>;
+  business: Doc<"businesses">;
+};
+
+/** The business behind a user, or a thrown error. */
+export async function businessOf(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<"users">,
+): Promise<Doc<"businesses">> {
+  const business = await ctx.db
+    .query("businesses")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .first();
+  if (!business) throw new Error("Connect your Google profile first.");
+  return business;
+}
+
+/** The signed-in caller's business, or a thrown error. */
+export async function ownedBusiness(
+  ctx: QueryCtx | MutationCtx,
+): Promise<Doc<"businesses">> {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) throw new Error("Sign in first.");
+  return await businessOf(ctx, userId);
+}
+
+async function rowOf<T extends OwnedTable>(
+  ctx: QueryCtx | MutationCtx,
+  business: Doc<"businesses">,
+  id: Id<T>,
+): Promise<Doc<T>> {
+  const row = await ctx.db.get(id);
+  // Every OwnedTable document carries a businessId; TypeScript can't see
+  // through the generic to know it, hence the narrow read.
+  const owner = (row as { businessId?: Id<"businesses"> } | null)?.businessId;
+  if (!row || owner !== business._id) throw new Error(NOT_FOUND_MESSAGE);
+  return row;
+}
+
+/** The caller's business and one of its rows. Refuses anything else. */
+export async function ownedRow<T extends OwnedTable>(
+  ctx: QueryCtx | MutationCtx,
+  id: Id<T>,
+): Promise<Owned<T>> {
+  const business = await ownedBusiness(ctx);
+  return { row: await rowOf(ctx, business, id), business };
+}
+
+/**
+ * The same check for code acting on a user's behalf without a session —
+ * the crons, and the internal actions the public ones dispatch to.
+ */
+export async function ownedRowFor<T extends OwnedTable>(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<"users">,
+  id: Id<T>,
+): Promise<Owned<T>> {
+  const business = await businessOf(ctx, userId);
+  return { row: await rowOf(ctx, business, id), business };
+}

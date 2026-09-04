@@ -9,7 +9,13 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
-import { paidAction, paidMutation } from "./access";
+import {
+  ownedRow,
+  ownedRowFor,
+  paidAction,
+  paidMutation,
+  type Owned,
+} from "./access";
 
 /**
  * Photos on the Google Business Profile.
@@ -166,6 +172,10 @@ export const savePhoto = paidMutation({
       .first();
     if (!business) throw new Error("Connect your Google profile first.");
 
+    // A storage id can't be ownership-checked after the fact. That's fine:
+    // generateUploadUrl only ever hands a URL to its own caller, so the
+    // worst a stranger's id can do here is attach their own upload to
+    // this business.
     const url = await ctx.storage.getUrl(storageId);
     return await ctx.db.insert("photos", {
       businessId: business._id,
@@ -181,13 +191,11 @@ export const savePhoto = paidMutation({
 export const removePhoto = paidMutation({
   args: { id: v.id("photos") },
   handler: async (ctx, { id }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
-    const row = await ctx.db.get(id);
-    if (row?.status === "published") {
+    const { row } = await ownedRow(ctx, id);
+    if (row.status === "published") {
       throw new Error("This one is already on Google. Remove it there.");
     }
-    if (row) await ctx.db.delete(id);
+    await ctx.db.delete(row._id);
   },
 });
 
@@ -214,9 +222,10 @@ export const markPhotoPublished = internalMutation({
   },
 });
 
-export const photoById = internalQuery({
-  args: { id: v.id("photos") },
-  handler: async (ctx, { id }) => await ctx.db.get(id),
+/** A photo, only if it belongs to this user's business. */
+export const ownedPhoto = internalQuery({
+  args: { userId: v.id("users"), id: v.id("photos") },
+  handler: async (ctx, { userId, id }) => await ownedRowFor(ctx, userId, id),
 });
 
 export const pushPhoto = internalAction({
@@ -225,15 +234,15 @@ export const pushPhoto = internalAction({
     ctx,
     { photoId, userId },
   ): Promise<{ ok: boolean; error?: string }> => {
-    const photo = await ctx.runQuery(internal.photos.photoById, {
-      id: photoId,
-    });
-    if (!photo?.url) return { ok: false, error: "That photo is gone." };
+    // Ownership is settled here, right before the Google call, for the
+    // owner's button and the daily drip alike.
+    const { row: photo, business }: Owned<"photos"> = await ctx.runQuery(
+      internal.photos.ownedPhoto,
+      { userId, id: photoId },
+    );
+    if (!photo.url) return { ok: false, error: "That photo is gone." };
 
-    const business = await ctx.runQuery(internal.google.businessForUser, {
-      userId,
-    });
-    const parent = business ? parentFor(business) : null;
+    const parent = parentFor(business);
     if (!parent) return { ok: false, error: "No Google listing linked." };
 
     const token: string = await ctx.runAction(internal.google.accessTokenFor, {

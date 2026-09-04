@@ -9,7 +9,13 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
-import { paidAction, paidMutation } from "./access";
+import {
+  ownedRow,
+  ownedRowFor,
+  paidAction,
+  paidMutation,
+  type Owned,
+} from "./access";
 
 /**
  * Reviews from the Google Business Profile.
@@ -294,9 +300,10 @@ export const replyContext = internalQuery({
   },
 });
 
-export const reviewById = internalQuery({
-  args: { id: v.id("reviews") },
-  handler: async (ctx, { id }) => await ctx.db.get(id),
+/** A review, only if it belongs to this user's business. */
+export const ownedReview = internalQuery({
+  args: { userId: v.id("users"), id: v.id("reviews") },
+  handler: async (ctx, { userId, id }) => await ownedRowFor(ctx, userId, id),
 });
 
 export const saveDraft = internalMutation({
@@ -353,14 +360,17 @@ export const markReplied = internalMutation({
 export const draftReply = internalAction({
   args: { reviewId: v.id("reviews"), userId: v.id("users") },
   handler: async (ctx, { reviewId, userId }): Promise<string | null> => {
+    // Ownership first, before a word of the review reaches OpenAI.
+    const { row: review }: Owned<"reviews"> = await ctx.runQuery(
+      internal.reviews.ownedReview,
+      { userId, id: reviewId },
+    );
+
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) return null;
 
-    const review = await ctx.runQuery(internal.reviews.reviewById, {
-      id: reviewId,
-    });
     const c = await ctx.runQuery(internal.reviews.replyContext, { userId });
-    if (!review || !c) return null;
+    if (!c) return null;
 
     // Google hands names back however the customer typed them — "rahul",
     // "SHEKHAR". Addressing someone in their own miscasing reads as sloppy.
@@ -485,10 +495,12 @@ export const pushReply = internalAction({
     ctx,
     { reviewId, userId, text },
   ): Promise<{ ok: boolean; error?: string }> => {
-    const review = await ctx.runQuery(internal.reviews.reviewById, {
-      id: reviewId,
-    });
-    if (!review?.gbpReviewName) {
+    // Checked here, at the Google call, so every path in is covered.
+    const { row: review }: Owned<"reviews"> = await ctx.runQuery(
+      internal.reviews.ownedReview,
+      { userId, id: reviewId },
+    );
+    if (!review.gbpReviewName) {
       return { ok: false, error: "That review is no longer on Google." };
     }
 
@@ -611,8 +623,11 @@ export const approveReply = paidAction({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Sign in first.");
 
-    const review = await ctx.runQuery(internal.reviews.reviewById, { id });
-    const body = (text ?? review?.replyText ?? "").trim();
+    const { row: review }: Owned<"reviews"> = await ctx.runQuery(
+      internal.reviews.ownedReview,
+      { userId, id },
+    );
+    const body = (text ?? review.replyText ?? "").trim();
     if (!body) return { ok: false, error: "There's nothing to send." };
 
     return await ctx.runAction(internal.reviews.pushReply, {
@@ -636,11 +651,14 @@ export const rewriteReply = paidAction({
     );
     if (!text) return null;
 
-    const review = await ctx.runQuery(internal.reviews.reviewById, { id });
+    const { row: review }: Owned<"reviews"> = await ctx.runQuery(
+      internal.reviews.ownedReview,
+      { userId, id },
+    );
     await ctx.runMutation(internal.reviews.saveDraft, {
       id,
       replyText: text,
-      needsApproval: (review?.rating ?? 5) <= 3,
+      needsApproval: review.rating <= 3,
     });
     return text;
   },
@@ -650,9 +668,8 @@ export const rewriteReply = paidAction({
 export const discardDraft = paidMutation({
   args: { id: v.id("reviews") },
   handler: async (ctx, { id }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
-    await ctx.db.patch(id, {
+    const { row } = await ownedRow(ctx, id);
+    await ctx.db.patch(row._id, {
       replyText: undefined,
       replyStatus: "none",
       replyNeedsApproval: undefined,

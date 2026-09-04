@@ -9,7 +9,13 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
-import { paidAction, paidMutation } from "./access";
+import {
+  ownedRow,
+  ownedRowFor,
+  paidAction,
+  paidMutation,
+  type Owned,
+} from "./access";
 
 /**
  * Writing and publishing Google Business Profile posts.
@@ -97,9 +103,10 @@ export const publishedRecently = internalQuery({
   },
 });
 
-export const postById = internalQuery({
-  args: { id: v.id("posts") },
-  handler: async (ctx, { id }) => await ctx.db.get(id),
+/** A post, only if it belongs to this user's business. */
+export const ownedPost = internalQuery({
+  args: { userId: v.id("users"), id: v.id("posts") },
+  handler: async (ctx, { userId, id }) => await ownedRowFor(ctx, userId, id),
 });
 
 /* -------------------------------- storage ------------------------------- */
@@ -152,23 +159,19 @@ export const markPublished = internalMutation({
 export const updateDraft = paidMutation({
   args: { id: v.id("posts"), body: v.string() },
   handler: async (ctx, { id, body }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
-    const post = await ctx.db.get(id);
-    if (!post) throw new Error("That post is gone.");
+    const { row: post } = await ownedRow(ctx, id);
     if (post.status === "published") {
       throw new Error("Published posts can't be edited here.");
     }
-    await ctx.db.patch(id, { body: body.slice(0, 1500) });
+    await ctx.db.patch(post._id, { body: body.slice(0, 1500) });
   },
 });
 
 export const removePost = paidMutation({
   args: { id: v.id("posts") },
   handler: async (ctx, { id }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
-    await ctx.db.delete(id);
+    const { row: post } = await ownedRow(ctx, id);
+    await ctx.db.delete(post._id);
   },
 });
 
@@ -438,13 +441,14 @@ export const pushToGoogle = internalAction({
     ctx,
     { postId, userId },
   ): Promise<{ ok: boolean; name?: string; error?: string }> => {
-    const post = await ctx.runQuery(internal.posts.postById, { id: postId });
-    if (!post) return { ok: false, error: "That post is gone." };
-
-    const business = await ctx.runQuery(internal.google.businessForUser, {
-      userId,
-    });
-    if (!business?.gbpAccountName || !business.gbpLocationName) {
+    // The post has to belong to the business whose Google credentials are
+    // about to be used. Checked here, at the point of the Google call, so
+    // the owner's button and the crons are covered by the same line.
+    const { row: post, business }: Owned<"posts"> = await ctx.runQuery(
+      internal.posts.ownedPost,
+      { userId, id: postId },
+    );
+    if (!business.gbpAccountName || !business.gbpLocationName) {
       return { ok: false, error: "No Google listing linked." };
     }
 

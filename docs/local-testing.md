@@ -10,9 +10,93 @@ without a Google Cloud project, and without a rupee moving. This page is how.
 | Next.js app | `npm run dev` (or `docker compose up`) on port 3000 | `.env.local` |
 | Convex backend | `npx convex dev` on the host, local deployment on ports 3210 (API) and 3211 (HTTP) | Convex env vars, set with `npx convex env set KEY value` |
 
-`npx convex env set` is the only thing that puts a value on the backend.
-Writing it into `.env.convex` alone does nothing; that file is your own
-notebook. `.env.local` is read by Next automatically.
+Next reads `.env.local` at the repo root on its own. Convex reads nothing
+from disk: a deployment's variables live on the deployment, and the CLI
+pushes them there. So there are two kinds of file, and each holds only
+what its side actually reads.
+
+## Env files, one per side
+
+**`.env.local`**: Next, plus which deployment the CLI targets. Nothing
+else, and no secrets. Next doesn't read them, and `docker compose` hands
+this whole file to the container.
+
+```
+# Which Convex deployment the CLI pushes to and the app talks to. Swap
+# these three lines to move between the local backend and a cloud one.
+CONVEX_DEPLOYMENT=anonymous:anonymous-footfall
+NEXT_PUBLIC_CONVEX_URL=http://127.0.0.1:3210
+NEXT_PUBLIC_CONVEX_SITE_URL=http://127.0.0.1:3211
+
+# The app's own address, and the domain shop sites live on in production.
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SITE_DOMAIN=footfall.zone
+
+# Serve the fake Google at /api/mock/google.
+GOOGLE_MOCK_ENABLED=1
+
+# Only for the real Google consent screen. Unused while the mock is on.
+# GOOGLE_CLIENT_ID=
+```
+
+**`convex/.env.convex.<name>`**: one file per Convex deployment, holding
+that deployment's variables and nothing about Next. Both are gitignored
+by the `.env*` rule.
+
+```
+# Where the OAuth callback sends the browser back.
+SITE_URL=http://localhost:3000
+# Dev only: prints sign-in codes to the backend log.
+OTP_DEV_ECHO=1
+
+OPENAI_API_KEY=
+FIRECRAWL_API_KEY=
+# Optional, paid per search: rank checks and keyword research.
+SERPAPI_KEY=
+# Optional: keyword volumes.
+DATAFORSEO_AUTH=
+
+RAZORPAY_KEY_ID=rzp_test_
+RAZORPAY_KEY_SECRET=
+RAZORPAY_WEBHOOK_SECRET=
+# Dev only: leave the grant to the webhook.
+# RAZORPAY_WEBHOOK_ONLY=1
+
+# The fake Google. A cloud deployment needs a tunnel URL here.
+GOOGLE_API_MOCK_URL=http://127.0.0.1:3000/api/mock/google
+
+# Only for the real Google consent screen and "sign in with Google".
+# GOOGLE_CLIENT_ID=
+# GOOGLE_CLIENT_SECRET=
+# AUTH_GOOGLE_ID=
+# AUTH_GOOGLE_SECRET=
+
+# Only for real SMS and email codes. Unneeded with OTP_DEV_ECHO.
+# MSG91_AUTH_KEY=
+# MSG91_SENDER_ID=
+# MSG91_TEMPLATE_ID=
+# AUTH_RESEND_KEY=
+# AUTH_EMAIL_FROM=
+```
+
+Not in that file: `CONVEX_SITE_URL` and `CONVEX_CLOUD_URL` (Convex sets
+them itself), `JWT_PRIVATE_KEY` and `JWKS` (generated per deployment by
+`npx @convex-dev/auth`), and anything `NEXT_PUBLIC_`.
+
+Push a file to the deployment named in `.env.local`:
+
+```
+npm run env:push -- convex/.env.convex.local
+```
+
+Or to a specific deployment, whatever `.env.local` says:
+
+```
+npm run env:push -- convex/.env.convex.stage --deployment precious-lobster-374
+```
+
+The file wins over what is already on the deployment. Check the result
+with `npx convex env list`, adding `--deployment <name>` for a cloud one.
 
 ## Which keys you need
 

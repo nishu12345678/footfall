@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "webhook:fake": "node scripts/razorpay-webhook.mjs"
+    "webhook:fake": "node scripts/razorpay-webhook.mjs",
+    "env:push": "convex env set --force --from-file"
   },
   "dependencies": {
     "@auth/core": "^0.41.3",

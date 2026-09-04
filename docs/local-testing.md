@@ -38,11 +38,20 @@ echo 'GOOGLE_MOCK_ENABLED=1' >> .env.local
 npx convex env set GOOGLE_API_MOCK_URL http://127.0.0.1:3000/api/mock/google
 ```
 
-Restart `npm run dev` so Next picks up the new variable. Check it answers:
+Restart `npm run dev` so Next picks up the new variable. Keep
+`npx convex dev` running throughout: it is what pushes the code on this
+branch to the local backend, and the backend reads the variable on every
+call, so no restart is needed on that side. Check both halves:
 
 ```
 curl -s http://127.0.0.1:3000/api/mock/google/_control/state
+npx convex env get GOOGLE_API_MOCK_URL
 ```
+
+If connect fails with *"The fake Google is on in .env.local but not on
+the backend"*, the second half is missing: run the `env set` line again
+from the repo root and check `.env.local` names the same deployment that
+`npx convex dev` is serving.
 
 What you get is one account managing one listing, Glow Salon in Thane,
 with 8 reviews (4 unanswered, one of them a 2-star complaint that the

@@ -23,8 +23,7 @@ import {
 
 const MOCK_BASE = "http://google.mock/api/mock/google";
 
-// The hosts module reads this when it is first loaded, which convex-test
-// does lazily, after this line has run.
+// The hosts module reads this on every call, so the order here is free.
 vi.stubEnv("GOOGLE_API_MOCK_URL", MOCK_BASE);
 afterAll(() => vi.unstubAllEnvs());
 

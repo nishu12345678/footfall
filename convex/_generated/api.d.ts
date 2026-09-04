@@ -20,6 +20,7 @@ import type * as crons from "../crons.js";
 import type * as dashboard from "../dashboard.js";
 import type * as gbp from "../gbp.js";
 import type * as google from "../google.js";
+import type * as googleHosts from "../googleHosts.js";
 import type * as http from "../http.js";
 import type * as keywords from "../keywords.js";
 import type * as lists from "../lists.js";
@@ -49,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   dashboard: typeof dashboard;
   gbp: typeof gbp;
   google: typeof google;
+  googleHosts: typeof googleHosts;
   http: typeof http;
   keywords: typeof keywords;
   lists: typeof lists;

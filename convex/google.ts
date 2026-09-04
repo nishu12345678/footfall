@@ -11,7 +11,7 @@ import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { paidAction, paidMutation } from "./access";
-import { ACCOUNTS_URL, INFO_BASE, TOKEN_URL } from "./googleHosts";
+import { MOCK_AUTH_CODE, accountsUrl, googleMocked, infoBase, tokenUrl } from "./googleHosts";
 
 /**
  * Google Business Profile connection.
@@ -119,7 +119,7 @@ export const exchangeCode = action({
       throw new Error("Google credentials are not configured.");
     }
 
-    const res = await fetch(TOKEN_URL, {
+    const res = await fetch(tokenUrl(), {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
@@ -170,7 +170,7 @@ async function freshAccessToken(
     throw new Error("Google access expired. Reconnect your profile.");
   }
 
-  const res = await fetch(TOKEN_URL, {
+  const res = await fetch(tokenUrl(), {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -218,7 +218,7 @@ export const listLocations = action({
 
     const token = await freshAccessToken(ctx, userId);
 
-    const accounts = await googleGet(ACCOUNTS_URL, token);
+    const accounts = await googleGet(accountsUrl(), token);
     const accountList: { name: string }[] = accounts.accounts ?? [];
     if (accountList.length === 0) return [];
 
@@ -226,7 +226,7 @@ export const listLocations = action({
 
     for (const account of accountList) {
       const url =
-        `${INFO_BASE}/${account.name}/locations` +
+        `${infoBase()}/${account.name}/locations` +
         `?readMask=${encodeURIComponent(LOCATION_READ_MASK)}&pageSize=100`;
       const page = await googleGet(url, token);
 
@@ -448,7 +448,20 @@ export const completeLink = internalAction({
       };
     }
 
-    const res = await fetch(TOKEN_URL, {
+    // The start route hands out this code only when the fake Google is on
+    // in Next. If the backend is about to send it to the real Google, the
+    // two halves of the switch disagree, and Google's "Malformed auth code"
+    // would tell the owner nothing.
+    if (code === MOCK_AUTH_CODE && !googleMocked()) {
+      return {
+        ok: false,
+        returnTo: link.returnTo,
+        error:
+          "The fake Google is on in .env.local but not on the backend. Run: npx convex env set GOOGLE_API_MOCK_URL http://127.0.0.1:3000/api/mock/google",
+      };
+    }
+
+    const res = await fetch(tokenUrl(), {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
@@ -503,7 +516,7 @@ export const refreshLocation = action({
 
     const token = await freshAccessToken(ctx, userId);
     const url =
-      `${INFO_BASE}/${business.gbpLocationName}` +
+      `${infoBase()}/${business.gbpLocationName}` +
       `?readMask=${encodeURIComponent(LOCATION_READ_MASK)}`;
     const loc = await googleGet(url, token);
 
@@ -696,7 +709,7 @@ async function categoryFor(
   token: string,
 ): Promise<{ id: string; serviceTypes: ServiceType[] } | null> {
   const res = await fetch(
-    `${INFO_BASE}/${business.gbpLocationName}?readMask=categories`,
+    `${infoBase()}/${business.gbpLocationName}?readMask=categories`,
     { headers: { Authorization: `Bearer ${token}` } },
   );
   if (!res.ok) {
@@ -900,7 +913,7 @@ export const pushServicesForUser = internalAction({
     const serviceItems = buildServiceItems(c.offerings, category.id, matched);
 
     const res = await fetch(
-      `${INFO_BASE}/${c.business.gbpLocationName}?updateMask=serviceItems`,
+      `${infoBase()}/${c.business.gbpLocationName}?updateMask=serviceItems`,
       {
         method: "PATCH",
         headers: {
@@ -954,7 +967,7 @@ export const pushServices = paidAction({
     const serviceItems = buildServiceItems(c.offerings, category.id, matched);
 
     const url =
-      `${INFO_BASE}/${c.business.gbpLocationName}` +
+      `${infoBase()}/${c.business.gbpLocationName}` +
       `?updateMask=serviceItems`;
 
     const res = await fetch(url, {

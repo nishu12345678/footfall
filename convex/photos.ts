@@ -16,7 +16,7 @@ import {
   paidMutation,
   type Owned,
 } from "./access";
-import { V4_BASE } from "./googleHosts";
+import { v4Base } from "./googleHosts";
 
 /**
  * Photos on the Google Business Profile.
@@ -111,7 +111,7 @@ export const syncForUser = internalAction({
       userId,
     });
 
-    const res = await fetch(`${V4_BASE}/${parent}/media?pageSize=100`, {
+    const res = await fetch(`${v4Base()}/${parent}/media?pageSize=100`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const text = await res.text();
@@ -248,7 +248,7 @@ export const pushPhoto = internalAction({
       userId,
     });
 
-    const res = await fetch(`${V4_BASE}/${parent}/media`, {
+    const res = await fetch(`${v4Base()}/${parent}/media`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

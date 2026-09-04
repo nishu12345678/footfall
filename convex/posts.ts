@@ -16,7 +16,7 @@ import {
   paidMutation,
   type Owned,
 } from "./access";
-import { V4_BASE } from "./googleHosts";
+import { v4Base } from "./googleHosts";
 
 /**
  * Writing and publishing Google Business Profile posts.
@@ -483,7 +483,7 @@ export const pushToGoogle = internalAction({
       }
     }
 
-    const url = `${V4_BASE}/${parent}/localPosts`;
+    const url = `${v4Base()}/${parent}/localPosts`;
     const res = await fetch(url, {
       method: "POST",
       headers: {
@@ -1282,7 +1282,7 @@ export const syncFromGoogleForUser = internalAction({
     // A long-running shop can have hundreds. Three pages is plenty to judge
     // whether the listing is alive.
     for (let page = 0; page < 3; page++) {
-      const url = new URL(`${V4_BASE}/${parent}/localPosts`);
+      const url = new URL(`${v4Base()}/${parent}/localPosts`);
       url.searchParams.set("pageSize", "100");
       if (pageToken) url.searchParams.set("pageToken", pageToken);
 

@@ -16,7 +16,7 @@ import {
   paidMutation,
   type Owned,
 } from "./access";
-import { V4_BASE } from "./googleHosts";
+import { v4Base } from "./googleHosts";
 
 /**
  * Reviews from the Google Business Profile.
@@ -118,7 +118,7 @@ export const syncForUser = internalAction({
 
     for (let page = 0; page < 12; page++) {
       const url =
-        `${V4_BASE}/${parent}/reviews?pageSize=50` +
+        `${v4Base()}/${parent}/reviews?pageSize=50` +
         (pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : "");
 
       const res = await fetch(url, {
@@ -507,7 +507,7 @@ export const pushReply = internalAction({
       userId,
     });
 
-    const res = await fetch(`${V4_BASE}/${review.gbpReviewName}/reply`, {
+    const res = await fetch(`${v4Base()}/${review.gbpReviewName}/reply`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,

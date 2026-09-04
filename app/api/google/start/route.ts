@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
 import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@/convex/_generated/api";
+import { MOCK_AUTH_CODE } from "@/convex/googleHosts";
 
 /**
  * Sends the owner to Google's consent screen.
@@ -75,7 +76,7 @@ export const GET = async (request: NextRequest) => {
 
   if (mocked) {
     const callback = new URL(`${convexSite}/google/callback`);
-    callback.searchParams.set("code", "mock-authorisation-code");
+    callback.searchParams.set("code", MOCK_AUTH_CODE);
     callback.searchParams.set("state", state);
     return NextResponse.redirect(callback.toString());
   }

@@ -9,7 +9,7 @@ import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
 import { paidAction } from "./access";
-import { PERF_BASE } from "./googleHosts";
+import { perfBase } from "./googleHosts";
 
 /**
  * The two jobs behind the Performance screen.
@@ -118,7 +118,7 @@ export const syncMetricsForUser = internalAction({
     params.set("dailyRange.end_date.month", String(e.month));
     params.set("dailyRange.end_date.day", String(e.day));
 
-    const url = `${PERF_BASE}/${business.gbpLocationName}:fetchMultiDailyMetricsTimeSeries?${params}`;
+    const url = `${perfBase()}/${business.gbpLocationName}:fetchMultiDailyMetricsTimeSeries?${params}`;
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
     });

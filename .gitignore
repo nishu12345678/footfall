@@ -54,3 +54,7 @@ skills-lock.json
 # local reference material, never publish
 screenshots/
 credentials.txt
+
+# local reference material and dev credentials, never publish
+local-dev/
+KNOWLEDGE.txt

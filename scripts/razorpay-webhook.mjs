@@ -15,7 +15,7 @@
  * "created". Run it twice and the period must not double. Add
  * --bad-signature and the backend must answer 400 and write nothing.
  *
- * The secret comes from --secret, RAZORPAY_WEBHOOK_SECRET, or .env.convex,
+ * The secret comes from --secret, RAZORPAY_WEBHOOK_SECRET, or convex/.env.local,
  * and the target from --url, NEXT_PUBLIC_CONVEX_SITE_URL, or .env.local.
  */
 
@@ -61,7 +61,7 @@ function parseArgs(argv) {
 }
 
 const args = parseArgs(process.argv.slice(2));
-const convexEnv = readEnvFile(".env.convex");
+const convexEnv = readEnvFile("convex/.env.local");
 const localEnv = readEnvFile(".env.local");
 
 const secret =

@@ -39,7 +39,7 @@ GOOGLE_MOCK_ENABLED=1
 # GOOGLE_CLIENT_ID=
 ```
 
-**`convex/.env.convex.<name>`**: one file per Convex deployment, holding
+**`convex/.env.<name>`**: one file per Convex deployment, holding
 that deployment's variables and nothing about Next. Both are gitignored
 by the `.env*` rule.
 
@@ -86,13 +86,13 @@ them itself), `JWT_PRIVATE_KEY` and `JWKS` (generated per deployment by
 Push a file to the deployment named in `.env.local`:
 
 ```
-npm run env:push -- convex/.env.convex.local
+npm run env:push -- convex/.env.local
 ```
 
 Or to a specific deployment, whatever `.env.local` says:
 
 ```
-npm run env:push -- convex/.env.convex.stage --deployment precious-lobster-374
+npm run env:push -- convex/.env.stage --deployment precious-lobster-374
 ```
 
 The file wins over what is already on the deployment. Check the result
@@ -151,7 +151,7 @@ DataForSEO), rank checks and the geo grid (SerpApi), and the "does your
 website match your listing" check (Firecrawl), run against real search
 results and a real page, so they can be tested with the mock on. The
 reviews, photos and posts are invented. Those three APIs are live and
-paid; put their keys in `convex/.env.convex.local` only when you want to
+paid; put their keys in `convex/.env.local` only when you want to
 exercise them.
 
 The mock keeps state in memory. A post you publish shows up in the next
@@ -228,7 +228,7 @@ fire one yourself:
    answer `400 bad signature` and change nothing.
 
 The script reads the secret from `RAZORPAY_WEBHOOK_SECRET` in your shell
-or from `.env.convex`, and the target from `NEXT_PUBLIC_CONVEX_SITE_URL`
+or from `convex/.env.local`, and the target from `NEXT_PUBLIC_CONVEX_SITE_URL`
 in `.env.local`. Both can be overridden with `--secret` and `--url`.
 
 ### Webhook-only mode: the production path, live
@@ -306,7 +306,7 @@ and Razorpay can deliver real test-mode webhooks.
 
 2. **Give it its env vars.** A fresh deployment has none. Convex Auth's
    signing keys come from its own setup command; everything else is
-   `env set`, with the values from your `.env.convex` notebook:
+   `env set`, with the values from your `convex/.env.stage` file:
 
    ```
    npx @convex-dev/auth                     # JWT_PRIVATE_KEY, JWKS, SITE_URL

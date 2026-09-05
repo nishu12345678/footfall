@@ -138,11 +138,21 @@ the backend"*, the second half is missing: run the `env set` line again
 from the repo root and check `.env.local` names the same deployment that
 `npx convex dev` is serving.
 
-What you get is one account managing one listing, Glow Salon in Thane,
-with 8 reviews (4 unanswered, one of them a 2-star complaint that the
-agent will hold for approval), 6 photos, 2 old posts, and a month of
-views, calls and direction requests. Photos are drawn by the mock, so
-they load without internet.
+What you get is one account managing one listing, SR Indoor Swimming
+Pool in Miyapur, Hyderabad, with 8 reviews (4 unanswered, one of them a
+2-star complaint that the agent will hold for approval), 6 photos, 2 old
+posts, and a month of views, calls and direction requests. Photos are
+drawn by the mock, so they load without internet.
+
+The listing itself is a real public business: the name, address, phone,
+coordinates and website are the real ones. That is deliberate. The parts
+of the product that never go through Google, keyword research (SerpApi,
+DataForSEO), rank checks and the geo grid (SerpApi), and the "does your
+website match your listing" check (Firecrawl), run against real search
+results and a real page, so they can be tested with the mock on. The
+reviews, photos and posts are invented. Those three APIs are live and
+paid; put their keys in `convex/.env.convex.local` only when you want to
+exercise them.
 
 The mock keeps state in memory. A post you publish shows up in the next
 sync; a reply lands on its review. `POST _control/reset` starts over,
@@ -160,7 +170,7 @@ refuses to serve unless `GOOGLE_MOCK_ENABLED=1`, so production meets a
    The 4-digit code is in the `npx convex dev` terminal, on a line
    starting `[otp-dev-echo]`.
 2. Press **connect Google**. With the mock on there is no consent screen;
-   you land on the processing page and Glow Salon is linked.
+   you land on the processing page and SR Indoor Swimming Pool is linked.
 3. **Continue setup** sends you to onboarding step 2, which is behind the
    plan, so you are bounced to the free report at `/app/report`. That is
    the product working as designed: connect and the report are free, the

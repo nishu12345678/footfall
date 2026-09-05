@@ -4,9 +4,17 @@
  * footfall can't be exercised without a listing, and a real one needs a
  * Google Cloud project with Business Profile API access, which Google only
  * grants to verified businesses. This is the listing you don't have: one
- * account, one salon in Thane, with reviews, photos, posts and a month of
- * performance, answering on the same paths and in the same shapes as the
- * real APIs, so the Convex code that talks to Google runs unchanged.
+ * account, one swimming pool in Miyapur, Hyderabad, with reviews, photos,
+ * posts and a month of performance, answering on the same paths and in
+ * the same shapes as the real APIs, so the Convex code that talks to
+ * Google runs unchanged.
+ *
+ * The pool itself is a real public listing: the name, address, phone,
+ * coordinates and website are the real ones. That is so the features
+ * that never touch Google, rank checks and keyword research through
+ * SerpApi and DataForSEO, and the Firecrawl check of the website against
+ * the listing, get real answers with the mock on. The reviews, the
+ * photos and the posts are invented.
  *
  * It is served by app/api/mock/google when GOOGLE_MOCK_ENABLED=1, and the
  * backend is pointed at it with GOOGLE_API_MOCK_URL (see
@@ -99,16 +107,14 @@ export function hashSeed(s: string): number {
 }
 
 const SERVICE_TYPES = [
-  ["job_type_id:haircut", "Haircut"],
-  ["job_type_id:hair_coloring", "Hair colouring"],
-  ["job_type_id:hair_spa", "Hair spa"],
-  ["job_type_id:keratin_treatment", "Keratin treatment"],
-  ["job_type_id:facial", "Facial"],
-  ["job_type_id:waxing", "Waxing"],
-  ["job_type_id:threading", "Threading"],
-  ["job_type_id:manicure", "Manicure"],
-  ["job_type_id:pedicure", "Pedicure"],
-  ["job_type_id:bridal_makeup", "Bridal makeup"],
+  ["job_type_id:kids_swimming_classes", "Kids swimming classes"],
+  ["job_type_id:adult_swimming_classes", "Adult swimming classes"],
+  ["job_type_id:ladies_batch", "Ladies-only batch"],
+  ["job_type_id:special_needs_swimming", "Special needs swimming training"],
+  ["job_type_id:personal_training", "Personal training"],
+  ["job_type_id:competition_training", "Competition training"],
+  ["job_type_id:pool_use", "Pool use, per session"],
+  ["job_type_id:monthly_membership", "Monthly membership"],
 ].map(([serviceTypeId, displayName]) => ({ serviceTypeId, displayName }));
 
 const HOURS = [
@@ -121,9 +127,9 @@ const HOURS = [
   "SUNDAY",
 ].map((day) => ({
   openDay: day,
-  openTime: { hours: 10 },
+  openTime: { hours: 6 },
   closeDay: day,
-  closeTime: { hours: day === "SUNDAY" ? 18 : 20 },
+  closeTime: { hours: 22 },
 }));
 
 function review(
@@ -159,37 +165,37 @@ function freshState(): MockState {
         "Priya Sharma",
         "FIVE",
         3,
-        "Got a keratin treatment done here last week and my hair has never felt this smooth. Sunita was patient with all my questions.",
+        "My six-year-old went from crying at the shallow end to a full length in three weeks. Coach Sunita was patient with him and with all my questions.",
       ),
       review(
         "r2",
         "Rahul Mehta",
         "FOUR",
         6,
-        "Good haircut, reasonable price. But the wait was long even with an appointment.",
+        "Water is clean and actually warm in the mornings. But the 7 am batch is packed, you wait for a lane even with a membership.",
       ),
       review(
         "r3",
         "Sneha Kulkarni",
         "FIVE",
         11,
-        "Best bridal makeup in Thane. They came home on the wedding morning and everything was on time.",
-        "Thank you Sneha, it was a joy to be part of your day. Wishing you both a wonderful life ahead.",
+        "Learnt to swim at 34 here. Ladies-only batch with a female coach, which is the only reason I finally signed up.",
+        "Thank you Sneha, that first full length is a big deal at any age. See you in the mornings.",
       ),
       review(
         "r4",
         "Amit Desai",
         "TWO",
         14,
-        "Asked for a trim and lost three inches. Staff argued instead of listening.",
+        "Asked about the 20-day promise and got a refund runaround when I couldn't continue. Front desk argued instead of listening.",
       ),
       review(
         "r5",
         "Neha Joshi",
         "FIVE",
         22,
-        "Clean place, gentle hands, and the hair spa is worth every rupee.",
-        "Thanks Neha, the hair spa is our favourite too. See you next month.",
+        "Clean changing rooms, proper showers, and the pool is heated so the kids don't shiver in winter.",
+        "Thanks Neha, the heating is what we're proudest of. See you next season.",
       ),
       review("r6", "Karan Patil", "THREE", 30),
       review(
@@ -197,8 +203,8 @@ function freshState(): MockState {
         "Anjali Rao",
         "FIVE",
         45,
-        "Regular here for threading and facials. Never had a bad experience in two years.",
-        "Two years already, Anjali. Thank you for trusting us with your skin all this time.",
+        "Regular here for evening laps for two years. Never once found the water cloudy.",
+        "Two years of laps, Anjali. Thank you for trusting us with your evenings all this time.",
       ),
       review(
         "r8",
@@ -206,16 +212,16 @@ function freshState(): MockState {
         "ONE",
         70,
         "Overpriced for what it is.",
-        "We're sorry it felt that way, Vikram. Do call us on the salon number so we can understand what went wrong.",
+        "We're sorry it felt that way, Vikram. Do call us on the pool number so we can understand what went wrong.",
       ),
     ],
     media: [
-      ["glow-front", "Front of the salon on Pokhran Road", 200],
-      ["glow-spa", "Hair spa station", 160],
-      ["glow-bridal", "Bridal makeup, ready to leave", 120],
-      ["glow-pedicure", "Pedicure corner", 90],
-      ["glow-shelf", "Products we use and sell", 60],
-      ["glow-reception", "Reception", 30],
+      ["pool-entrance", "Entrance on the Friends Colony road", 200],
+      ["pool-lanes", "Six lanes, temperature controlled", 160],
+      ["pool-kids", "Kids batch in the shallow end", 120],
+      ["pool-coach", "Coach demonstrating freestyle", 90],
+      ["pool-changing", "Changing rooms and showers", 60],
+      ["pool-reception", "Reception", 30],
     ].map(([seed, description, daysAgo], i) => ({
       name: `${PARENT}/media/m${i + 1}`,
       mediaFormat: "PHOTO" as const,
@@ -229,18 +235,18 @@ function freshState(): MockState {
         name: `${PARENT}/localPosts/p1`,
         languageCode: "en-IN",
         summary:
-          "Monsoon hair spa offer: any hair spa with a free scalp massage this month. Walk in or call to book, we're open till 8.",
+          "Summer batches are open: 20-day learn-to-swim for kids and adults, 6 am to 10 pm every day. Walk in or call to book a slot.",
         topicType: "STANDARD",
         state: "LIVE",
         createTime: ago(58),
         updateTime: ago(58),
-        media: [{ mediaFormat: "PHOTO", googleUrl: "img/glow-spa" }],
+        media: [{ mediaFormat: "PHOTO", googleUrl: "img/pool-lanes" }],
       },
       {
         name: `${PARENT}/localPosts/p2`,
         languageCode: "en-IN",
         summary:
-          "We're now open on Sundays, 10 to 6. Bridal trials on Sunday mornings by appointment.",
+          "The pool is now temperature controlled, so morning batches run right through winter. Ladies-only batch at 11 am on weekdays.",
         topicType: "STANDARD",
         state: "LIVE",
         createTime: ago(150),
@@ -270,33 +276,36 @@ function locationDoc() {
   return {
     name: MOCK_LOCATION,
     languageCode: "en",
-    title: "Glow Salon",
-    phoneNumbers: { primaryPhone: "+91 98200 12345" },
+    title: "SR Indoor Swimming Pool",
+    phoneNumbers: { primaryPhone: "+91 89991 09999" },
     categories: {
       primaryCategory: {
-        name: "gcid:beauty_salon",
-        displayName: "Beauty salon",
+        name: "gcid:swimming_pool",
+        displayName: "Swimming pool",
         serviceTypes: SERVICE_TYPES,
       },
       additionalCategories: [
-        { name: "gcid:hair_salon", displayName: "Hair salon" },
-        { name: "gcid:nail_salon", displayName: "Nail salon" },
+        { name: "gcid:indoor_swimming_pool", displayName: "Indoor swimming pool" },
+        { name: "gcid:swimming_instructor", displayName: "Swimming instructor" },
       ],
     },
     storefrontAddress: {
       regionCode: "IN",
       languageCode: "en",
-      postalCode: "400610",
-      administrativeArea: "Maharashtra",
-      locality: "Thane",
-      addressLines: ["Shop 4, Vasant Vihar Complex", "Pokhran Road No. 2"],
+      postalCode: "500049",
+      administrativeArea: "Telangana",
+      locality: "Hyderabad",
+      addressLines: [
+        "1/15, behind Zilla Parishad High School",
+        "Friends Colony, Indira Nagar Colony, Miyapur",
+      ],
     },
-    websiteUri: "https://glowsalonthane.example.com",
+    websiteUri: "https://www.srswimmingpool.com/miyapur/",
     regularHours: { periods: HOURS },
-    latlng: { latitude: 19.2183, longitude: 72.9781 },
+    latlng: { latitude: 17.4971336, longitude: 78.3572515 },
     metadata: {
-      mapsUri: "https://maps.google.com/?cid=900800700100200300",
-      newReviewUri: "https://g.page/r/mock-glow-salon/review",
+      mapsUri: "https://maps.google.com/?cid=104805843397405443",
+      newReviewUri: "https://g.page/r/mock-sr-pool/review",
     },
     serviceItems: state.serviceItems,
   };
@@ -497,7 +506,7 @@ export function handleGoogleMock(req: MockRequest): MockResponse {
     if (method !== "GET") return notFound();
     return ok({
       accounts: [
-        { name: MOCK_ACCOUNT, accountName: "Glow Salon", type: "PERSONAL" },
+        { name: MOCK_ACCOUNT, accountName: "SR Swimming Pool", type: "PERSONAL" },
       ],
     });
   }

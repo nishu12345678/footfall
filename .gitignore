@@ -47,6 +47,7 @@ skills-lock.json
 
 .vercel
 .env*
+!.env.example
 
 # convex auth keys (never commit)
 .auth-keys.json

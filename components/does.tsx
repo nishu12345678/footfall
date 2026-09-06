@@ -6,9 +6,9 @@ export function Does() {
   return (
     <section
       id="does"
-      className="bg-paper-2 px-5 py-20 sm:py-28"
+      className="bg-paper-2 px-6 py-24 sm:px-10 sm:py-32 lg:px-16"
     >
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-[1400px]">
         <Reveal>
           <SectionHead
             eyebrow={DOES.eyebrow}
@@ -17,7 +17,7 @@ export function Does() {
           />
         </Reveal>
 
-        <div className="mt-12 grid gap-5 md:grid-cols-2">
+        <div className="mt-14 grid gap-6 md:grid-cols-2 lg:mt-16 lg:gap-8">
           {DOES.items.map((item, i) => (
             <Reveal
               key={item.tag}
@@ -25,8 +25,8 @@ export function Does() {
               className={i === 0 ? "md:col-span-2" : ""}
             >
               <article
-                className={`card h-full p-6 ${
-                  i === 0 ? "md:p-8" : ""
+                className={`card h-full p-8 ${
+                  i === 0 ? "md:p-10" : ""
                 }`}
               >
                 <span className="chip">
@@ -52,7 +52,7 @@ export function Does() {
                 >
                   {item.body}
                 </p>
-                <p className="mt-4 border-t border-black/10 pt-3 text-[13px] text-muted">
+                <p className="mt-6 border-t border-black/8 pt-4 text-[13px] text-muted">
                   {item.detail}
                 </p>
               </article>

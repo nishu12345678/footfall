@@ -56,7 +56,7 @@ export function MapPack({ className = "" }: { className?: string }) {
     <div ref={hostRef} className={className}>
       <WindowCard title={MAP_PACK.title}>
         {/* search bar */}
-        <div className="flex items-center gap-2 border-b border-rule-soft px-3 py-2.5">
+        <div className="flex items-center gap-2.5 border-b border-rule-soft px-4 py-3">
           <span className="text-muted" aria-hidden>
             ⌕
           </span>
@@ -70,7 +70,7 @@ export function MapPack({ className = "" }: { className?: string }) {
           {rows.map((row, i) => (
             <li
               key={row.name}
-              className={`flex items-center gap-3 px-3 py-3 transition-colors duration-500 ${
+              className={`flex items-center gap-3 px-4 py-3.5 transition-colors duration-500 ${
                 row.you ? "bg-pin-soft" : ""
               }`}
             >
@@ -116,7 +116,7 @@ export function MapPack({ className = "" }: { className?: string }) {
         </ol>
 
         {/* caption + manual toggle */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule-soft bg-paper-2 px-3 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule-soft bg-paper-2 px-4 py-3">
           <p className="text-[13px] leading-snug text-ink-soft">
             {after ? MAP_PACK.afterLabel : MAP_PACK.beforeLabel}
           </p>
@@ -143,7 +143,7 @@ export function MapPack({ className = "" }: { className?: string }) {
         </div>
       </WindowCard>
 
-      <p className="mt-2.5 px-1 text-[13px] leading-relaxed text-muted">
+      <p className="mt-3 px-1 text-[13px] leading-relaxed text-muted">
         {MAP_PACK.note}
       </p>
     </div>

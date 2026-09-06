@@ -68,11 +68,13 @@ export function SectionHead({
 }) {
   const centered = align === "center";
   return (
-    <div className={centered ? "mx-auto max-w-2xl text-center" : "max-w-2xl"}>
+    <div className={centered ? "mx-auto max-w-3xl text-center" : "max-w-3xl"}>
       <p className="eyebrow">{eyebrow}</p>
-      <h2 className="mt-4 text-[clamp(2rem,4.6vw,3rem)]">{heading}</h2>
+      <h2 className="mt-4 text-[clamp(2.2rem,4.5vw,3.6rem)]">{heading}</h2>
       {sub ? (
-        <p className="mt-4 text-[19px] leading-relaxed text-ink-soft">{sub}</p>
+        <p className="mt-5 text-[clamp(1.1rem,1.8vw,1.3rem)] leading-relaxed text-ink-soft">
+          {sub}
+        </p>
       ) : null}
     </div>
   );

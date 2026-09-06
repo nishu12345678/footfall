@@ -61,9 +61,9 @@ export function AreaMap({
 
       circleRef.current = L.circle([lat, lng], {
         radius: radiusKm * 1000,
-        color: "#0071e3",
+        color: "#2b4eff",
         weight: 2,
-        fillColor: "#0071e3",
+        fillColor: "#2b4eff",
         fillOpacity: 0.08,
       }).addTo(map);
 
@@ -72,7 +72,7 @@ export function AreaMap({
         radius: 7,
         color: "#ffffff",
         weight: 2,
-        fillColor: "#0071e3",
+        fillColor: "#2b4eff",
         fillOpacity: 1,
       })
         .addTo(map)
@@ -115,9 +115,9 @@ export function AreaMap({
         if (pin.lat === undefined || pin.lng === undefined) continue;
         L.circleMarker([pin.lat, pin.lng], {
           radius: 5,
-          color: pin.added ? "#ffffff" : "#86868b",
+          color: pin.added ? "#ffffff" : "#8a867c",
           weight: 1.5,
-          fillColor: pin.added ? "#34c759" : "#ffffff",
+          fillColor: pin.added ? "#157a3c" : "#ffffff",
           fillOpacity: 1,
         })
           .addTo(group)
@@ -134,9 +134,9 @@ export function AreaMap({
   }, [pins]);
 
   return (
-    <div className="overflow-hidden rounded-[18px] shadow-card">
+    <div className="overflow-hidden rounded-[22px] shadow-card">
       <div ref={hostRef} className="h-[220px] w-full bg-paper-3" />
-      <p className="border-t border-black/10 bg-paper-2 px-4 py-2 text-[12px] text-ink-soft">
+      <p className="border-t border-black/8 bg-paper-2 px-5 py-3 text-[12px] text-ink-soft">
         {radiusKm}km around {label}
       </p>
     </div>

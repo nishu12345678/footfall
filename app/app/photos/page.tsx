@@ -250,7 +250,7 @@ export default function PhotosPage() {
       location={business.locationName ?? business.city}
       logoUrl={business.logoUrl}
     >
-      <h1 className="text-[1.6rem]">photos</h1>
+      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">photos</h1>
       <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
         Add everything once. We put four up a week &mdash; Mon, Wed, Fri and Sat
         &mdash; so your listing always looks like a shop someone is running.
@@ -272,7 +272,7 @@ export default function PhotosPage() {
         type="button"
         onClick={() => fileRef.current?.click()}
         disabled={uploading > 0}
-        className="btn btn-primary mt-5 w-full disabled:opacity-40"
+        className="btn btn-primary mt-7 w-full disabled:opacity-40"
       >
         {uploading > 0
           ? `uploading… ${uploading} left`
@@ -280,8 +280,8 @@ export default function PhotosPage() {
       </button>
 
       {/* ------------------------------ why ------------------------------ */}
-      <details className="group card mt-3">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[14px] font-semibold">
+      <details className="group card mt-4">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-[14px] font-semibold">
           Why publish photos and videos?
           <span
             aria-hidden
@@ -290,7 +290,7 @@ export default function PhotosPage() {
             ›
           </span>
         </summary>
-        <ul className="space-y-2.5 border-t border-rule-soft px-4 py-3.5">
+        <ul className="space-y-3.5 border-t border-rule-soft px-5 py-4">
           {[
             [
               "People trust a business they can see",
@@ -328,27 +328,27 @@ export default function PhotosPage() {
       </details>
 
       {syncing ? (
-        <div className="mt-4">
+        <div className="mt-5">
           <Working label="Reading what's already on your listing" />
         </div>
       ) : null}
 
       {note ? (
-        <p className="mt-4 rounded-[12px] bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
+        <p className="mt-5 rounded-[12px] bg-open-soft px-4 py-3 text-[13px] leading-snug">
           {note}
         </p>
       ) : null}
       {error ? (
         <p
           role="alert"
-          className="mt-4 break-words rounded-[12px] bg-pin-soft px-3.5 py-2.5 text-[13px] leading-snug"
+          className="mt-5 break-words rounded-[12px] bg-pin-soft px-4 py-3 text-[13px] leading-snug"
         >
           {error}
         </p>
       ) : null}
 
       {/* ------------------------ your photos ---------------------------- */}
-      <section className="mt-8">
+      <section className="mt-10">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="text-[15px] font-semibold text-ink">
             Your photos and videos
@@ -369,13 +369,13 @@ export default function PhotosPage() {
         </div>
 
         {live.length === 0 ? (
-          <p className="card mt-3 px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
+          <p className="card mt-4 px-5 py-10 text-center text-[13px] leading-relaxed text-muted">
             {syncing
               ? "Checking…"
               : "Nothing on your listing yet. Photos are one of the first things a customer looks at."}
           </p>
         ) : (
-          <ul className="mt-3 grid grid-cols-3 gap-2">
+          <ul className="mt-4 grid grid-cols-3 gap-2.5">
             {shown.map((item) => (
               <li key={item._id}>
                 <Tile item={item} />
@@ -386,7 +386,7 @@ export default function PhotosPage() {
       </section>
 
       {/* --------------------------- scheduled --------------------------- */}
-      <section className="mt-8">
+      <section className="mt-10">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="text-[15px] font-semibold text-ink">
             Scheduled photos and videos
@@ -397,12 +397,12 @@ export default function PhotosPage() {
         </div>
 
         {upcoming.length === 0 ? (
-          <p className="card mt-3 px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
+          <p className="card mt-4 px-5 py-10 text-center text-[13px] leading-relaxed text-muted">
             Nothing scheduled. Add a batch and we&rsquo;ll spread them out, four
             a week.
           </p>
         ) : (
-          <div className="mt-3 space-y-5">
+          <div className="mt-4 space-y-7">
             {[...weeks.entries()]
               .sort((a, b) => a[0] - b[0])
               .map(([monday, items]) => (
@@ -416,11 +416,11 @@ export default function PhotosPage() {
                     </p>
                   </div>
 
-                  <ul className="inset-group mt-2">
+                  <ul className="inset-group mt-3">
                     {items.map(({ date, item }) => (
                       <li
                         key={item._id}
-                        className="inset-row flex items-center gap-3 px-3 py-2.5"
+                        className="inset-row flex items-center gap-3.5 px-4 py-3.5"
                       >
                         <span className="w-16 flex-none">
                           <Tile item={item} />
@@ -462,11 +462,11 @@ export default function PhotosPage() {
       </section>
 
       {failed.length > 0 ? (
-        <section className="mt-8">
+        <section className="mt-10">
           <h2 className="text-[15px] font-semibold text-pin">
             Google wouldn&rsquo;t take these
           </h2>
-          <ul className="mt-3 grid grid-cols-3 gap-2">
+          <ul className="mt-4 grid grid-cols-3 gap-2.5">
             {failed.map((item) => (
               <li key={item._id}>
                 <Tile item={item} className="opacity-60" />
@@ -484,8 +484,8 @@ export default function PhotosPage() {
       ) : null}
 
       {/* -------------------------- guidelines --------------------------- */}
-      <details className="group card mt-8">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[14px] font-semibold">
+      <details className="group card mt-10">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-[14px] font-semibold">
           What Google accepts
           <span
             aria-hidden
@@ -494,7 +494,7 @@ export default function PhotosPage() {
             ›
           </span>
         </summary>
-        <div className="space-y-3.5 border-t border-rule-soft px-4 py-3.5">
+        <div className="space-y-4 border-t border-rule-soft px-5 py-4">
           <div>
             <p className="text-[13px] font-medium uppercase tracking-[0.05em] text-muted">
               Photos

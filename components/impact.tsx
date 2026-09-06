@@ -34,11 +34,11 @@ export function Impact() {
 
   if (!data.ready) {
     return (
-      <section className="mt-7">
+      <section className="mt-10">
         <h2 className="font-display text-[15px] font-bold">
           Before footfall, and after
         </h2>
-        <p className="mt-3 rounded-[14px] bg-paper-2 px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
+        <p className="mt-4 rounded-[16px] bg-paper-2 px-6 py-10 text-center text-[13px] leading-relaxed text-muted">
           {data.days > 0
             ? `We've been running your listing for ${data.days} day${data.days === 1 ? "" : "s"}. Once there's a week of it, this compares that week against the week before we started.`
             : "This starts filling in once we've been running your listing for a week. Google's own data lags a couple of days behind."}
@@ -49,11 +49,11 @@ export function Impact() {
 
   if (!data.hasBefore) {
     return (
-      <section className="mt-7">
+      <section className="mt-10">
         <h2 className="font-display text-[15px] font-bold">
           Before footfall, and after
         </h2>
-        <p className="mt-3 rounded-[14px] bg-paper-2 px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
+        <p className="mt-4 rounded-[16px] bg-paper-2 px-6 py-10 text-center text-[13px] leading-relaxed text-muted">
           Google has no data for the {data.days} days before we started, so
           there&rsquo;s nothing honest to compare against yet.
         </p>
@@ -62,7 +62,7 @@ export function Impact() {
   }
 
   return (
-    <section className="mt-7">
+    <section className="mt-10">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-display text-[15px] font-bold">
           Before footfall, and after
@@ -76,7 +76,7 @@ export function Impact() {
         {data.days} days before it.
       </p>
 
-      <ul className="mt-3 space-y-2">
+      <ul className="mt-4 space-y-3">
         {ROWS.map((row) => {
           const before = data.before[row.key];
           const after = data.after[row.key];
@@ -87,7 +87,7 @@ export function Impact() {
           return (
             <li
               key={row.key}
-              className="rounded-[14px] bg-paper-2 p-4"
+              className="rounded-[16px] bg-paper-2 p-5"
             >
               <div className="flex items-baseline justify-between gap-3">
                 <span className="text-[14px] font-semibold">{row.label}</span>

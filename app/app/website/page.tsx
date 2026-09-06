@@ -38,7 +38,7 @@ export default function WebsitePage() {
       location={business.locationName ?? business.city}
       logoUrl={business.logoUrl}
     >
-      <h1 className="text-[1.6rem]">your website</h1>
+      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">your website</h1>
       <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
         A page built from your Google listing, so your name, address, phone and
         hours match Google exactly. That consistency is one of the few local SEO
@@ -47,7 +47,7 @@ export default function WebsitePage() {
 
       {site ? (
         <>
-          <div className="card mt-6 p-4">
+          <div className="card mt-8 p-5">
             <div className="flex items-center justify-between gap-3">
               <span
                 className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
@@ -73,7 +73,7 @@ export default function WebsitePage() {
               </span>
             </div>
 
-            <p className="mt-3 break-all font-mono text-[12px] text-ink-soft">
+            <p className="mt-4 break-all font-mono text-[12px] text-ink-soft">
               /s/{site.slug}
             </p>
             <p className="mt-2 text-[15px] font-semibold leading-snug">
@@ -83,7 +83,7 @@ export default function WebsitePage() {
               {site.metaDescription}
             </p>
 
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-5 flex flex-wrap gap-2.5">
               <a
                 href={shopUrl(site.slug)}
                 target="_blank"
@@ -113,11 +113,11 @@ export default function WebsitePage() {
             </div>
           </div>
 
-          <div className="card mt-4 p-4">
+          <div className="card mt-5 p-5">
             <p className="text-[15px] font-semibold text-ink">
               What&rsquo;s on it
             </p>
-            <ul className="mt-2 space-y-1.5 text-[13px] leading-snug text-ink-soft">
+            <ul className="mt-3 space-y-2 text-[13px] leading-snug text-ink-soft">
               <li>· {site.services.length} services, written for local search</li>
               <li>· {site.faqs.length} questions customers actually ask</li>
               <li>· your opening hours, straight from Google</li>
@@ -133,13 +133,13 @@ export default function WebsitePage() {
             type="button"
             onClick={() => void build()}
             disabled={busy}
-            className="btn btn-ghost mt-4 w-full disabled:opacity-40"
+            className="btn btn-ghost mt-5 w-full disabled:opacity-40"
           >
             {busy ? "rewriting…" : "rewrite the copy"}
           </button>
         </>
       ) : (
-        <div className="card mt-6 p-5">
+        <div className="card mt-8 p-6">
           {business.website ? (
             <p className="text-[14px] leading-relaxed text-ink-soft">
               You already have a website at{" "}
@@ -161,7 +161,7 @@ export default function WebsitePage() {
             type="button"
             onClick={() => void build()}
             disabled={busy}
-            className="btn btn-primary mt-5 w-full disabled:opacity-40"
+            className="btn btn-primary mt-6 w-full disabled:opacity-40"
           >
             <span aria-hidden>✦</span>
             {busy ? "building…" : "create my website"}
@@ -172,7 +172,7 @@ export default function WebsitePage() {
       {error ? (
         <p
           role="alert"
-          className="mt-4 break-words rounded-[12px] bg-pin-soft px-3.5 py-2.5 text-[13px] leading-snug"
+          className="mt-5 break-words rounded-[12px] bg-pin-soft px-4 py-3 text-[13px] leading-snug"
         >
           {error}
         </p>

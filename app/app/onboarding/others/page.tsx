@@ -33,9 +33,9 @@ export default function OthersPage() {
 
   if (data === null) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6">
-        <h1 className="text-[1.8rem]">connect google first</h1>
-        <a href="/app/connect" className="btn btn-primary mt-6 w-full">
+      <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
+        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
+        <a href="/app/connect" className="btn btn-primary mt-8 w-full">
           connect google
         </a>
       </main>
@@ -112,12 +112,12 @@ export default function OthersPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-12">
       <Steps current={6} />
 
-      <div className="mt-7 flex-1">
-        <h1 className="text-[1.75rem]">your logo</h1>
-        <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
+      <div className="mt-9 flex-1">
+        <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">your logo</h1>
+        <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
           We put this on every image we post to your listing, so your posts
           look like yours.
         </p>
@@ -134,7 +134,7 @@ export default function OthersPage() {
         />
 
         {business.website ? (
-          <div className="card mt-6 p-4">
+          <div className="card mt-8 p-5">
             <div className="flex items-center justify-between gap-3">
               <p className="flex items-center gap-1.5 text-[15px] font-semibold text-ink">
                 <span aria-hidden className="text-pin">
@@ -154,7 +154,7 @@ export default function OthersPage() {
 
             {candidates && candidates.length > 0 ? (
               <>
-                <ul className="mt-3 grid grid-cols-4 gap-2">
+                <ul className="mt-4 grid grid-cols-4 gap-2.5">
                   {candidates.map((src) => (
                     <li key={src}>
                       <button
@@ -188,15 +188,15 @@ export default function OthersPage() {
 
         {business.logoUrl ? (
           <>
-            <p className="eyebrow mt-7">background</p>
-            <div className="mt-3 grid grid-cols-2 gap-3">
+            <p className="eyebrow mt-9">background</p>
+            <div className="mt-4 grid grid-cols-2 gap-4">
               {(["black", "white"] as const).map((bg) => (
                 <button
                   key={bg}
                   type="button"
                   onClick={() => void setBackground({ background: bg })}
                   aria-pressed={background === bg}
-                  className={`pressable rounded-[14px] p-3 transition-colors ${
+                  className={`pressable rounded-[14px] p-4 transition-colors ${
                     background === bg ? "bg-pin-soft" : "bg-paper-2"
                   }`}
                 >
@@ -227,17 +227,17 @@ export default function OthersPage() {
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="mt-3 text-[13px] font-medium text-pin hover:opacity-80"
+              className="mt-4 text-[13px] font-medium text-pin hover:opacity-80"
             >
               {uploading ? "uploading…" : "replace logo"}
             </button>
 
-            <p className="eyebrow mt-8">preview</p>
-            <p className="mt-1 text-[11px] text-muted">
+            <p className="eyebrow mt-10">preview</p>
+            <p className="mt-1.5 text-[11px] text-muted">
               * image is for representation only
             </p>
 
-            <div className="window mt-3">
+            <div className="window mt-4">
               <div className="relative aspect-[4/3] bg-gradient-to-br from-paper-3 via-paper-2 to-paper">
                 <span
                   aria-hidden
@@ -285,7 +285,7 @@ export default function OthersPage() {
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="pressable mt-4 flex w-full flex-col items-center gap-2 rounded-[18px] bg-paper-2 px-6 py-10 transition-colors hover:bg-paper-3 disabled:opacity-50"
+            className="pressable mt-6 flex w-full flex-col items-center gap-2.5 rounded-[18px] bg-paper-2 px-6 py-12 transition-colors hover:bg-paper-3 disabled:opacity-50"
           >
             <span aria-hidden className="text-[24px]">
               ⬆
@@ -309,7 +309,7 @@ export default function OthersPage() {
         ) : null}
       </div>
 
-      <div className="mt-8 grid grid-cols-2 gap-3">
+      <div className="mt-10 grid grid-cols-2 gap-4">
         <button
           type="button"
           onClick={() => void done()}

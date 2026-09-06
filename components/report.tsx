@@ -15,24 +15,24 @@ export function Report() {
   return (
     <section
       id="report"
-      className="bg-paper-2 px-5 py-20 sm:py-28"
+      className="bg-paper-2 px-6 py-24 sm:px-10 sm:py-32 lg:px-16"
     >
-      <div className="mx-auto grid max-w-6xl items-start gap-12 lg:grid-cols-2 lg:gap-16">
+      <div className="mx-auto grid max-w-[1400px] items-start gap-14 lg:grid-cols-2 lg:gap-20">
         <Reveal>
           <p className="eyebrow">{REPORT.eyebrow}</p>
-          <h2 className="mt-4 text-[clamp(2rem,4.6vw,3rem)]">
+          <h2 className="mt-4 text-[clamp(2.2rem,4.5vw,3.6rem)]">
             {REPORT.heading}
           </h2>
-          <p className="mt-4 text-[19px] leading-relaxed text-ink-soft">
+          <p className="mt-5 text-[clamp(1.1rem,1.8vw,1.3rem)] leading-relaxed text-ink-soft">
             {REPORT.sub}
           </p>
 
-          <ol className="mt-8 grid gap-3">
+          <ol className="mt-10 grid gap-4">
             {REPORT.steps.map((step, i) => (
-              <li key={step} className="flex items-center gap-3">
+              <li key={step} className="flex items-baseline gap-4">
                 <span
                   aria-hidden
-                  className="grid h-8 w-8 flex-none place-items-center rounded-full bg-pin-soft text-[15px] font-semibold text-pin"
+                  className="w-9 flex-none text-[28px] font-extrabold leading-none tracking-[-0.03em] text-pin"
                 >
                   {i + 1}
                 </span>
@@ -41,7 +41,7 @@ export function Report() {
             ))}
           </ol>
 
-          <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+          <div className="mt-10 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
             <a href={LINKS.cta} className="btn btn-primary">
               {REPORT.cta}
             </a>
@@ -55,21 +55,21 @@ export function Report() {
             </a>
           </div>
 
-          <p className="mt-4 text-[15px] leading-relaxed text-muted">
+          <p className="mt-5 text-[15px] leading-relaxed text-muted">
             {REPORT.note}
           </p>
         </Reveal>
 
-        <div className="grid gap-5">
+        <div className="grid gap-6 lg:gap-8">
           <Reveal delay={80}>
-            <div className="card p-6">
+            <div className="card p-8">
               <p className="text-[17px] font-bold">What the report tells you</p>
-              <ul className="mt-4 grid gap-4">
+              <ul className="mt-6 grid gap-5">
                 {REPORT.checks.map((check) => (
-                  <li key={check.label} className="flex items-start gap-3.5">
+                  <li key={check.label} className="flex items-start gap-4">
                     <span
                       aria-hidden
-                      className="grid h-10 w-10 flex-none place-items-center rounded-[12px] bg-paper-2 text-[20px]"
+                      className="grid h-12 w-12 flex-none place-items-center rounded-[14px] bg-paper-2 text-[22px]"
                     >
                       {check.icon}
                     </span>
@@ -88,7 +88,7 @@ export function Report() {
           </Reveal>
 
           <Reveal delay={160}>
-            <div className="card flex flex-col gap-2 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="card flex flex-col gap-3 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
               <p className="text-[16px] font-bold text-open">
                 {REPORT.freeLine}
               </p>

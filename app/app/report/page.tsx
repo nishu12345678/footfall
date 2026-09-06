@@ -23,7 +23,7 @@ const TONE = {
     mark: "!",
   },
   warn: {
-    chip: "bg-star/15 text-[#b25000]",
+    chip: "bg-star/15 text-[#8a5a13]",
     label: "Worth doing",
     mark: "•",
   },
@@ -71,7 +71,7 @@ export default function ReportPage() {
 
   if (report === undefined) {
     return (
-      <main className="mx-auto max-w-md px-5 py-16">
+      <main className="mx-auto max-w-xl px-6 py-16">
         <p className="text-[16px] text-muted">Reading your listing…</p>
       </main>
     );
@@ -79,7 +79,7 @@ export default function ReportPage() {
 
   if (report === null) {
     return (
-      <main className="mx-auto max-w-md px-5 py-16">
+      <main className="mx-auto max-w-xl px-6 py-16">
         <p className="text-[16px] text-muted">Please sign in.</p>
       </main>
     );
@@ -87,14 +87,16 @@ export default function ReportPage() {
 
   if (!report.connected) {
     return (
-      <main className="mx-auto max-w-md px-5 py-14">
-        <h1 className="text-[1.9rem]">Connect your Google profile</h1>
+      <main className="mx-auto max-w-xl px-6 py-14">
+        <h1 className="text-[clamp(1.9rem,5vw,2.2rem)]">
+          Connect your Google profile
+        </h1>
         <p className="mt-4 text-[17px] leading-relaxed text-ink-soft">
           One Google login and we&rsquo;ll read your listing and tell you
           exactly what is holding it back. Free, and it takes about 40
           seconds. Nothing is published and nothing changes.
         </p>
-        <a href="/app/connect" className="btn btn-primary mt-7 w-full">
+        <a href="/app/connect" className="btn btn-primary mt-9 w-full">
           Connect Google Business Profile
         </a>
       </main>
@@ -103,7 +105,7 @@ export default function ReportPage() {
 
   if (!report.listingSyncedAt) {
     return (
-      <main className="mx-auto max-w-md px-5 py-16 text-center">
+      <main className="mx-auto max-w-xl px-6 py-16 text-center">
         <p className="text-[19px] font-semibold">
           Reading your Google listing…
         </p>
@@ -115,7 +117,7 @@ export default function ReportPage() {
           <button
             type="button"
             onClick={readNow}
-            className="btn btn-primary mt-7 w-full"
+            className="btn btn-primary mt-9 w-full"
           >
             Try again
           </button>
@@ -160,19 +162,21 @@ export default function ReportPage() {
   };
 
   return (
-    <main className="mx-auto max-w-md px-5 py-10">
+    <main className="mx-auto max-w-xl px-6 py-12">
       <p className="text-[13px] font-medium uppercase tracking-[0.05em] text-pin">
         Free listing report
       </p>
-      <h1 className="mt-2 text-[1.8rem]">{report.business.name}</h1>
-      <p className="mt-1 text-[16px] text-muted">
+      <h1 className="mt-3 text-[clamp(1.8rem,5vw,2.2rem)]">
+        {report.business.name}
+      </h1>
+      <p className="mt-2 text-[16px] text-muted">
         {[report.business.category, report.business.city]
           .filter(Boolean)
           .join(" · ")}
       </p>
 
       {/* The headline number. Blunt on purpose — this is the reason to pay. */}
-      <section className="card mt-7 p-6">
+      <section className="card mt-9 p-6">
         <p className="text-[17px] leading-relaxed">
           We found{" "}
           <strong className="text-pin">
@@ -199,7 +203,7 @@ export default function ReportPage() {
         </dl>
       </section>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
         <p className="text-[14px] text-muted">
           Read from Google on {fmtDate(report.listingSyncedAt)}
         </p>
@@ -213,13 +217,13 @@ export default function ReportPage() {
         </button>
       </div>
 
-      <ul className="mt-6 grid gap-3">
+      <ul className="mt-8 grid gap-4">
         {report.findings.map((f) => {
           const tone = TONE[f.severity];
           return (
             <li
               key={f.id}
-              className="rounded-[18px] bg-white p-5 shadow-card"
+              className="rounded-[18px] bg-white p-6 shadow-card"
             >
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold ${tone.chip}`}
@@ -233,8 +237,8 @@ export default function ReportPage() {
               <p className="mt-2 text-[16px] leading-relaxed text-ink-soft">
                 {f.detail}
               </p>
-              <p className="mt-3 border-t border-rule-soft pt-3 text-[15px] leading-relaxed text-ink">
-                <span className="font-semibold text-open">On a plan: </span>
+              <p className="mt-4 border-t border-rule-soft pt-4 text-[15px] leading-relaxed text-ink">
+                <span className="font-semibold text-open-deep">On a plan: </span>
                 {f.fix}
               </p>
             </li>
@@ -249,7 +253,7 @@ export default function ReportPage() {
           type="button"
           onClick={runCheck}
           disabled={checking}
-          className="btn btn-ghost mt-5 w-full disabled:opacity-60"
+          className="btn btn-ghost mt-6 w-full disabled:opacity-60"
         >
           {checking
             ? "Reading your website…"
@@ -258,7 +262,7 @@ export default function ReportPage() {
               : "Check my website too"}
         </button>
       ) : (
-        <section className="card mt-5 p-5">
+        <section className="card mt-6 p-6">
           <h2 className="text-[18px] font-bold">You have no website</h2>
           <p className="mt-2 text-[16px] leading-relaxed text-ink-soft">
             We can build you one right now from your Google listing — your
@@ -292,11 +296,11 @@ export default function ReportPage() {
       )}
 
       {note ? (
-        <p className="mt-3 text-center text-[15px] text-muted">{note}</p>
+        <p className="mt-4 text-center text-[15px] text-muted">{note}</p>
       ) : null}
 
       {!report.paid ? (
-        <section className="mt-10 rounded-[16px] bg-pin p-7 text-white shadow-lift">
+        <section className="mt-12 rounded-[18px] bg-pin p-8 text-white shadow-lift">
           <h2 className="text-[1.5rem] text-white">
             This is the list. We can do all of it.
           </h2>

@@ -121,7 +121,7 @@ export function AppHeader({
 }) {
   return (
     <header className="sticky top-0 z-30 material hairline-b">
-      <div className="mx-auto flex max-w-md items-center gap-3 px-5 py-3">
+      <div className="mx-auto flex max-w-xl items-center gap-3 px-6 py-3.5">
         {logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -165,7 +165,7 @@ export function BottomNav() {
 
   return (
     <nav className="sticky bottom-0 z-30 material hairline-t pb-[env(safe-area-inset-bottom)]">
-      <ul className="mx-auto flex max-w-md">
+      <ul className="mx-auto flex max-w-xl">
         {NAV.map((item) => {
           const active =
             item.href === "/app"
@@ -206,7 +206,7 @@ export function AppScreen({
   return (
     <div className="flex min-h-screen flex-col bg-paper-2">
       <AppHeader name={name} location={location} logoUrl={logoUrl} />
-      <div className="mx-auto w-full max-w-md flex-1 px-5 py-5">{children}</div>
+      <div className="mx-auto w-full max-w-xl flex-1 px-6 py-8">{children}</div>
       <BottomNav />
     </div>
   );
@@ -222,12 +222,12 @@ export function Loading() {
 
 export function NeedsConnect() {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6">
-      <h1 className="text-[1.8rem]">connect google first</h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
+      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
+      <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">
         Everything here comes from your Google listing.
       </p>
-      <a href="/app/connect" className="btn btn-primary mt-6 w-full">
+      <a href="/app/connect" className="btn btn-primary mt-8 w-full">
         connect google
       </a>
     </main>

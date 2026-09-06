@@ -5,7 +5,7 @@ export function Nav() {
     <>
       {/* announcement strip — the same offer that appears under pricing */}
       <div className="bg-ink/95 text-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-2 gap-y-1 px-5 py-2.5 text-center">
+        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-center gap-x-2 gap-y-1 px-6 py-2.5 text-center sm:px-10 lg:px-16">
           <span className="text-[13px] font-medium">
             {PRICING.offer.heading}
           </span>
@@ -22,10 +22,10 @@ export function Nav() {
       </div>
 
       <header className="material hairline-b sticky top-0 z-50">
-        <nav className="mx-auto flex max-w-6xl items-center gap-6 px-5 py-3">
+        <nav className="mx-auto flex max-w-[1400px] items-center gap-6 px-6 py-4 sm:px-10 lg:px-16">
           <a
             href="#top"
-            className="flex flex-none items-center gap-2 text-[21px] font-extrabold tracking-tight"
+            className="flex flex-none items-center gap-2 text-[22px] font-extrabold tracking-tight"
           >
             <span
               aria-hidden
@@ -36,12 +36,12 @@ export function Nav() {
             {BRAND.name}
           </a>
 
-          <ul className="ml-auto hidden items-center gap-7 lg:flex">
+          <ul className="ml-auto hidden items-center gap-8 lg:flex">
             {NAV.map((item) => (
               <li key={item.href}>
                 <a
                   href={item.href}
-                  className="text-[16px] font-medium text-ink-soft transition-colors hover:text-pin"
+                  className="text-[15px] font-semibold text-ink-soft transition-colors hover:text-ink"
                 >
                   {item.label}
                 </a>

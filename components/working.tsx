@@ -6,7 +6,7 @@
  */
 export function Working({ label }: { label: string }) {
   return (
-    <div className="card p-5">
+    <div className="card p-6">
       <p className="flex items-center gap-2 font-display text-[14px] font-semibold">
         <span aria-hidden className="text-pin">
           ✦
@@ -14,13 +14,13 @@ export function Working({ label }: { label: string }) {
         {label}
       </p>
       <div
-        className="mt-3 h-1.5 overflow-hidden rounded-full bg-paper-3"
+        className="mt-4 h-1.5 overflow-hidden rounded-full bg-paper-3"
         role="progressbar"
         aria-label={label}
       >
         <span className="sweep block h-full w-1/3 rounded-full bg-pin" />
       </div>
-      <p className="caption mt-2">
+      <p className="caption mt-3">
         this takes a few seconds
       </p>
     </div>

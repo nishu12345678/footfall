@@ -204,13 +204,13 @@ export default function PerformancePage() {
       location={business.locationName ?? business.city}
       logoUrl={business.logoUrl}
     >
-      <h1 className="text-[1.6rem]">performance</h1>
+      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">performance</h1>
       <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
         What your listing did, and where you rank for the searches that matter.
       </p>
 
       {/* range */}
-      <div className="mt-5 flex items-center gap-1 rounded-full bg-paper-3 p-1">
+      <div className="mt-7 flex items-center gap-1 rounded-full bg-paper-3 p-1">
         {RANGES.map((r) => (
           <button
             key={r.days}
@@ -226,7 +226,7 @@ export default function PerformancePage() {
         ))}
       </div>
 
-      <p className="mt-2 flex flex-wrap items-center gap-x-2 text-[12px] text-muted">
+      <p className="mt-3 flex flex-wrap items-center gap-x-2 text-[12px] text-muted">
         {rangeLabel ? <span>{rangeLabel}</span> : <span>no data in range</span>}
         <span aria-hidden>·</span>
         <span>
@@ -236,7 +236,7 @@ export default function PerformancePage() {
         </span>
       </p>
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className="mt-5 grid grid-cols-2 gap-3">
         <button
           type="button"
           onClick={() => void run("metrics")}
@@ -256,28 +256,28 @@ export default function PerformancePage() {
       </div>
 
       {note ? (
-        <p className="mt-3 rounded-[12px] bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
+        <p className="mt-4 rounded-[12px] bg-open-soft px-4 py-3 text-[13px] leading-snug">
           {note}
         </p>
       ) : null}
       {error ? (
         <p
           role="alert"
-          className="mt-3 break-words rounded-[12px] bg-pin-soft px-3.5 py-2.5 text-[13px] leading-snug"
+          className="mt-4 break-words rounded-[12px] bg-pin-soft px-4 py-3 text-[13px] leading-snug"
         >
           {error}
         </p>
       ) : null}
 
       {/* totals */}
-      <div className="mt-5 grid grid-cols-3 gap-2">
+      <div className="mt-6 grid grid-cols-3 gap-3">
         {METRICS.map((m) => (
           <button
             key={m.key}
             type="button"
             onClick={() => setChart(m.key)}
             aria-pressed={chart === m.key}
-            className={`pressable rounded-[14px] p-3 text-center shadow-card transition-colors ${
+            className={`pressable rounded-[14px] p-4 text-center shadow-card transition-colors ${
               chart === m.key ? "bg-pin-soft" : "bg-white"
             }`}
           >
@@ -297,7 +297,7 @@ export default function PerformancePage() {
 
       {/* daily trend */}
       {window.length > 1 ? (
-        <div className="card mt-4 p-4">
+        <div className="card mt-5 p-5">
           <p className="text-[13px] font-medium uppercase tracking-[0.05em] text-muted">
             {chart} per day
           </p>
@@ -327,7 +327,7 @@ export default function PerformancePage() {
       ) : null}
 
       {window.length === 0 ? (
-        <p className="mt-3 text-[13px] leading-relaxed text-muted">
+        <p className="mt-4 text-[13px] leading-relaxed text-muted">
           Nothing pulled for this range yet. Google&rsquo;s data also lags a few
           days, so the most recent days often read zero.
         </p>
@@ -336,7 +336,7 @@ export default function PerformancePage() {
       <Impact />
 
       {/* keywords */}
-      <section className="mt-7">
+      <section className="mt-10">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="text-[15px] font-semibold text-ink">
             Rank for targeted keywords
@@ -347,21 +347,21 @@ export default function PerformancePage() {
         </div>
 
         {keywords.length === 0 ? (
-          <p className="card mt-3 px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
+          <p className="card mt-4 px-5 py-10 text-center text-[13px] leading-relaxed text-muted">
             No keywords yet. Add them in setup and we&rsquo;ll track your
             position weekly.
           </p>
         ) : null}
 
         {groups.map((group) => (
-          <div key={group.key} className="mt-5">
+          <div key={group.key} className="mt-7">
             <h3 className="text-[13px] font-semibold">
               {group.title}
             </h3>
             <p className="mt-1 text-[12px] leading-relaxed text-muted">
               {group.note}
             </p>
-            <ul className="inset-group mt-2">
+            <ul className="inset-group mt-3">
               {[...group.rows]
                 .sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999))
                 .map((kw) => {
@@ -371,7 +371,7 @@ export default function PerformancePage() {
                       : null;
                   const checked = kw.checkedAt !== undefined;
                   return (
-                    <li key={kw._id} className="inset-row px-4 py-3">
+                    <li key={kw._id} className="inset-row px-5 py-4">
                       <div className="flex items-center gap-3">
                         <span className="min-w-0 flex-1 truncate text-[14px]">
                           {kw.term}
@@ -394,7 +394,7 @@ export default function PerformancePage() {
                               : kw.rank <= 3
                                 ? "bg-open-soft text-open-deep"
                                 : kw.rank <= 10
-                                  ? "bg-star/15 text-[#b25000]"
+                                  ? "bg-star/15 text-[#8a5a13]"
                                   : "bg-pin-soft text-pin"
                           }`}
                         >
@@ -403,7 +403,7 @@ export default function PerformancePage() {
                       </div>
 
                       {checked && (kw.coverageTotal ?? 0) > 1 ? (
-                        <div className="mt-1.5">
+                        <div className="mt-2">
                           <div className="flex items-center gap-2">
                             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-paper-3">
                               <div
@@ -431,7 +431,7 @@ export default function PerformancePage() {
                           type="button"
                           onClick={() => void drawGrid(kw.term)}
                           disabled={gridding !== null}
-                          className="mt-1.5 text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
+                          className="mt-2 text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
                         >
                           {gridding === kw.term
                             ? "checking around you…"
@@ -470,7 +470,7 @@ export default function PerformancePage() {
         ))}
 
         {keywords.length > 0 ? (
-          <p className="mt-3 rounded-[12px] bg-white px-3.5 py-2.5 text-[13px] leading-relaxed text-ink-soft shadow-card">
+          <p className="mt-4 rounded-[12px] bg-white px-4 py-3.5 text-[13px] leading-relaxed text-ink-soft shadow-card">
             {business.ranksCheckedAt === undefined
               ? "Checking where you rank right now…"
               : rankedCount === 0
@@ -483,19 +483,22 @@ export default function PerformancePage() {
       <Relevance />
 
       {/* competitors */}
-      <section className="mt-7">
+      <section className="mt-10">
         <h2 className="text-[15px] font-semibold text-ink">
           Competitors ahead of you
         </h2>
         {competitors.length === 0 ? (
-          <p className="card mt-3 px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
+          <p className="card mt-4 px-5 py-10 text-center text-[13px] leading-relaxed text-muted">
             Run a rank check and we&rsquo;ll fill this in from the map results
             around your shop.
           </p>
         ) : (
-          <ul className="inset-group mt-3">
+          <ul className="inset-group mt-4">
             {competitors.map((c) => (
-              <li key={c._id} className="inset-row flex items-center gap-3 px-4 py-3">
+              <li
+                key={c._id}
+                className="inset-row flex items-center gap-3 px-5 py-4"
+              >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[14px]">{c.name}</span>
                   <span className="text-[12px] text-muted">

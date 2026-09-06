@@ -171,7 +171,7 @@ export default function PostsPage() {
       location={business.locationName ?? business.city}
       logoUrl={business.logoUrl}
     >
-      <h1 className="text-[1.6rem]">posts</h1>
+      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">posts</h1>
       <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
         This runs by itself. Three posts a week, on weekdays, planned a
         fortnight ahead and topped up every Sunday. You don&rsquo;t need to do
@@ -179,7 +179,7 @@ export default function PostsPage() {
         and change it if you want.
       </p>
 
-      <div className="mt-4 rounded-[12px] bg-open-soft px-3.5 py-2.5">
+      <div className="mt-6 rounded-[12px] bg-open-soft px-4 py-3.5">
         <p className="flex items-center gap-2 text-[13px] font-semibold">
           <span
             aria-hidden
@@ -196,27 +196,27 @@ export default function PostsPage() {
       </div>
 
       {planning ? (
-        <div className="mt-4">
+        <div className="mt-5">
           <Working label="Working out what to post about" />
         </div>
       ) : null}
 
       {note ? (
-        <p className="mt-4 rounded-[12px] bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
+        <p className="mt-5 rounded-[12px] bg-open-soft px-4 py-3 text-[13px] leading-snug">
           {note}
         </p>
       ) : null}
       {error ? (
         <p
           role="alert"
-          className="mt-4 break-words rounded-[12px] bg-pin-soft px-3.5 py-2.5 text-[13px] leading-snug"
+          className="mt-5 break-words rounded-[12px] bg-pin-soft px-4 py-3 text-[13px] leading-snug"
         >
           {error}
         </p>
       ) : null}
 
       {/* ---------------------------- coming up --------------------------- */}
-      <section className="mt-8">
+      <section className="mt-10">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="text-[15px] font-semibold text-ink">Coming up</h2>
           <span className="flex-none text-[11px] text-muted">
@@ -225,7 +225,7 @@ export default function PostsPage() {
         </div>
 
         {scheduled.length === 0 ? (
-          <div className="card mt-3 px-4 py-8 text-center">
+          <div className="card mt-4 px-5 py-10 text-center">
             {filling ? (
               <Working label="Writing your next two weeks of posts" />
             ) : (
@@ -235,14 +235,14 @@ export default function PostsPage() {
             )}
           </div>
         ) : (
-          <ul className="mt-3 space-y-3">
+          <ul className="mt-4 space-y-4">
             {scheduled.map((post) => (
               <li
                 key={post._id}
-                className="card p-4"
+                className="card p-5"
               >
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <span className="rounded-full bg-star/15 px-2.5 py-0.5 text-[11px] font-medium text-[#b25000]">
+                  <span className="rounded-full bg-star/15 px-2.5 py-0.5 text-[11px] font-medium text-[#8a5a13]">
                     {when(post.scheduledFor)}
                   </span>
                   {post.title ? (
@@ -315,15 +315,15 @@ export default function PostsPage() {
 
       {/* ----------------------------- drafts ----------------------------- */}
       {drafts.length > 0 ? (
-        <section className="mt-8">
+        <section className="mt-10">
           <h2 className="text-[15px] font-semibold text-ink">
             Waiting for you
           </h2>
-          <ul className="mt-3 space-y-3">
+          <ul className="mt-4 space-y-4">
             {drafts.map((post) => (
               <li
                 key={post._id}
-                className="card p-4"
+                className="card p-5"
               >
                 <PostBody post={post} />
 
@@ -367,7 +367,7 @@ export default function PostsPage() {
       ) : null}
 
       {/* ---------------------------- published --------------------------- */}
-      <section className="mt-8">
+      <section className="mt-10">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="text-[15px] font-semibold text-ink">
             On your listing
@@ -378,15 +378,15 @@ export default function PostsPage() {
         </div>
 
         {published.length === 0 ? (
-          <p className="card mt-3 px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
+          <p className="card mt-4 px-5 py-10 text-center text-[13px] leading-relaxed text-muted">
             Nothing on your listing yet.
           </p>
         ) : (
-          <ul className="mt-3 space-y-3">
+          <ul className="mt-4 space-y-4">
             {published.map((post) => (
               <li
                 key={post._id}
-                className="card p-4"
+                className="card p-5"
               >
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <span className="flex items-center gap-1.5 rounded-full bg-open-soft px-2.5 py-0.5 text-[11px] font-medium text-open-deep">
@@ -421,7 +421,7 @@ export default function PostsPage() {
       </section>
 
       {/* ------------------------- write one yourself --------------------- */}
-      <section className="card mt-8 p-4">
+      <section className="card mt-10 p-5">
         <button
           type="button"
           onClick={() => void plan()}

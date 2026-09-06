@@ -142,32 +142,34 @@ export default function BillingPage() {
 
   if (status === undefined) {
     return (
-      <main className="mx-auto max-w-md px-5 py-16">
+      <main className="mx-auto max-w-xl px-6 py-16">
         <p className="text-[16px] text-muted">Loading…</p>
       </main>
     );
   }
 
   return (
-    <main className="mx-auto max-w-md px-5 py-10">
+    <main className="mx-auto max-w-xl px-6 py-12">
       {status.active ? (
         <section className="card p-6">
           <p className="text-[13px] font-medium uppercase tracking-[0.05em] text-open-deep">
             Active
           </p>
-          <h1 className="mt-2 text-[1.7rem]">Your plan is running</h1>
+          <h1 className="mt-3 text-[clamp(1.7rem,5vw,2rem)]">
+            Your plan is running
+          </h1>
           <p className="mt-3 text-[17px] leading-relaxed text-ink-soft">
             You are on the <strong>{status.plan}</strong> plan. It runs until{" "}
             <strong>{status.expiresAt ? fmtDate(status.expiresAt) : "—"}</strong>
             .
           </p>
-          <a href="/app" className="btn btn-primary mt-6 w-full">
+          <a href="/app" className="btn btn-primary mt-8 w-full">
             Go to my listing
           </a>
         </section>
       ) : (
         <>
-          <h1 className="text-[1.9rem]">Choose your plan</h1>
+          <h1 className="text-[clamp(1.9rem,5vw,2.2rem)]">Choose your plan</h1>
           <p className="mt-3 text-[17px] leading-relaxed text-ink-soft">
             footfall starts running your Google listing the moment this is
             paid. Same product on both — the only difference is how often you
@@ -193,7 +195,7 @@ export default function BillingPage() {
       ) : null}
 
       {!status.active && !waiting ? (
-        <div className="mt-7 grid gap-4">
+        <div className="mt-9 grid gap-5">
           {PRICING.plans.map((plan) => {
             const featured = Boolean(plan.badge);
             return (
@@ -232,7 +234,7 @@ export default function BillingPage() {
                   type="button"
                   onClick={() => pay(plan.id)}
                   disabled={busy !== null || !ready}
-                  className="btn btn-primary mt-5 w-full disabled:opacity-60"
+                  className="btn btn-primary mt-6 w-full disabled:opacity-60"
                 >
                   {busy === plan.id
                     ? "Opening payment…"
@@ -252,13 +254,13 @@ export default function BillingPage() {
       ) : null}
 
       {status.receipts && status.receipts.length > 0 ? (
-        <section className="mt-10">
+        <section className="mt-12">
           <h2 className="text-[1.2rem]">Your payments</h2>
-          <ul className="inset-group mt-4">
+          <ul className="inset-group mt-5">
             {status.receipts.map((r) => (
               <li
                 key={`${r.paymentId}`}
-                className="inset-row flex items-center justify-between gap-3 px-4 py-3"
+                className="inset-row flex items-center justify-between gap-3 px-5 py-4"
               >
                 <span>
                   <span className="block text-[16px] font-semibold capitalize">

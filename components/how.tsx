@@ -4,8 +4,8 @@ import { SectionHead } from "./window-card";
 
 export function How() {
   return (
-    <section id="how" className="px-5 py-20 sm:py-28">
-      <div className="mx-auto max-w-6xl">
+    <section id="how" className="px-6 py-24 sm:px-10 sm:py-32 lg:px-16">
+      <div className="mx-auto max-w-[1400px]">
         <Reveal>
           <SectionHead
             eyebrow="How it works"
@@ -14,18 +14,18 @@ export function How() {
           />
         </Reveal>
 
-        <ol className="mt-12 grid gap-5 md:grid-cols-3">
+        <ol className="mt-16 grid gap-6 md:grid-cols-3 lg:mt-20 lg:gap-8">
           {STEPS.map((step, i) => (
             <Reveal key={step.n} delay={i * 90}>
-              <li className="relative h-full rounded-[18px] bg-paper-2 p-6 shadow-card">
-                <span className="grid h-7 w-7 place-items-center rounded-full bg-pin-soft text-[13px] font-semibold text-pin">
+              <li className="relative h-full rounded-[24px] bg-paper-2 p-8">
+                <span className="block text-[44px] font-extrabold leading-none tracking-[-0.03em] text-ink/10">
                   {step.n}
                 </span>
-                <h3 className="mt-3 text-[1.6rem]">{step.title}</h3>
-                <p className="mt-1 text-[13px] font-medium text-muted">
+                <h3 className="mt-5 text-[1.7rem]">{step.title}</h3>
+                <p className="mt-1.5 text-[13px] font-medium text-muted">
                   {step.time}
                 </p>
-                <p className="mt-4 text-[17px] leading-relaxed text-ink-soft">
+                <p className="mt-5 text-[17px] leading-relaxed text-ink-soft">
                   {step.body}
                 </p>
                 {i < STEPS.length - 1 ? (

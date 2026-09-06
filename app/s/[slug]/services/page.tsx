@@ -61,7 +61,7 @@ export default async function ServicesPage({
       <UtilityBar data={data} />
       <SiteNav data={data} />
 
-      <main className="mx-auto max-w-5xl px-5 pt-12 pb-10">
+      <main className="mx-auto max-w-[1280px] px-6 pt-16 pb-16 sm:px-10 sm:pt-24 sm:pb-24 lg:px-14">
         <nav aria-label="Breadcrumb" className="text-[12px] text-muted">
           <a href={base} className="hover:text-pin">
             Home
@@ -70,17 +70,17 @@ export default async function ServicesPage({
           <span>Services</span>
         </nav>
 
-        <h1 className="mt-4 text-[clamp(2rem,6vw,3rem)]">
+        <h1 className="mt-5 text-[clamp(2.4rem,5.5vw,4rem)]">
           What we offer{business.city ? ` in ${business.city}` : ""}
         </h1>
-        <p className="mt-4 max-w-2xl text-[16px] leading-relaxed text-ink-soft">
+        <p className="mt-6 max-w-3xl text-[17px] leading-relaxed text-ink-soft">
           {areas.length
             ? `Everything below is available at our ${business.city ?? "shop"}, and we serve ${areas.slice(0, 4).join(", ")} and the areas around them.`
             : `Everything below is available at our ${business.city ?? "shop"}.`}{" "}
           Message us about any of it and we&rsquo;ll answer the same day.
         </p>
 
-        <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
           {site.services.map((service) => {
             const link = whatsappLink(
               data.whatsapp,
@@ -89,10 +89,10 @@ export default async function ServicesPage({
             return (
               <li
                 key={service.name}
-                className="flex flex-col rounded-[18px] bg-paper-2 p-6"
+                className="card flex flex-col rounded-[22px] p-8"
               >
-                <h2 className="text-[1.15rem]">{service.name}</h2>
-                <p className="mt-2 flex-1 text-[14px] leading-relaxed text-ink-soft">
+                <h2 className="text-[1.25rem]">{service.name}</h2>
+                <p className="mt-2.5 flex-1 text-[15px] leading-relaxed text-ink-soft">
                   {service.body}
                 </p>
                 {link ? (
@@ -100,7 +100,7 @@ export default async function ServicesPage({
                     href={link}
                     target="_blank"
                     rel="noreferrer"
-                    className="btn btn-ghost btn-sm mt-4 w-full"
+                    className="btn btn-ghost btn-sm mt-6 w-full"
                   >
                     <WhatsAppIcon />
                     Ask about this
@@ -111,7 +111,7 @@ export default async function ServicesPage({
           })}
         </ul>
 
-        <div className="mt-12">
+        <div className="mt-16 sm:mt-24">
           <ContactBand data={data} />
         </div>
       </main>

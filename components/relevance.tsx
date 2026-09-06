@@ -45,7 +45,7 @@ export function Relevance() {
   }
 
   return (
-    <section className="mt-7">
+    <section className="mt-10">
       <h2 className="font-display text-[15px] font-bold">
         What Google thinks you do
       </h2>
@@ -54,7 +54,7 @@ export function Relevance() {
         else. This is what your listing currently claims.
       </p>
 
-      <div className="mt-3 rounded-[14px] bg-paper-2 p-4">
+      <div className="mt-4 rounded-[16px] bg-paper-2 p-5">
         <p className="text-[13px] font-medium text-muted">
           Main category
         </p>
@@ -82,7 +82,7 @@ export function Relevance() {
       </div>
 
       {missingCategories.length > 0 ? (
-        <div className="mt-3 rounded-[14px] bg-pin-soft p-4">
+        <div className="mt-4 rounded-[16px] bg-pin-soft p-5">
           <p className="text-[13px] font-semibold leading-snug">
             Shops ahead of you claim categories you don&rsquo;t
           </p>
@@ -103,13 +103,13 @@ export function Relevance() {
           </p>
         </div>
       ) : competitorsChecked > 0 ? (
-        <p className="mt-3 rounded-[12px] bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug text-open-deep">
+        <p className="mt-4 rounded-[12px] bg-open-soft px-4 py-3 text-[13px] leading-snug text-open-deep">
           Your categories match the shops ranking around you.
         </p>
       ) : null}
 
       {/* services */}
-      <div className="mt-3 rounded-[14px] bg-paper-2 p-4">
+      <div className="mt-4 rounded-[16px] bg-paper-2 p-5">
         <p className="text-[13px] font-semibold leading-snug">
           Your services on Google
         </p>

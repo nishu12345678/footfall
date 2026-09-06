@@ -47,7 +47,7 @@ export default function HomePage() {
       {!business.onboardingComplete ? (
         <a
           href={resumeHref(business)}
-          className="pressable mb-4 flex items-center gap-3 rounded-[14px] bg-star/15 p-4 shadow-card"
+          className="pressable mb-6 flex items-center gap-3 rounded-[14px] bg-star/15 p-5 shadow-card"
         >
           <span className="min-w-0 flex-1">
             <span className="block text-[15px] font-semibold leading-tight">
@@ -66,7 +66,7 @@ export default function HomePage() {
 
       {/* ---------------------------- reviews ---------------------------- */}
       <section
-        className={`rounded-[18px] p-4 shadow-card ${
+        className={`rounded-[18px] p-5 shadow-card ${
           reviews.thisWeek > 0 ? "bg-open-soft" : "bg-pin-soft"
         }`}
       >
@@ -80,14 +80,16 @@ export default function HomePage() {
               : "No reviews yet this week"}
           </p>
           <p className="flex-none text-[17px] font-semibold">
-            <span className={reviews.thisWeek > 0 ? "text-open" : "text-pin"}>
+            <span
+              className={reviews.thisWeek > 0 ? "text-open-deep" : "text-pin"}
+            >
               {reviews.thisWeek}
             </span>
             <span className="text-muted">/{reviews.target}</span>
           </p>
         </div>
 
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/70">
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/70">
           <div
             className={`h-full rounded-full transition-all ${
               reviews.thisWeek > 0 ? "bg-open" : "bg-pin/30"
@@ -96,13 +98,13 @@ export default function HomePage() {
           />
         </div>
 
-        <p className="mt-3 text-[13px] leading-snug text-ink-soft">
+        <p className="mt-4 text-[13px] leading-relaxed text-ink-soft">
           {reviews.daysSinceLastReview === null
             ? "We haven't seen a review come in yet. Reviews are the strongest thing you can move for Google ranking."
             : `Your last review was ${reviews.daysSinceLastReview} days ago. Reviews are vital for good Google ranking.`}
         </p>
 
-        <div className="mt-4 flex items-center justify-between gap-1 border-t border-rule-soft pt-3 text-center">
+        <div className="mt-5 flex items-center justify-between gap-1 border-t border-rule-soft pt-4 text-center">
           {["More customers", "More reviews", "Better ranking"].map(
             (step, i) => (
               <div key={step} className="flex flex-1 items-center gap-1">
@@ -110,7 +112,7 @@ export default function HomePage() {
                   {step}
                 </span>
                 {i < 2 ? (
-                  <span aria-hidden className="text-open">
+                  <span aria-hidden className="text-open-deep">
                     →
                   </span>
                 ) : null}
@@ -121,14 +123,14 @@ export default function HomePage() {
       </section>
 
       {note ? (
-        <p className="mt-4 rounded-[12px] bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
+        <p className="mt-5 rounded-[12px] bg-open-soft px-4 py-3 text-[13px] leading-snug">
           {note}
         </p>
       ) : null}
       {error ? (
         <p
           role="alert"
-          className="mt-4 rounded-[12px] bg-pin-soft px-3.5 py-2.5 text-[13px] leading-snug"
+          className="mt-5 rounded-[12px] bg-pin-soft px-4 py-3 text-[13px] leading-snug"
         >
           {error}
         </p>
@@ -139,15 +141,15 @@ export default function HomePage() {
           type="button"
           onClick={() => void refreshListing()}
           disabled={busy}
-          className="mt-4 text-[13px] font-medium text-pin hover:opacity-80"
+          className="mt-5 text-[13px] font-medium text-pin hover:opacity-80"
         >
           refresh listing from google
         </button>
       ) : null}
 
       {/* --------------------------- agent state ------------------------- */}
-      <section className="inset-group mt-6">
-        <div className="hairline-b flex items-center justify-between gap-3 px-4 py-3">
+      <section className="inset-group mt-8">
+        <div className="hairline-b flex items-center justify-between gap-3 px-5 py-3.5">
           <p className="flex items-center gap-2 text-[15px] font-semibold">
             <span aria-hidden className="text-pin">
               ✦
@@ -221,11 +223,11 @@ export default function HomePage() {
       </section>
 
       {/* ---------------------------- timeline --------------------------- */}
-      <section className="mt-6">
+      <section className="mt-8">
         <h2 className="text-[15px] font-semibold text-ink">
           Google Business Profile
         </h2>
-        <ol className="mt-3 space-y-0">
+        <ol className="mt-4 space-y-0">
           {[
             { label: "Profile connected", done: !!business.gbpLocationName },
             { label: "Business analysed", done: business.onboardingStep >= 4 },
@@ -253,7 +255,7 @@ export default function HomePage() {
                 ) : null}
               </span>
               <span
-                className={`pb-4 text-[14px] ${
+                className={`pb-5 text-[14px] ${
                   step.done ? "text-ink" : "text-muted"
                 }`}
               >
@@ -265,21 +267,21 @@ export default function HomePage() {
       </section>
 
       {/* ----------------------------- actions --------------------------- */}
-      <section className="mt-2">
+      <section className="mt-4">
         <h2 className="text-[15px] font-semibold text-ink">
           What we&rsquo;ve done
         </h2>
 
         {actions.length === 0 ? (
-          <p className="card mt-3 px-4 py-6 text-center text-[13px] leading-relaxed text-muted">
+          <p className="card mt-4 px-5 py-8 text-center text-[13px] leading-relaxed text-muted">
             Nothing yet. The first post goes out once setup is finished.
           </p>
         ) : (
-          <ul className="mt-3 space-y-2.5">
+          <ul className="mt-4 space-y-3">
             {actions.map((action) => (
               <li
                 key={action._id}
-                className="card p-3.5"
+                className="card p-5"
               >
                 <div className="flex items-center justify-between gap-3">
                   <span className="rounded-full bg-pin-soft px-2.5 py-0.5 text-[11px] font-medium text-pin">
@@ -320,7 +322,7 @@ function Counter({
 }) {
   return (
     <li className="inset-row">
-      <a href={href} className="flex items-center gap-3 px-4 py-3">
+      <a href={href} className="flex items-center gap-3 px-5 py-4">
         <span className="min-w-0 flex-1">
           <span className="block text-[14px] font-semibold leading-tight">
             {label}

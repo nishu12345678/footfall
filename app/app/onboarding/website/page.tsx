@@ -68,9 +68,9 @@ export default function WebsiteStepPage() {
 
   if (data === null) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6">
-        <h1 className="text-[1.8rem]">connect google first</h1>
-        <a href="/app/connect" className="btn btn-primary mt-6 w-full">
+      <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
+        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
+        <a href="/app/connect" className="btn btn-primary mt-8 w-full">
           connect google
         </a>
       </main>
@@ -85,29 +85,29 @@ export default function WebsiteStepPage() {
   /* ------------------------- they already have one ---------------------- */
   if (hasOwnSite) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
+      <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-12">
         <Steps current={5} />
 
-        <div className="mt-7 flex-1">
-          <h1 className="text-[1.75rem]">your website</h1>
-          <p className="mt-2 break-all text-[13px] font-mono text-ink-soft">
+        <div className="mt-9 flex-1">
+          <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">your website</h1>
+          <p className="mt-3 break-all text-[13px] font-mono text-ink-soft">
             {business.website}
           </p>
-          <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+          <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">
             You already have a site, so we won&rsquo;t make you another one.
             Here&rsquo;s what it&rsquo;s missing that would help people nearby
             find you.
           </p>
 
           {auditing ? (
-            <div className="mt-6">
+            <div className="mt-8">
               <Working label="Reading your website" />
             </div>
           ) : null}
 
           {audit ? (
             <>
-              <div className="mt-6 flex items-baseline justify-between gap-3">
+              <div className="mt-8 flex items-baseline justify-between gap-3">
                 <h2 className="text-[15px] font-semibold text-ink">
                   {failed.length === 0
                     ? "Nothing missing"
@@ -118,11 +118,11 @@ export default function WebsiteStepPage() {
                 </span>
               </div>
 
-              <ul className="mt-3 space-y-2">
+              <ul className="mt-4 space-y-2.5">
                 {[...failed, ...passed].map((check, i) => (
                   <li
                     key={check.id}
-                    className={`rounded-[12px] p-3 ${
+                    className={`rounded-[12px] p-4 ${
                       check.passed ? "bg-paper-2" : "bg-pin-soft"
                     }`}
                   >
@@ -162,7 +162,7 @@ export default function WebsiteStepPage() {
           ) : null}
         </div>
 
-        <a href="/app/onboarding/others" className="btn btn-primary mt-8 w-full">
+        <a href="/app/onboarding/others" className="btn btn-primary mt-10 w-full">
           next
         </a>
       </main>
@@ -171,28 +171,28 @@ export default function WebsiteStepPage() {
 
   /* --------------------------- no website yet --------------------------- */
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-12">
       <Steps current={5} />
 
-      <div className="mt-7 flex-1">
-        <h1 className="text-[1.75rem]">
+      <div className="mt-9 flex-1">
+        <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
           {site ? "your website is live" : "we’re making you a website"}
         </h1>
-        <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
+        <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
           {site
             ? "Built from your Google listing, so your name, address, phone and hours match Google exactly. That match is one of the few things you fully control that Google actually rewards."
             : "One page with your services, hours, phone and directions — built from your Google listing. Nothing to write, nothing to host, no yearly fee."}
         </p>
 
         {building ? (
-          <div className="mt-6">
+          <div className="mt-8">
             <Working label="Writing your website from your listing" />
           </div>
         ) : null}
 
         {site && !building ? (
           <>
-            <div className="window mt-6">
+            <div className="window mt-8">
               <div className="window-bar">
                 <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
@@ -202,7 +202,7 @@ export default function WebsiteStepPage() {
                 </span>
               </div>
 
-              <div className="p-4">
+              <div className="p-5">
                 <p className="text-[17px] font-semibold leading-tight">
                   {site.headline}
                 </p>
@@ -225,14 +225,14 @@ export default function WebsiteStepPage() {
               </div>
             </div>
 
-            <ul className="mt-4 space-y-1.5 text-[13px] leading-snug text-ink-soft">
+            <ul className="mt-5 space-y-2 text-[13px] leading-snug text-ink-soft">
               <li>· {site.services.length} services, written for local search</li>
               <li>· {site.faqs.length} questions customers actually ask</li>
               <li>· your hours, phone and directions straight from Google</li>
               <li>· structured data so Google can read the page properly</li>
             </ul>
 
-            <div className="mt-5 flex flex-wrap gap-2">
+            <div className="mt-6 flex flex-wrap gap-2.5">
               <a
                 href={shopUrl(site.slug)}
                 target="_blank"
@@ -257,7 +257,7 @@ export default function WebsiteStepPage() {
           <button
             type="button"
             onClick={() => void build()}
-            className="btn btn-primary mt-6 w-full"
+            className="btn btn-primary mt-8 w-full"
           >
             <span aria-hidden>✦</span> make my website
           </button>
@@ -275,7 +275,7 @@ export default function WebsiteStepPage() {
 
       <a
         href="/app/onboarding/others"
-        className={`btn mt-8 w-full ${site ? "btn-primary" : "btn-ghost"}`}
+        className={`btn mt-10 w-full ${site ? "btn-primary" : "btn-ghost"}`}
       >
         {site ? "next" : "skip for now"}
       </a>

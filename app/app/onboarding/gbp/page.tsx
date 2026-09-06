@@ -139,9 +139,9 @@ export default function GbpPage() {
 
   if (data === null) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6">
-        <h1 className="text-[1.8rem]">connect google first</h1>
-        <a href="/app/connect" className="btn btn-primary mt-6 w-full">
+      <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
+        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
+        <a href="/app/connect" className="btn btn-primary mt-8 w-full">
           connect google
         </a>
       </main>
@@ -210,10 +210,10 @@ export default function GbpPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-12">
       <Steps current={4} />
 
-      <div className="mt-7 flex gap-4 overflow-x-auto border-b border-rule">
+      <div className="mt-9 flex gap-5 overflow-x-auto border-b border-rule">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -231,7 +231,7 @@ export default function GbpPage() {
           >
             {t.label}
             {seen[t.id] && tab !== t.id ? (
-              <span aria-hidden className="ml-1 text-open">
+              <span aria-hidden className="ml-1 text-open-deep">
                 ✓
               </span>
             ) : null}
@@ -239,19 +239,19 @@ export default function GbpPage() {
         ))}
       </div>
 
-      <div className="mt-7 flex-1">
+      <div className="mt-9 flex-1">
         {tab === "areas" ? (
           <>
-            <h1 className="text-[1.75rem]">
+            <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
               where do your customers come from?
             </h1>
-            <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
+            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               How far people travel to you. We measure your &ldquo;near
               me&rdquo; ranking across this whole area, not just at your door.
             </p>
 
             {data.business.lat && data.business.lng ? (
-              <div className="mt-5">
+              <div className="mt-6">
                 <AreaMap
                   lat={data.business.lat}
                   lng={data.business.lng}
@@ -271,7 +271,7 @@ export default function GbpPage() {
             ) : null}
 
             <form
-              className="mt-6 flex gap-2"
+              className="mt-8 flex gap-2.5"
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!draft.trim()) return;
@@ -294,7 +294,7 @@ export default function GbpPage() {
               </button>
             </form>
 
-            <div className="card mt-6 p-4">
+            <div className="card mt-8 p-5">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[15px] font-semibold text-ink">
                   Areas near you
@@ -367,7 +367,7 @@ export default function GbpPage() {
             </div>
 
             {data.business.scanRadiusKm ? (
-              <div className="mt-4 rounded-[12px] bg-paper-2 px-3.5 py-2.5">
+              <div className="mt-5 rounded-[12px] bg-paper-2 p-4">
                 <p className="text-[13px] font-semibold leading-snug">
                   We&rsquo;ll measure your &ldquo;near me&rdquo; ranking across{" "}
                   {data.business.scanRadiusKm}km
@@ -380,7 +380,7 @@ export default function GbpPage() {
               </div>
             ) : null}
 
-            <p className="eyebrow mt-6">you serve</p>
+            <p className="eyebrow mt-8">you serve</p>
             <ul className="mt-3 flex flex-wrap gap-2">
               {data.serviceAreas.map((area) => (
                 <li key={area._id}>
@@ -403,14 +403,16 @@ export default function GbpPage() {
 
         {tab === "keywords" ? (
           <>
-            <h1 className="text-[1.75rem]">what do people search?</h1>
-            <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
+            <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
+              what do people search?
+            </h1>
+            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               We track your position for each of these every week, so you can
               see the ranking move.
             </p>
 
             <form
-              className="mt-6 flex gap-2"
+              className="mt-8 flex gap-2.5"
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!draft.trim()) return;
@@ -433,11 +435,11 @@ export default function GbpPage() {
               </button>
             </form>
 
-            <ul className="mt-5 space-y-2">
+            <ul className="mt-6 space-y-2.5">
               {data.keywords.map((kw) => (
                 <li
                   key={kw._id}
-                  className="flex items-center justify-between gap-3 rounded-[12px] bg-paper-2 px-3.5 py-2.5"
+                  className="flex items-center justify-between gap-3 rounded-[12px] bg-paper-2 px-4 py-3"
                 >
                   <span className="min-w-0 truncate text-[14px]">
                     {kw.term}
@@ -454,7 +456,7 @@ export default function GbpPage() {
               ))}
             </ul>
 
-            <div className="card mt-7 p-4">
+            <div className="card mt-8 p-5">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[15px] font-semibold text-ink">
                   Researched from Google
@@ -474,11 +476,11 @@ export default function GbpPage() {
                   <Working label="Finding what your customers search for" />
                 </div>
               ) : researched.length ? (
-                <ul className="mt-3 space-y-2">
+                <ul className="mt-4 space-y-2.5">
                   {researched.map((r) => (
                     <li
                       key={r.term}
-                      className="rounded-[12px] bg-paper-2 p-2.5"
+                      className="rounded-[12px] bg-paper-2 p-3.5"
                     >
                       <div className="flex items-center gap-2">
                         <button
@@ -536,15 +538,20 @@ export default function GbpPage() {
 
         {tab === "hours" ? (
           <>
-            <h1 className="text-[1.75rem]">when are you open?</h1>
-            <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
+            <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
+              when are you open?
+            </h1>
+            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               Wrong hours are the fastest way to lose a walk-in. Check every
               day.
             </p>
 
-            <ul className="inset-group mt-6">
+            <ul className="inset-group mt-8">
               {hours.map((row) => (
-                <li key={row.day} className="inset-row flex items-center gap-3 px-4 py-2.5">
+                <li
+                  key={row.day}
+                  className="inset-row flex items-center gap-3 px-4 py-3.5"
+                >
                   <span className="w-[76px] flex-none text-[14px] font-semibold">
                     {DAYS[row.day]}
                   </span>
@@ -592,12 +599,14 @@ export default function GbpPage() {
 
         {tab === "attributes" ? (
           <>
-            <h1 className="text-[1.75rem]">what else should people know?</h1>
-            <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
+            <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
+              what else should people know?
+            </h1>
+            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               Small things that decide between you and the shop down the road.
             </p>
 
-            <ul className="mt-6 space-y-2">
+            <ul className="mt-8 space-y-2.5">
               {data.attributeChoices.map((choice) => {
                 const on = enabled.has(choice.key);
                 return (
@@ -612,7 +621,7 @@ export default function GbpPage() {
                         })
                       }
                       aria-pressed={on}
-                      className={`pressable flex w-full items-center gap-3 rounded-[12px] px-3.5 py-3 text-left text-[14px] transition-colors ${
+                      className={`pressable flex w-full items-center gap-3 rounded-[12px] px-4 py-3.5 text-left text-[14px] transition-colors ${
                         on ? "bg-open-soft" : "bg-paper-2 hover:bg-paper-3"
                       }`}
                     >
@@ -645,7 +654,7 @@ export default function GbpPage() {
         ) : null}
       </div>
 
-      <p className="mt-8 text-center text-[12px] text-muted">
+      <p className="mt-10 text-center text-[12px] text-muted">
         step 4 of 6 · {TABS.filter((x) => seen[x.id]).length} of {TABS.length}{" "}
         sections done
       </p>
@@ -654,7 +663,7 @@ export default function GbpPage() {
         type="button"
         onClick={() => void next()}
         disabled={busy}
-        className="btn btn-primary mt-2 w-full disabled:opacity-40"
+        className="btn btn-primary mt-3 w-full disabled:opacity-40"
       >
         {tab === "hours"
           ? "save hours & next"
@@ -667,7 +676,7 @@ export default function GbpPage() {
 
       <a
         href={ONBOARDING_STEPS[4].href}
-        className="mt-3 block text-center text-[13px] font-medium text-pin hover:opacity-80"
+        className="mt-4 block text-center text-[13px] font-medium text-pin hover:opacity-80"
       >
         skip the rest of this step
       </a>

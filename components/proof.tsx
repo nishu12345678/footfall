@@ -10,26 +10,26 @@ import { Reveal } from "./reveal";
  */
 export function Proof() {
   return (
-    <section id="proof" className="px-5 py-20 sm:py-28">
-      <div className="mx-auto max-w-6xl">
+    <section id="proof" className="px-6 py-24 sm:px-10 sm:py-32 lg:px-16">
+      <div className="mx-auto max-w-[1400px]">
         <Reveal className="text-center">
           <p className="eyebrow justify-center">{PROOF.eyebrow}</p>
 
-          <p className="mt-6 font-display text-[clamp(3rem,10vw,6rem)] font-bold leading-none">
+          <p className="mt-8 font-display text-[clamp(3.5rem,11vw,7rem)] font-extrabold leading-none tracking-[-0.04em]">
             {PROOF.stat.value}
           </p>
           <p className="mt-2 font-display text-[clamp(1.1rem,2.6vw,1.5rem)] font-medium">
             {PROOF.stat.label}
           </p>
-          <p className="mx-auto mt-4 max-w-md text-[17px] leading-relaxed text-ink-soft">
+          <p className="mx-auto mt-5 max-w-md text-[17px] leading-relaxed text-ink-soft">
             {PROOF.note}
           </p>
         </Reveal>
 
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:mt-16 lg:grid-cols-4 lg:gap-8">
           {PROOF.quotes.map((quote, i) => (
             <Reveal key={quote.text} delay={i * 70}>
-              <figure className="card relative h-full p-5">
+              <figure className="card relative h-full p-8">
                 {quote.placeholder ? (
                   <span className="absolute -top-2.5 right-3 rounded-full bg-star/15 px-2.5 py-0.5 text-[11px] font-semibold text-[#b25000]">
                     sample
@@ -42,7 +42,7 @@ export function Proof() {
                 <blockquote className="mt-1 text-[16px] leading-relaxed text-ink">
                   {quote.text}
                 </blockquote>
-                <figcaption className="mt-4 border-t border-black/10 pt-3">
+                <figcaption className="mt-6 border-t border-black/8 pt-4">
                   <span className="block font-display text-[15px] font-semibold">
                     {quote.name}
                   </span>

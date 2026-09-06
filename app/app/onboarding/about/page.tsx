@@ -62,9 +62,9 @@ export default function AboutPage() {
 
   if (data === null) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6">
-        <h1 className="text-[1.8rem]">connect google first</h1>
-        <a href="/app/connect" className="btn btn-primary mt-6 w-full">
+      <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
+        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
+        <a href="/app/connect" className="btn btn-primary mt-8 w-full">
           connect google
         </a>
       </main>
@@ -112,10 +112,10 @@ export default function AboutPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-12">
       <Steps current={3} />
 
-      <div className="mt-7 grid grid-cols-2 gap-1 rounded-full bg-paper-3 p-1">
+      <div className="mt-9 grid grid-cols-2 gap-1 rounded-full bg-paper-3 p-1">
         {(["offerings", "specialties"] as const).map((t) => (
           <button
             key={t}
@@ -133,14 +133,14 @@ export default function AboutPage() {
         ))}
       </div>
 
-      <div className="mt-7 flex-1">
-        <h1 className="text-[1.75rem]">{copy.heading}</h1>
-        <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
+      <div className="mt-9 flex-1">
+        <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">{copy.heading}</h1>
+        <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
           {copy.sub}
         </p>
 
         <form
-          className="mt-6 flex gap-2"
+          className="mt-8 flex gap-2.5"
           onSubmit={(e) => {
             e.preventDefault();
             if (!draft.trim()) return;
@@ -165,7 +165,7 @@ export default function AboutPage() {
 
         {chosen.length > 0 ? (
           <>
-            <p className="eyebrow mt-7">selected</p>
+            <p className="eyebrow mt-8">selected</p>
             <ul className="mt-3 flex flex-wrap gap-2">
               {chosen.map((row) => (
                 <li key={row._id}>
@@ -186,7 +186,7 @@ export default function AboutPage() {
           </>
         ) : null}
 
-        <div className="card mt-8 p-4">
+        <div className="card mt-10 p-5">
           <div className="flex items-center justify-between gap-3">
             <p className="flex items-center gap-1.5 text-[15px] font-semibold text-ink">
               <span aria-hidden className="text-pin">
@@ -254,7 +254,7 @@ export default function AboutPage() {
         type="button"
         onClick={() => void next()}
         disabled={chosen.length === 0}
-        className="btn btn-primary mt-8 w-full disabled:cursor-not-allowed disabled:opacity-40"
+        className="btn btn-primary mt-10 w-full disabled:cursor-not-allowed disabled:opacity-40"
       >
         {tab === "offerings" ? "save info & next" : "save & next"}
       </button>

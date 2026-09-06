@@ -9,15 +9,15 @@ export function Steps({ current }: { current: number }) {
     "Finish",
   ];
   return (
-    <ol className="flex items-start justify-between gap-0.5">
+    <ol className="flex items-start justify-between gap-1">
       {steps.map((label, i) => {
         const n = i + 1;
         const done = n < current;
         const active = n === current;
         return (
-          <li key={label} className="flex flex-1 flex-col items-center gap-1.5">
+          <li key={label} className="flex flex-1 flex-col items-center gap-2">
             <span
-              className={`grid h-7 w-7 place-items-center rounded-full text-[13px] font-semibold ${
+              className={`grid h-8 w-8 place-items-center rounded-full text-[13px] font-semibold ${
                 done
                   ? "bg-open text-white"
                   : active
@@ -28,7 +28,7 @@ export function Steps({ current }: { current: number }) {
               {done ? "✓" : n}
             </span>
             <span
-              className={`text-center text-[9px] leading-tight ${
+              className={`text-center text-[10px] leading-tight ${
                 active ? "font-semibold text-pin" : "text-muted"
               }`}
             >

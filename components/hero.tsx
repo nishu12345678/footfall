@@ -9,9 +9,9 @@ export function Hero() {
   return (
     <section
       id="top"
-      className="relative overflow-hidden bg-gradient-to-b from-paper-2 to-white px-5 pt-14 pb-20 sm:pt-20"
+      className="relative overflow-hidden bg-gradient-to-b from-paper-2/60 to-transparent px-6 pt-20 pb-24 sm:px-10 sm:pt-28 sm:pb-32 lg:px-16"
     >
-      <div className="relative mx-auto max-w-6xl">
+      <div className="relative mx-auto max-w-[1400px]">
         <Reveal className="text-center">
           <p className="chip mx-auto">
             <span className="h-2 w-2 rounded-full bg-open" aria-hidden />
@@ -20,15 +20,15 @@ export function Hero() {
 
           {/* The headline is the promise, not the brand name. Nobody
               searching for more customers is looking for a wordmark. */}
-          <h1 className="mx-auto mt-6 max-w-4xl text-[clamp(2.3rem,6vw,4rem)]">
+          <h1 className="mx-auto mt-8 max-w-5xl text-[clamp(3rem,7.5vw,6rem)]">
             {HERO.headline}
           </h1>
 
-          <p className="mx-auto mt-6 max-w-2xl text-[clamp(1.05rem,2.2vw,1.3rem)] leading-relaxed text-ink-soft">
+          <p className="mx-auto mt-8 max-w-2xl text-[clamp(1.15rem,2.2vw,1.45rem)] leading-relaxed text-ink-soft">
             {HERO.sub}
           </p>
 
-          <div className="mt-9 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
+          <div className="mt-10 flex flex-col items-stretch justify-center gap-4 sm:flex-row sm:items-center">
             <a href={LINKS.cta} className="btn btn-primary">
               {HERO.ctaPrimary}
             </a>
@@ -42,9 +42,9 @@ export function Hero() {
             </a>
           </div>
 
-          <p className="mt-5 text-[15px] text-muted">{HERO.support}</p>
+          <p className="mt-6 text-[15px] text-muted">{HERO.support}</p>
 
-          <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+          <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
             {HERO.trust.map((item) => (
               <li
                 key={item}
@@ -61,10 +61,10 @@ export function Hero() {
 
         {/* The map pack is the centrepiece — it is the entire promise in
             one picture. The other two cards are the work that gets there. */}
-        <div className="mt-16 grid items-start gap-5 lg:grid-cols-12">
+        <div className="mt-20 grid items-start gap-6 lg:mt-24 lg:grid-cols-12 lg:gap-8">
           <Reveal delay={80} className="lg:col-span-4 lg:mt-10">
             <WindowCard title={post.title} live>
-              <div className="p-5">
+              <div className="p-6">
                 <p className="text-[13px] font-medium text-muted">
                   {post.business}
                 </p>
@@ -87,10 +87,10 @@ export function Hero() {
             <MapPack />
           </Reveal>
 
-          <div className="grid gap-5 lg:col-span-4 lg:mt-6">
+          <div className="grid gap-6 lg:col-span-4 lg:mt-6 lg:gap-8">
             <Reveal delay={160}>
               <WindowCard title={review.title}>
-                <div className="p-5">
+                <div className="p-6">
                   <div className="flex items-center gap-2.5">
                     <span
                       aria-hidden
@@ -125,7 +125,7 @@ export function Hero() {
 
             <Reveal delay={240}>
               <WindowCard title={chat.title}>
-                <div className="space-y-2 p-5">
+                <div className="space-y-2.5 p-6">
                   <p className="max-w-[88%] rounded-[18px] rounded-tl-sm bg-paper-3 px-3.5 py-2.5 text-[15px] leading-relaxed text-ink">
                     {chat.incoming}
                   </p>

@@ -121,7 +121,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-12">
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-12">
       <div className="flex flex-1 flex-col justify-center">
         <div className="text-center">
           <span
@@ -141,7 +141,7 @@ export default function LoginPage() {
         </div>
 
         {step === "identify" ? (
-          <div className="mt-9">
+          <div className="mt-10">
             <button
               type="button"
               onClick={() => void continueWithGoogle()}
@@ -152,7 +152,7 @@ export default function LoginPage() {
               {busy === "google" ? "opening google…" : "continue with google"}
             </button>
 
-            <div className="my-6 flex items-center gap-3">
+            <div className="my-7 flex items-center gap-3">
               <span className="h-px flex-1 bg-rule-soft" aria-hidden />
               <span className="text-[12px] text-muted">or</span>
               <span className="h-px flex-1 bg-rule-soft" aria-hidden />
@@ -161,7 +161,7 @@ export default function LoginPage() {
             <div
               role="group"
               aria-label="sign-in method"
-              className="mb-4 grid grid-cols-2 gap-1 rounded-full bg-paper-3 p-1"
+              className="mb-5 grid grid-cols-2 gap-1 rounded-full bg-paper-3 p-1"
             >
               {(["phone", "email"] as const).map((m) => (
                 <button
@@ -228,7 +228,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={!identifierReady || busy !== null}
-                className="btn btn-primary mt-5 w-full disabled:cursor-not-allowed disabled:opacity-40"
+                className="btn btn-primary mt-6 w-full disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {busy === "send" ? "sending…" : "send code"}
               </button>
@@ -236,7 +236,7 @@ export default function LoginPage() {
           </div>
         ) : (
           <form
-            className="mt-9"
+            className="mt-10"
             onSubmit={(e) => {
               e.preventDefault();
               if (codeReady && !busy) void verifyCode();
@@ -263,12 +263,12 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={!codeReady || busy !== null}
-              className="btn btn-primary mt-5 w-full disabled:cursor-not-allowed disabled:opacity-40"
+              className="btn btn-primary mt-6 w-full disabled:cursor-not-allowed disabled:opacity-40"
             >
               {busy === "verify" ? "checking…" : "verify"}
             </button>
 
-            <div className="mt-4 flex items-center justify-between text-[13px]">
+            <div className="mt-5 flex items-center justify-between text-[13px]">
               <button
                 type="button"
                 onClick={() => reset(method)}

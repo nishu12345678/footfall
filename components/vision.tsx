@@ -4,8 +4,8 @@ import { WindowCard } from "./window-card";
 
 export function Vision() {
   return (
-    <section className="bg-paper-2 px-5 py-20 sm:py-28">
-      <div className="mx-auto grid max-w-6xl gap-14 lg:grid-cols-2 lg:gap-16">
+    <section className="bg-paper-2 px-6 py-24 sm:px-10 sm:py-32 lg:px-16">
+      <div className="mx-auto grid max-w-[1400px] gap-16 lg:grid-cols-2 lg:gap-24">
         <Reveal>
           <p className="eyebrow">{VISION.eyebrow}</p>
           <h2 className="mt-4 text-[clamp(2rem,5.4vw,3.4rem)]">
@@ -18,12 +18,12 @@ export function Vision() {
             ))}
           </div>
 
-          <p className="mt-6 rounded-[12px] bg-pin-soft p-4 text-[17px] leading-relaxed text-ink">
+          <p className="mt-8 rounded-[16px] bg-pin-soft p-6 text-[17px] leading-relaxed text-ink">
             {VISION.kicker}
           </p>
 
           {/* founder block, same shape as the reference */}
-          <div className="mt-8 flex items-center gap-3">
+          <div className="mt-10 flex items-center gap-3">
             {FOUNDER.photo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -54,10 +54,10 @@ export function Vision() {
         </Reveal>
 
         {/* the argument, as two windows side by side */}
-        <div className="grid content-start gap-5 sm:grid-cols-2 lg:mt-16">
+        <div className="grid content-start gap-6 sm:grid-cols-2 lg:mt-16 lg:gap-8">
           <Reveal delay={80}>
             <WindowCard title="Agency report · this month">
-              <div className="p-4">
+              <div className="p-6">
                 <dl className="space-y-2.5">
                   {[
                     ["Reach", "12,400"],
@@ -85,7 +85,7 @@ export function Vision() {
 
           <Reveal delay={160}>
             <WindowCard title="Your Google listing · right now" className="sm:mt-8">
-              <div className="p-4">
+              <div className="p-6">
                 <ul className="space-y-2.5">
                   {[
                     "Last post — 8 months ago",

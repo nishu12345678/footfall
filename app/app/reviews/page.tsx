@@ -102,13 +102,13 @@ export default function ReviewsPage() {
       location={business.locationName ?? business.city}
       logoUrl={business.logoUrl}
     >
-      <h1 className="text-[1.6rem]">reviews</h1>
+      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">reviews</h1>
       <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
         Every review on your Google listing, newest first.
       </p>
 
       {/* --------------------------- summary ---------------------------- */}
-      <div className="card mt-5 p-4">
+      <div className="card mt-7 p-5">
         <div className="flex items-end gap-4">
           <div>
             <p className="text-[2rem] font-bold leading-none tracking-[-0.02em]">
@@ -138,7 +138,7 @@ export default function ReviewsPage() {
 
         {summary.total > 0 ? (
           <>
-            <div className="mt-3.5 flex gap-2">
+            <div className="mt-5 flex gap-2.5">
               <span className="flex-1 rounded-[12px] bg-paper-2 px-3 py-2">
                 <span className="block text-[17px] font-semibold leading-none">
                   {summary.replyRate ?? 0}%
@@ -162,7 +162,7 @@ export default function ReviewsPage() {
             </div>
 
             <p
-              className={`mt-2.5 rounded-[12px] px-3 py-2 text-[12.5px] leading-snug ${
+              className={`mt-3 rounded-[12px] px-3.5 py-2.5 text-[12.5px] leading-snug ${
                 summary.awaiting === 0 ? "bg-open-soft" : "bg-star/15"
               }`}
             >
@@ -175,7 +175,7 @@ export default function ReviewsPage() {
       </div>
 
       {syncing ? (
-        <div className="mt-4">
+        <div className="mt-5">
           <Working label="Reading your reviews from Google" />
         </div>
       ) : null}
@@ -183,34 +183,34 @@ export default function ReviewsPage() {
       {error ? (
         <p
           role="alert"
-          className="mt-4 break-words rounded-[12px] bg-pin-soft px-3.5 py-2.5 text-[13px] leading-snug"
+          className="mt-5 break-words rounded-[12px] bg-pin-soft px-4 py-3 text-[13px] leading-snug"
         >
           {error}
         </p>
       ) : null}
 
       {note ? (
-        <p className="mt-4 rounded-[12px] bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
+        <p className="mt-5 rounded-[12px] bg-open-soft px-4 py-3 text-[13px] leading-snug">
           {note}
         </p>
       ) : null}
 
       {/* ------------------------ waiting for you ------------------------ */}
       {held.length > 0 ? (
-        <section className="mt-7">
+        <section className="mt-10">
           <h2 className="text-[15px] font-semibold text-ink">
             Waiting for you to send
           </h2>
-          <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-soft">
+          <p className="mt-2 text-[12.5px] leading-relaxed text-ink-soft">
             We&rsquo;ve written a reply to each of these. A low rating goes out
             under your name only when you say so.
           </p>
 
-          <ul className="mt-3 space-y-3">
+          <ul className="mt-4 space-y-4">
             {held.map((row) => (
               <li
                 key={row._id}
-                className="card p-4"
+                className="card p-5"
               >
                 <div className="flex items-center gap-2">
                   <Stars rating={row.rating} />
@@ -241,7 +241,7 @@ export default function ReviewsPage() {
                   </p>
                 )}
 
-                <div className="mt-3 flex flex-wrap items-center gap-2">
+                <div className="mt-4 flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() =>
@@ -289,17 +289,17 @@ export default function ReviewsPage() {
 
       {/* ---------------------------- the list --------------------------- */}
       {rows.length === 0 ? (
-        <p className="card mt-6 px-4 py-10 text-center text-[13px] leading-relaxed text-muted">
+        <p className="card mt-8 px-5 py-12 text-center text-[13px] leading-relaxed text-muted">
           {syncing
             ? "Checking…"
             : "Nothing on your listing yet. The first few reviews move a new listing more than anything else you can do."}
         </p>
       ) : (
-        <ul className="mt-6 space-y-3">
+        <ul className="mt-8 space-y-4">
           {rows.map((row) => (
             <li
               key={row._id}
-              className="card p-4"
+              className="card p-5"
             >
               <div className="flex items-center gap-2.5">
                 {row.authorPhoto ? (
@@ -344,7 +344,7 @@ export default function ReviewsPage() {
               )}
 
               {row.replyText ? (
-                <div className="mt-3 rounded-[12px] bg-paper-2 px-3 py-2">
+                <div className="mt-4 rounded-[12px] bg-paper-2 px-3.5 py-2.5">
                   <p className="text-[10px] font-medium uppercase tracking-[0.05em] text-muted">
                     Your reply
                     {row.repliedAt ? ` · ${ago(row.repliedAt)}` : ""}
@@ -368,7 +368,7 @@ export default function ReviewsPage() {
       )}
 
       {summary.total > rows.length ? (
-        <p className="mt-4 text-center text-[12px] text-muted">
+        <p className="mt-6 text-center text-[12px] text-muted">
           Showing the newest {rows.length} of {summary.total}.
         </p>
       ) : null}

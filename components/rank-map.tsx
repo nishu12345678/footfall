@@ -12,9 +12,9 @@ export type GridPoint = {
 
 /** Green when you're top 3, amber to 10, red beyond, grey when absent. */
 function colourFor(rank?: number) {
-  if (rank === undefined || rank === null) return { fill: "#86868b", text: "–" };
-  if (rank <= 3) return { fill: "#248a3d", text: String(rank) };
-  if (rank <= 10) return { fill: "#ff9f0a", text: String(rank) };
+  if (rank === undefined || rank === null) return { fill: "#8a867c", text: "–" };
+  if (rank <= 3) return { fill: "#157a3c", text: String(rank) };
+  if (rank <= 10) return { fill: "#e8a33d", text: String(rank) };
   return { fill: "#ff3b30", text: String(rank) };
 }
 
@@ -117,9 +117,9 @@ export function RankMap({
   const found = points.filter((p) => p.rank !== undefined).length;
 
   return (
-    <div className="overflow-hidden rounded-[18px] shadow-card">
+    <div className="overflow-hidden rounded-[22px] shadow-card">
       <div ref={hostRef} className="h-[240px] w-full bg-paper-3" />
-      <p className="border-t border-black/10 bg-paper-2 px-4 py-2 text-[12px] leading-relaxed text-ink-soft">
+      <p className="border-t border-black/8 bg-paper-2 px-5 py-3 text-[12px] leading-relaxed text-ink-soft">
         &ldquo;{keyword}&rdquo; · found at {found} of {points.length} points
       </p>
     </div>

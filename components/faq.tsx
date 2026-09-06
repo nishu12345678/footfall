@@ -8,8 +8,8 @@ import { SectionHead } from "./window-card";
  */
 export function Faq() {
   return (
-    <section id="faq" className="px-5 py-20 sm:py-28">
-      <div className="mx-auto max-w-3xl">
+    <section id="faq" className="px-6 py-24 sm:px-10 sm:py-32 lg:px-16">
+      <div className="mx-auto max-w-4xl">
         <Reveal>
           <SectionHead
             eyebrow={FAQ.eyebrow}
@@ -19,11 +19,11 @@ export function Faq() {
           />
         </Reveal>
 
-        <div className="card mt-12 divide-y divide-black/8">
+        <div className="card mt-14 divide-y divide-black/8 lg:mt-16">
           {FAQ.items.map((item, i) => (
             <Reveal key={item.q} delay={Math.min(i * 40, 240)}>
               <details className="group">
-                <summary className="flex cursor-pointer list-none items-start gap-4 px-6 py-5 [&::-webkit-details-marker]:hidden">
+                <summary className="flex cursor-pointer list-none items-start gap-4 px-8 py-6 [&::-webkit-details-marker]:hidden">
                   <span className="mt-1 text-[13px] font-medium text-muted">
                     {String(i + 1).padStart(2, "0")}
                   </span>
@@ -37,7 +37,7 @@ export function Faq() {
                     +
                   </span>
                 </summary>
-                <p className="pb-6 pl-14 pr-12 text-[17px] leading-relaxed text-ink-soft">
+                <p className="pb-8 pl-16 pr-14 text-[17px] leading-relaxed text-ink-soft">
                   {item.a}
                 </p>
               </details>

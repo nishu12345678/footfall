@@ -71,7 +71,7 @@ export default async function ContactPage({
       <UtilityBar data={data} />
       <SiteNav data={data} />
 
-      <main className="mx-auto max-w-5xl px-5 pt-12 pb-10">
+      <main className="mx-auto max-w-[1280px] px-6 pt-16 pb-16 sm:px-10 sm:pt-24 sm:pb-24 lg:px-14">
         <nav aria-label="Breadcrumb" className="text-[12px] text-muted">
           <a href={base} className="hover:text-pin">
             Home
@@ -80,18 +80,18 @@ export default async function ContactPage({
           <span>Contact</span>
         </nav>
 
-        <h1 className="mt-4 text-[clamp(2rem,6vw,3rem)]">
+        <h1 className="mt-5 text-[clamp(2.4rem,5.5vw,4rem)]">
           Contact {business.orgName}
         </h1>
-        <p className="mt-4 max-w-xl text-[16px] leading-relaxed text-ink-soft">
+        <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-ink-soft">
           The quickest way to reach us is WhatsApp — we answer the same day.
         </p>
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-[18px] bg-paper-2 p-6">
-            <h2 className="text-[1.2rem]">Where we are</h2>
+        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:gap-8">
+          <div className="card rounded-[22px] p-8">
+            <h2 className="text-[1.3rem]">Where we are</h2>
             {business.streetAddress ? (
-              <address className="mt-3 text-[15px] not-italic leading-relaxed text-ink-soft">
+              <address className="mt-4 text-[15px] not-italic leading-relaxed text-ink-soft">
                 {business.streetAddress}
                 {business.pinCode ? (
                   <>
@@ -106,16 +106,16 @@ export default async function ContactPage({
                 href={directions}
                 target="_blank"
                 rel="noreferrer"
-                className="btn btn-ghost btn-sm mt-4"
+                className="btn btn-ghost btn-sm mt-6"
               >
                 Get directions
               </a>
             ) : null}
           </div>
 
-          <div className="rounded-[18px] bg-paper-2 p-6">
-            <h2 className="text-[1.2rem]">Talk to us</h2>
-            <div className="mt-4 flex flex-col gap-2">
+          <div className="card rounded-[22px] p-8">
+            <h2 className="text-[1.3rem]">Talk to us</h2>
+            <div className="mt-5 flex flex-col gap-2.5">
               {wa ? (
                 <a
                   href={wa}
@@ -147,9 +147,9 @@ export default async function ContactPage({
         </div>
 
         {hours.length ? (
-          <section className="mt-10">
-            <h2 className="text-[1.5rem]">When we&rsquo;re open</h2>
-            <ul className="mt-4 max-w-md divide-y divide-black/8">
+          <section className="mt-16 sm:mt-20">
+            <h2 className="text-[1.6rem]">When we&rsquo;re open</h2>
+            <ul className="mt-6 max-w-md divide-y divide-black/8">
               {hours.map((h) => (
                 <li
                   key={h.day}
@@ -172,9 +172,9 @@ export default async function ContactPage({
             href={business.mapsUri}
             target="_blank"
             rel="noreferrer"
-            className="card pressable mt-10 block overflow-hidden"
+            className="card pressable mt-16 block overflow-hidden rounded-[22px] sm:mt-20"
           >
-            <span className="grid h-[180px] place-items-center bg-paper-2 text-[15px] text-ink-soft">
+            <span className="grid h-[220px] place-items-center bg-paper-2 text-[15px] text-ink-soft">
               Open {business.orgName} on Google Maps →
             </span>
           </a>

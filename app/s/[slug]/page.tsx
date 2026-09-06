@@ -77,8 +77,8 @@ export default async function SiteHome({
 
       <main>
         {/* hero */}
-        <section className="mx-auto max-w-5xl px-5 pt-12 pb-10 sm:pt-16">
-          <div className="grid gap-8 lg:grid-cols-[1.2fr_1fr] lg:items-center">
+        <section className="mx-auto max-w-[1280px] px-6 pt-16 pb-16 sm:px-10 sm:pt-24 sm:pb-24 lg:px-14">
+          <div className="grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:items-center lg:gap-16">
             <div>
               {business.primaryCategory ? (
                 <p className="chip">
@@ -88,19 +88,19 @@ export default async function SiteHome({
                 </p>
               ) : null}
 
-              <h1 className="mt-5 text-[clamp(2.1rem,6.5vw,3.4rem)]">
+              <h1 className="mt-6 text-[clamp(2.4rem,5.5vw,4rem)]">
                 {site.headline}
               </h1>
               {site.subhead ? (
-                <p className="mt-3 font-display text-[17px] font-medium text-ink-soft">
+                <p className="mt-4 font-display text-[18px] font-medium text-ink-soft">
                   {site.subhead}
                 </p>
               ) : null}
-              <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-ink-soft">
+              <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-ink-soft">
                 {site.about}
               </p>
 
-              <div className="mt-7 flex flex-wrap gap-3">
+              <div className="mt-9 flex flex-wrap gap-3">
                 {wa ? (
                   <a
                     href={wa}
@@ -118,7 +118,7 @@ export default async function SiteHome({
               </div>
 
               {rating !== null ? (
-                <p className="mt-5 flex items-center gap-2 text-[14px]">
+                <p className="mt-7 flex items-center gap-2 text-[14px]">
                   <span className="text-star" aria-hidden>
                     {"★".repeat(Math.round(rating))}
                   </span>
@@ -135,7 +135,7 @@ export default async function SiteHome({
               <img
                 src={photos[0].url}
                 alt={`${business.orgName}`}
-                className="aspect-[4/3] w-full rounded-[18px] object-cover shadow-lift"
+                className="aspect-[4/3] w-full rounded-[24px] object-cover shadow-lift"
               />
             ) : null}
           </div>
@@ -143,12 +143,12 @@ export default async function SiteHome({
 
         {/* services */}
         {site.services.length ? (
-          <section className="mx-auto max-w-5xl px-5 py-10">
-            <h2 className="text-[clamp(1.6rem,4.5vw,2.4rem)]">
+          <section className="mx-auto max-w-[1280px] px-6 py-16 sm:px-10 sm:py-24 lg:px-14">
+            <h2 className="text-[clamp(1.8rem,3.5vw,2.6rem)]">
               What we offer
               {business.city ? ` in ${business.city}` : ""}
             </h2>
-            <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
               {site.services.map((service) => {
                 const link = whatsappLink(
                   data.whatsapp,
@@ -157,10 +157,10 @@ export default async function SiteHome({
                 return (
                   <li
                     key={service.name}
-                    className="flex flex-col rounded-[18px] bg-paper-2 p-6"
+                    className="card flex flex-col rounded-[22px] p-8"
                   >
-                    <h3 className="text-[1.15rem]">{service.name}</h3>
-                    <p className="mt-2 flex-1 text-[14px] leading-relaxed text-ink-soft">
+                    <h3 className="text-[1.25rem]">{service.name}</h3>
+                    <p className="mt-2.5 flex-1 text-[15px] leading-relaxed text-ink-soft">
                       {service.body}
                     </p>
                     {link ? (
@@ -168,7 +168,7 @@ export default async function SiteHome({
                         href={link}
                         target="_blank"
                         rel="noreferrer"
-                        className="btn btn-ghost btn-sm mt-4 w-full"
+                        className="btn btn-ghost btn-sm mt-6 w-full"
                       >
                         <WhatsAppIcon />
                         Ask about this
@@ -183,9 +183,9 @@ export default async function SiteHome({
 
         {/* gallery */}
         {photos.length > 1 ? (
-          <section className="mx-auto max-w-5xl px-5 py-10">
-            <h2 className="text-[clamp(1.6rem,4.5vw,2.4rem)]">Have a look</h2>
-            <ul className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+          <section className="mx-auto max-w-[1280px] px-6 py-16 sm:px-10 sm:py-24 lg:px-14">
+            <h2 className="text-[clamp(1.8rem,3.5vw,2.6rem)]">Have a look</h2>
+            <ul className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
               {photos.slice(0, 8).map((photo, i) =>
                 photo.url ? (
                   <li key={photo._id}>
@@ -194,7 +194,7 @@ export default async function SiteHome({
                       src={photo.url}
                       alt={photo.caption ?? `${business.orgName} photo ${i + 1}`}
                       loading="lazy"
-                      className="aspect-square w-full rounded-[14px] object-cover shadow-card"
+                      className="aspect-square w-full rounded-[18px] object-cover shadow-card"
                     />
                   </li>
                 ) : null,
@@ -205,9 +205,9 @@ export default async function SiteHome({
 
         {/* reviews */}
         {withText.length ? (
-          <section className="mx-auto max-w-5xl px-5 py-10">
+          <section className="mx-auto max-w-[1280px] px-6 py-16 sm:px-10 sm:py-24 lg:px-14">
             <div className="flex flex-wrap items-baseline justify-between gap-3">
-              <h2 className="text-[clamp(1.6rem,4.5vw,2.4rem)]">
+              <h2 className="text-[clamp(1.8rem,3.5vw,2.6rem)]">
                 What customers say
               </h2>
               {business.reviewUri ? (
@@ -222,11 +222,11 @@ export default async function SiteHome({
               ) : null}
             </div>
 
-            <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
               {withText.slice(0, 6).map((review) => (
                 <li
                   key={review._id}
-                  className="rounded-[18px] bg-paper-2 p-6"
+                  className="card rounded-[22px] p-8"
                 >
                   <p className="text-star" aria-label={`${review.rating} out of 5`}>
                     {"★".repeat(review.rating)}
@@ -234,7 +234,7 @@ export default async function SiteHome({
                       {"★".repeat(5 - review.rating)}
                     </span>
                   </p>
-                  <p className="mt-2.5 text-[14px] leading-relaxed text-ink-soft">
+                  <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
                     {review.comment}
                   </p>
                   <p className="mt-3 text-[13px] font-medium text-muted">
@@ -252,12 +252,12 @@ export default async function SiteHome({
 
         {/* hours + areas */}
         {hours.length || areas.length ? (
-          <section className="mx-auto max-w-5xl px-5 py-10">
-            <div className="grid gap-8 sm:grid-cols-2">
+          <section className="mx-auto max-w-[1280px] px-6 py-16 sm:px-10 sm:py-24 lg:px-14">
+            <div className="grid gap-10 sm:grid-cols-2 lg:gap-16">
               {hours.length ? (
                 <div>
-                  <h2 className="text-[1.5rem]">Opening hours</h2>
-                  <ul className="mt-4 divide-y divide-black/8">
+                  <h2 className="text-[1.6rem]">Opening hours</h2>
+                  <ul className="mt-6 divide-y divide-black/8">
                     {hours.map((h) => (
                       <li
                         key={h.day}
@@ -277,8 +277,8 @@ export default async function SiteHome({
 
               {areas.length ? (
                 <div>
-                  <h2 className="text-[1.5rem]">Areas we serve</h2>
-                  <ul className="mt-4 flex flex-wrap gap-2">
+                  <h2 className="text-[1.6rem]">Areas we serve</h2>
+                  <ul className="mt-6 flex flex-wrap gap-2">
                     {areas.slice(0, 14).map((area) => (
                       <li key={area} className="chip">
                         {area}
@@ -303,15 +303,15 @@ export default async function SiteHome({
 
         {/* faqs */}
         {site.faqs.length ? (
-          <section className="mx-auto max-w-5xl px-5 py-10">
-            <h2 className="text-[clamp(1.6rem,4.5vw,2.4rem)]">
+          <section className="mx-auto max-w-[1280px] px-6 py-16 sm:px-10 sm:py-24 lg:px-14">
+            <h2 className="text-[clamp(1.8rem,3.5vw,2.6rem)]">
               Questions we get asked
             </h2>
-            <div className="mt-6 divide-y divide-black/8">
+            <div className="mt-8 divide-y divide-black/8">
               {site.faqs.map((faq) => (
                 <details key={faq.q} className="group py-1">
-                  <summary className="flex cursor-pointer list-none items-start gap-3 py-4 [&::-webkit-details-marker]:hidden">
-                    <h3 className="flex-1 font-display text-[16px] font-semibold">
+                  <summary className="flex cursor-pointer list-none items-start gap-3 py-5 [&::-webkit-details-marker]:hidden">
+                    <h3 className="flex-1 font-display text-[17px] font-semibold">
                       {faq.q}
                     </h3>
                     <span
@@ -330,7 +330,7 @@ export default async function SiteHome({
           </section>
         ) : null}
 
-        <div className="py-10">
+        <div className="py-16 sm:py-24">
           <ContactBand data={data} />
         </div>
       </main>

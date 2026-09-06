@@ -1,15 +1,20 @@
 import type { Metadata, Viewport } from "next";
+import { Manrope } from "next/font/google";
 import "./globals.css";
 
 /*
- * No webfont at all — the platform's own face carries the product.
+ * Manrope — one variable family for the whole product.
  *
- * SF Pro on Apple devices, the native grotesk everywhere else. The
- * system font ships optical sizing, size-specific tracking tables and
- * legibility tuning that no downloaded family matches, renders Hindi-
- * English mixed text through the platform's own fallbacks, and costs
- * zero bytes on a cheap Android connection.
+ * Geometric but warm, open apertures, excellent at both 13px captions
+ * and 90px display sizes. It reads effortlessly (the whole brief), and
+ * the 400→800 variable range builds the entire hierarchy without a
+ * second face.
  */
+const manrope = Manrope({
+  variable: "--font-manrope",
+  subsets: ["latin"],
+  display: "swap",
+});
 
 /*
  * The absolute address the shop sites live at.
@@ -43,12 +48,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ffffff",
+  themeColor: "#faf9f7",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="en" className={`${manrope.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <div className="relative z-10 flex min-h-full flex-col">{children}</div>
       </body>

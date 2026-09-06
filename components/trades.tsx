@@ -10,8 +10,8 @@ import { SectionHead } from "./window-card";
  */
 export function TrustBar() {
   return (
-    <section className="bg-paper-2 px-5 py-6">
-      <ul className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-8 gap-y-3">
+    <section className="bg-paper-2 px-6 py-8 sm:px-10 sm:py-10 lg:px-16">
+      <ul className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-center gap-x-10 gap-y-4">
         {TRUST.map((item) => (
           <li
             key={item}
@@ -41,8 +41,8 @@ export function TrustBar() {
  */
 export function Trades() {
   return (
-    <section id="trades" className="px-5 py-20 sm:py-28">
-      <div className="mx-auto max-w-6xl">
+    <section id="trades" className="px-6 py-24 sm:px-10 sm:py-32 lg:px-16">
+      <div className="mx-auto max-w-[1400px]">
         <Reveal>
           <SectionHead
             eyebrow={TRADES.eyebrow}
@@ -52,13 +52,13 @@ export function Trades() {
           />
         </Reveal>
 
-        <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-16 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:mt-20 lg:grid-cols-3 lg:gap-x-10 lg:gap-y-12">
           {TRADES.items.map((trade, i) => (
             <Reveal key={trade.name} delay={Math.min(i * 50, 300)}>
-              <li className="card flex h-full items-start gap-4 p-5 transition-shadow hover:shadow-lift">
+              <li className="flex h-full items-start gap-5">
                 <span
                   aria-hidden
-                  className="grid h-12 w-12 flex-none place-items-center rounded-[12px] bg-paper-2 text-[24px]"
+                  className="grid h-14 w-14 flex-none place-items-center rounded-[16px] bg-white text-[24px] shadow-card"
                 >
                   {trade.icon}
                 </span>
@@ -66,7 +66,7 @@ export function Trades() {
                   <span className="block text-[18px] font-bold tracking-tight">
                     {trade.name}
                   </span>
-                  <span className="mt-1 block text-[15px] leading-relaxed text-ink-soft">
+                  <span className="mt-1.5 block text-[15px] leading-relaxed text-ink-soft">
                     {trade.line}
                   </span>
                 </span>
@@ -76,7 +76,7 @@ export function Trades() {
         </ul>
 
         <Reveal delay={120}>
-          <div className="mt-10 flex flex-col items-center gap-5 text-center">
+          <div className="mt-16 flex flex-col items-center gap-5 text-center lg:mt-20">
             <p className="text-[17px] text-muted">{TRADES.note}</p>
             <a href={LINKS.cta} className="btn btn-primary">
               See your plan

@@ -1,56 +1,53 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------
-   footfall — Apple-style design system
+   footfall — premium minimal design system  (v2)
 
-   Light, quiet, precise. The palette is Apple's: near-black ink
-   (#1d1d1f) on white and #f5f5f7, one confident blue for actions,
-   iOS green for WhatsApp/live, iOS orange for stars. Depth comes
-   from translucent materials and soft ambient shadows, never from
-   hard borders. Type is the platform's own (SF on Apple devices),
-   with size-specific tracking: tight when large, neutral in body.
+   Warm porcelain paper instead of dead white, near-black ink,
+   one electric cobalt accent, black pill CTAs. Type is Manrope —
+   geometric, open apertures, effortless to read — set big and
+   loose: wide containers, oversized display sizes, generous
+   vertical rhythm. Depth from soft diffuse shadows and 0.5px
+   hairlines; never hard outlines.
 
-   Motion: springs in spirit — fast response, settle without
-   overshoot, interruptible, honest to reduced-motion.
+   Motion stays Apple: instant press feedback, spring-curve
+   settles, interruptible, honest to reduced-motion.
    --------------------------------------------------------------- */
 
 @theme {
-  --color-paper: #ffffff;
-  --color-paper-2: #f5f5f7;
-  --color-paper-3: #e8e8ed;
-  --color-ink: #1d1d1f;
-  --color-ink-soft: #515154;
-  --color-muted: #86868b;
-  --color-rule: #d2d2d7;
-  --color-rule-soft: #e8e8ed;
+  /* Warm neutrals — porcelain, not hospital white. */
+  --color-paper: #faf9f7;
+  --color-paper-2: #f2f0ec;
+  --color-paper-3: #e9e6e0;
+  --color-ink: #131311;
+  --color-ink-soft: #55524b;
+  --color-muted: #8a867c;
+  --color-rule: #ddd9d1;
+  --color-rule-soft: #ebe8e2;
 
-  --color-pin: #0071e3;
-  --color-pin-soft: #eaf3ff;
-  --color-open: #34c759;
-  --color-open-deep: #248a3d;
-  --color-open-soft: #e9f9ee;
-  --color-star: #ff9f0a;
-  --color-chat: #34c759;
+  /* One vivid accent: electric cobalt. CTAs are ink-black pills;
+     cobalt carries links, eyebrow dots and highlights. */
+  --color-pin: #2b4eff;
+  --color-pin-soft: #eceffe;
+  --color-open: #1da750;
+  --color-open-deep: #157a3c;
+  --color-open-soft: #e7f5ec;
+  --color-star: #e8a33d;
+  --color-chat: #1da750;
 
-  /* The platform's own face — SF on Apple hardware, the best
-     native grotesk everywhere else. It ships optical sizing and
-     tracking tables no webfont matches. */
-  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display",
-    "SF Pro Text", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-    sans-serif;
-  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-manrope), -apple-system, BlinkMacSystemFont,
+    system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-body: var(--font-manrope), -apple-system, BlinkMacSystemFont,
+    system-ui, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
     monospace;
 
-  --radius-window: 18px;
+  --radius-window: 22px;
 
-  /* Ambient, diffuse, no hard edge — depth like a sheet of glass
-     resting above the page, not a box drawn around content. */
-  --shadow-card: 0 0 0 0.5px rgb(0 0 0 / 0.04),
-    0 2px 8px rgb(0 0 0 / 0.04), 0 12px 32px -12px rgb(0 0 0 / 0.1);
-  --shadow-lift: 0 0 0 0.5px rgb(0 0 0 / 0.04),
-    0 4px 16px rgb(0 0 0 / 0.08), 0 24px 60px -20px rgb(0 0 0 / 0.2);
+  --shadow-card: 0 0 0 0.5px rgb(19 19 17 / 0.05),
+    0 2px 10px rgb(19 19 17 / 0.04), 0 16px 40px -16px rgb(19 19 17 / 0.1);
+  --shadow-lift: 0 0 0 0.5px rgb(19 19 17 / 0.05),
+    0 6px 20px rgb(19 19 17 / 0.07), 0 32px 80px -24px rgb(19 19 17 / 0.22);
 }
 
 /* --------------------------------- base --------------------------------- */
@@ -68,80 +65,77 @@ body {
   background-color: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-body);
-  /* 17px — the iOS body size. Comfortable at arm's length. */
   font-size: 17px;
-  line-height: 1.47;
+  line-height: 1.55;
   overflow-x: hidden;
   font-synthesis-weight: none;
   -webkit-font-smoothing: antialiased;
+  font-optical-sizing: auto;
 }
 
-/* Large text tightens as it grows — SF Display behaviour. Weight
-   does the emphasis; size and leading move together. */
+/* Display type: big, tight, confident. Weight builds hierarchy;
+   tracking is size-specific — tighter as it grows. */
 h1,
 h2,
 h3,
 h4 {
   font-family: var(--font-display);
   font-weight: 700;
-  letter-spacing: -0.016em;
-  line-height: 1.14;
+  letter-spacing: -0.018em;
+  line-height: 1.12;
   text-wrap: balance;
-  font-optical-sizing: auto;
 }
 
 h1 {
-  letter-spacing: -0.028em;
-  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.034em;
+  line-height: 1.008;
 }
 
 h2 {
-  letter-spacing: -0.022em;
-  line-height: 1.08;
+  font-weight: 800;
+  letter-spacing: -0.028em;
+  line-height: 1.04;
 }
 
 ::selection {
-  background: rgb(0 113 227 / 0.22);
+  background: rgb(43 78 255 / 0.18);
   color: inherit;
 }
 
 :focus-visible {
-  outline: 3px solid rgb(0 113 227 / 0.55);
+  outline: 3px solid rgb(43 78 255 / 0.5);
   outline-offset: 2px;
   border-radius: 8px;
 }
 
-/* ------------------------------- materials ------------------------------
-   Translucency is the structure: chrome floats above content as a
-   blurred material, content scrolls underneath. Bigger surfaces
-   read thicker (more blur, deeper shadow). */
+/* ------------------------------- materials ------------------------------ */
 
 .material {
-  background: rgb(255 255 255 / 0.72);
+  background: rgb(250 249 247 / 0.72);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
 }
 
 .material-thick {
-  background: rgb(255 255 255 / 0.82);
+  background: rgb(250 249 247 / 0.85);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
   backdrop-filter: blur(28px) saturate(180%);
   box-shadow: var(--shadow-card);
 }
 
-/* Hairline instead of a 1px border — the light catching an edge. */
 .hairline-b {
-  box-shadow: inset 0 -0.5px 0 rgb(0 0 0 / 0.12);
+  box-shadow: inset 0 -0.5px 0 rgb(19 19 17 / 0.12);
 }
 
 .hairline-t {
-  box-shadow: inset 0 0.5px 0 rgb(0 0 0 / 0.12);
+  box-shadow: inset 0 0.5px 0 rgb(19 19 17 / 0.12);
 }
 
 @media (prefers-reduced-transparency: reduce) {
   .material,
   .material-thick {
-    background: rgb(255 255 255 / 0.97);
+    background: rgb(250 249 247 / 0.98);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
@@ -150,7 +144,7 @@ h2 {
 @media (prefers-contrast: more) {
   .material,
   .material-thick {
-    background: #ffffff;
+    background: var(--color-paper);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     border-bottom: 1px solid var(--color-rule);
@@ -160,7 +154,7 @@ h2 {
 /* ------------------------------- surfaces ------------------------------- */
 
 .window {
-  background: var(--color-paper);
+  background: #ffffff;
   border-radius: var(--radius-window);
   box-shadow: var(--shadow-card);
   overflow: hidden;
@@ -170,9 +164,9 @@ h2 {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 16px;
-  box-shadow: inset 0 -0.5px 0 rgb(0 0 0 / 0.08);
-  background: rgb(245 245 247 / 0.72);
+  padding: 13px 18px;
+  box-shadow: inset 0 -0.5px 0 rgb(19 19 17 / 0.08);
+  background: rgb(242 240 236 / 0.7);
   -webkit-backdrop-filter: blur(12px) saturate(160%);
   backdrop-filter: blur(12px) saturate(160%);
 }
@@ -180,7 +174,7 @@ h2 {
 .window-title {
   font-size: 13px;
   font-weight: 600;
-  letter-spacing: -0.006em;
+  letter-spacing: -0.004em;
   color: var(--color-ink-soft);
   white-space: nowrap;
   overflow: hidden;
@@ -188,41 +182,39 @@ h2 {
 }
 
 .card {
-  background: var(--color-paper);
+  background: #ffffff;
   border-radius: var(--radius-window);
   box-shadow: var(--shadow-card);
 }
 
-/* A quiet grouped-list row, like iOS Settings. */
 .inset-group {
-  background: var(--color-paper);
-  border-radius: 14px;
+  background: #ffffff;
+  border-radius: 16px;
   box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 
 .inset-row + .inset-row {
-  box-shadow: inset 0 0.5px 0 rgb(0 0 0 / 0.08);
+  box-shadow: inset 0 0.5px 0 rgb(19 19 17 / 0.08);
 }
 
 /* ------------------------------- controls -------------------------------
-   Pills, like every Apple call-to-action. Instant press feedback on
-   pointer-down; the transform springs back on release. 48px+ tap
-   targets throughout. */
+   Black pill CTAs — the premium move. Cobalt stays for links and
+   accents. Instant press feedback on pointer-down. */
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 50px;
+  gap: 9px;
+  min-height: 52px;
   border-radius: 980px;
   border: 1px solid transparent;
-  padding: 13px 28px;
+  padding: 14px 30px;
   font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 17px;
-  letter-spacing: -0.014em;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.012em;
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -232,65 +224,52 @@ h2 {
     box-shadow 0.25s cubic-bezier(0.25, 1, 0.4, 1),
     border-color 0.18s ease,
     color 0.18s ease,
-    filter 0.18s ease;
+    opacity 0.18s ease;
   will-change: transform;
 }
 
-/* Feedback lives on the press, and it is instant. */
 .btn:active {
   transform: scale(0.96);
   transition-duration: 0.06s;
 }
 
 .btn-primary {
-  background: var(--color-pin);
-  color: #fff;
-  box-shadow: 0 1px 2.5px rgb(0 113 227 / 0.25),
-    0 10px 24px -10px rgb(0 113 227 / 0.5);
+  background: var(--color-ink);
+  color: var(--color-paper);
+  box-shadow: 0 1px 3px rgb(19 19 17 / 0.25),
+    0 12px 28px -12px rgb(19 19 17 / 0.5);
 }
 
 .btn-primary:hover {
-  background: #0077ed;
+  background: #000000;
 }
 
-.btn-primary:active {
-  background: #006edb;
-}
-
-/* The green one is the low-friction action — WhatsApp, "talk to a
-   person". iOS system green: the colour of the button they already
-   trust. */
 .btn-whatsapp {
   background: var(--color-open);
   color: #fff;
-  box-shadow: 0 1px 2.5px rgb(52 199 89 / 0.3),
-    0 10px 24px -10px rgb(52 199 89 / 0.5);
+  box-shadow: 0 1px 3px rgb(29 167 80 / 0.3),
+    0 12px 28px -12px rgb(29 167 80 / 0.5);
 }
 
 .btn-whatsapp:hover {
-  background: #30bd53;
-}
-
-.btn-whatsapp:active {
-  background: #2cae4d;
+  background: #189447;
 }
 
 .btn-ghost {
-  background: rgb(0 0 0 / 0.05);
+  background: rgb(19 19 17 / 0.05);
   color: var(--color-ink);
 }
 
 .btn-ghost:hover {
-  background: rgb(0 0 0 / 0.08);
+  background: rgb(19 19 17 / 0.09);
 }
 
 .btn-sm {
-  min-height: 40px;
-  padding: 9px 18px;
+  min-height: 42px;
+  padding: 10px 20px;
   font-size: 15px;
 }
 
-/* Generic pressable — cards and rows that respond like objects. */
 .pressable {
   transition: transform 0.32s cubic-bezier(0.25, 1, 0.4, 1),
     box-shadow 0.32s cubic-bezier(0.25, 1, 0.4, 1);
@@ -304,16 +283,24 @@ h2 {
 
 /* -------------------------------- labels -------------------------------- */
 
-/* Sentence case, coloured, confident — the apple.com eyebrow.
-   No uppercase, no letterspacing games. */
+/* Editorial eyebrow: tiny, tracked-out, muted — with a cobalt tick. */
 .eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 17px;
+  gap: 10px;
+  font-size: 12.5px;
   font-weight: 700;
-  letter-spacing: -0.012em;
-  color: var(--color-pin);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-muted);
+}
+
+.eyebrow::before {
+  content: "";
+  width: 20px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-pin);
 }
 
 .chip {
@@ -321,31 +308,27 @@ h2 {
   align-items: center;
   gap: 8px;
   border-radius: 980px;
-  padding: 8px 16px;
+  padding: 9px 18px;
   font-size: 14px;
-  font-weight: 500;
-  letter-spacing: -0.006em;
+  font-weight: 600;
+  letter-spacing: -0.004em;
   color: var(--color-ink-soft);
-  background: rgb(120 120 128 / 0.08);
+  background: rgb(19 19 17 / 0.05);
 }
 
-/* Small caption text — footnotes, metadata. */
 .caption {
   font-size: 13px;
-  letter-spacing: -0.003em;
+  letter-spacing: 0;
   color: var(--color-muted);
 }
 
-/* -------------------------------- motion --------------------------------
-   Enter like a spring settling: from the current value, quick out of
-   the gate, gentle into place, no overshoot (critically damped).
-   Gesture-free UI earns no bounce. */
+/* -------------------------------- motion -------------------------------- */
 
 .reveal {
   opacity: 0;
-  transform: translateY(20px) scale(0.99);
-  transition: opacity 0.7s cubic-bezier(0.25, 1, 0.4, 1),
-    transform 0.7s cubic-bezier(0.25, 1, 0.4, 1);
+  transform: translateY(24px);
+  transition: opacity 0.8s cubic-bezier(0.25, 1, 0.4, 1),
+    transform 0.8s cubic-bezier(0.25, 1, 0.4, 1);
   will-change: opacity, transform;
 }
 
@@ -382,7 +365,6 @@ h2 {
   animation: blink 1.8s ease-in-out infinite;
 }
 
-/* Logo strips and trade rails that scroll on their own. */
 @keyframes marquee {
   from {
     transform: translateX(0);
@@ -409,7 +391,6 @@ h2 {
   .marquee {
     animation: none !important;
   }
-  /* Reduced motion still gets feedback — a cross-fade, not a slide. */
   .reveal {
     transform: none;
     transition: opacity 0.25s ease;
@@ -429,7 +410,6 @@ h2 {
   }
 }
 
-/* indeterminate progress used while footfall works on the owner's behalf */
 @keyframes sweep {
   0% {
     transform: translateX(-110%);

@@ -1,22 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 
 /*
- * One family for the whole product.
+ * No webfont at all — the platform's own face carries the product.
  *
- * The page had three: a display face, a body face and a monospace for
- * labels. Monospace labels read as "developer tool" to a shop owner, and
- * the display face fought with Hindi-English mixed words. Inter carries
- * all of it, and the extra weights are what give headings their authority
- * instead of a second family.
+ * SF Pro on Apple devices, the native grotesk everywhere else. The
+ * system font ships optical sizing, size-specific tracking tables and
+ * legibility tuning that no downloaded family matches, renders Hindi-
+ * English mixed text through the platform's own fallbacks, and costs
+ * zero bytes on a cheap Android connection.
  */
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  display: "swap",
-});
 
 /*
  * The absolute address the shop sites live at.
@@ -55,10 +48,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} h-full antialiased`}
-    >
+    <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
         <div className="relative z-10 flex min-h-full flex-col">{children}</div>
       </body>

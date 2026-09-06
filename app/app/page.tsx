@@ -47,10 +47,10 @@ export default function HomePage() {
       {!business.onboardingComplete ? (
         <a
           href={resumeHref(business)}
-          className="mb-4 flex items-center gap-3 rounded-[14px] border border-ink bg-star/20 p-4 shadow-[3px_3px_0_var(--color-ink)]"
+          className="pressable mb-4 flex items-center gap-3 rounded-[14px] bg-star/15 p-4 shadow-card"
         >
           <span className="min-w-0 flex-1">
-            <span className="block font-display text-[15px] font-bold leading-tight">
+            <span className="block text-[15px] font-semibold leading-tight">
               Your setup isn&rsquo;t finished
             </span>
             <span className="mt-0.5 block text-[13px] text-ink-soft">
@@ -58,7 +58,7 @@ export default function HomePage() {
               {resumeLabel(business).replace("continue setup — ", "")}
             </span>
           </span>
-          <span aria-hidden className="flex-none text-ink">
+          <span aria-hidden className="flex-none text-muted">
             ›
           </span>
         </a>
@@ -66,22 +66,20 @@ export default function HomePage() {
 
       {/* ---------------------------- reviews ---------------------------- */}
       <section
-        className={`rounded-[14px] border p-4 ${
-          reviews.thisWeek > 0
-            ? "border-open bg-open-soft"
-            : "border-pin bg-pin-soft"
+        className={`rounded-[18px] p-4 shadow-card ${
+          reviews.thisWeek > 0 ? "bg-open-soft" : "bg-pin-soft"
         }`}
       >
-        <p className="font-mono text-[11px] text-ink-soft">
+        <p className="text-[13px] font-medium text-ink-soft">
           This week&rsquo;s reviews
         </p>
         <div className="mt-1 flex items-baseline justify-between gap-3">
-          <p className="font-display text-[17px] font-bold leading-tight">
+          <p className="text-[17px] font-semibold leading-tight">
             {reviews.thisWeek > 0
               ? `${reviews.thisWeek} new this week`
               : "No reviews yet this week"}
           </p>
-          <p className="flex-none font-display text-[17px] font-bold">
+          <p className="flex-none text-[17px] font-semibold">
             <span className={reviews.thisWeek > 0 ? "text-open" : "text-pin"}>
               {reviews.thisWeek}
             </span>
@@ -89,7 +87,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-paper-2">
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/70">
           <div
             className={`h-full rounded-full transition-all ${
               reviews.thisWeek > 0 ? "bg-open" : "bg-pin/30"
@@ -108,7 +106,7 @@ export default function HomePage() {
           {["More customers", "More reviews", "Better ranking"].map(
             (step, i) => (
               <div key={step} className="flex flex-1 items-center gap-1">
-                <span className="flex-1 font-mono text-[9px] uppercase tracking-wide text-muted">
+                <span className="flex-1 text-[10px] font-medium text-muted">
                   {step}
                 </span>
                 {i < 2 ? (
@@ -123,14 +121,14 @@ export default function HomePage() {
       </section>
 
       {note ? (
-        <p className="mt-4 rounded-[12px] border border-open bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
+        <p className="mt-4 rounded-[12px] bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
           {note}
         </p>
       ) : null}
       {error ? (
         <p
           role="alert"
-          className="mt-4 rounded-[12px] border border-pin bg-pin-soft px-3.5 py-2.5 text-[13px] leading-snug"
+          className="mt-4 rounded-[12px] bg-pin-soft px-3.5 py-2.5 text-[13px] leading-snug"
         >
           {error}
         </p>
@@ -141,26 +139,26 @@ export default function HomePage() {
           type="button"
           onClick={() => void refreshListing()}
           disabled={busy}
-          className="mt-4 font-mono text-[11px] underline underline-offset-4 hover:text-pin"
+          className="mt-4 text-[13px] font-medium text-pin hover:opacity-80"
         >
           refresh listing from google
         </button>
       ) : null}
 
       {/* --------------------------- agent state ------------------------- */}
-      <section className="mt-6 rounded-[14px] border border-ink bg-paper-2 shadow-[3px_4px_0_var(--color-ink)]">
-        <div className="flex items-center justify-between gap-3 border-b border-rule-soft px-4 py-3">
-          <p className="flex items-center gap-2 font-display text-[15px] font-bold">
+      <section className="inset-group mt-6">
+        <div className="hairline-b flex items-center justify-between gap-3 px-4 py-3">
+          <p className="flex items-center gap-2 text-[15px] font-semibold">
             <span aria-hidden className="text-pin">
               ✦
             </span>
             GBP AI agent
           </p>
           <span
-            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10px] ${
+            className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
               business.agentActive
-                ? "border-open bg-open-soft text-open"
-                : "border-rule text-muted"
+                ? "bg-open-soft text-open-deep"
+                : "bg-paper-3 text-ink-soft"
             }`}
           >
             <span
@@ -173,7 +171,7 @@ export default function HomePage() {
           </span>
         </div>
 
-        <ul className="divide-y divide-rule-soft">
+        <ul>
           <Counter
             href="/app/posts"
             label={`${posts.published} posts published`}
@@ -224,7 +222,7 @@ export default function HomePage() {
 
       {/* ---------------------------- timeline --------------------------- */}
       <section className="mt-6">
-        <h2 className="font-display text-[15px] font-bold">
+        <h2 className="text-[15px] font-semibold text-ink">
           Google Business Profile
         </h2>
         <ol className="mt-3 space-y-0">
@@ -242,19 +240,16 @@ export default function HomePage() {
               <span className="flex flex-col items-center">
                 <span
                   aria-hidden
-                  className={`grid h-5 w-5 place-items-center rounded-full border text-[10px] ${
+                  className={`grid h-5 w-5 place-items-center rounded-full text-[10px] ${
                     step.done
-                      ? "border-open bg-open text-paper-2"
-                      : "border-rule text-transparent"
+                      ? "bg-open text-white"
+                      : "bg-paper-3 text-transparent"
                   }`}
                 >
                   ✓
                 </span>
                 {i < all.length - 1 ? (
-                  <span
-                    aria-hidden
-                    className="w-px flex-1 border-l border-dashed border-rule"
-                  />
+                  <span aria-hidden className="w-px flex-1 bg-rule" />
                 ) : null}
               </span>
               <span
@@ -271,12 +266,12 @@ export default function HomePage() {
 
       {/* ----------------------------- actions --------------------------- */}
       <section className="mt-2">
-        <h2 className="font-display text-[15px] font-bold">
+        <h2 className="text-[15px] font-semibold text-ink">
           What we&rsquo;ve done
         </h2>
 
         {actions.length === 0 ? (
-          <p className="mt-3 rounded-[14px] border border-dashed border-rule px-4 py-6 text-center text-[13px] leading-relaxed text-muted">
+          <p className="card mt-3 px-4 py-6 text-center text-[13px] leading-relaxed text-muted">
             Nothing yet. The first post goes out once setup is finished.
           </p>
         ) : (
@@ -284,13 +279,13 @@ export default function HomePage() {
             {actions.map((action) => (
               <li
                 key={action._id}
-                className="rounded-[14px] border border-rule bg-paper-2 p-3.5"
+                className="card p-3.5"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <span className="rounded-full border border-ink bg-paper px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider">
+                  <span className="rounded-full bg-pin-soft px-2.5 py-0.5 text-[11px] font-medium text-pin">
                     {action.type.replace("_", " ")}
                   </span>
-                  <span className="flex-none font-mono text-[10px] text-muted">
+                  <span className="flex-none text-[12px] text-muted">
                     {new Date(action.createdAt).toLocaleDateString("en-IN", {
                       day: "numeric",
                       month: "short",
@@ -324,7 +319,7 @@ function Counter({
   detail: string;
 }) {
   return (
-    <li>
+    <li className="inset-row">
       <a href={href} className="flex items-center gap-3 px-4 py-3">
         <span className="min-w-0 flex-1">
           <span className="block text-[14px] font-semibold leading-tight">

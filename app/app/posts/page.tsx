@@ -131,7 +131,7 @@ export default function PostsPage() {
               alt=""
               loading="lazy"
               referrerPolicy="no-referrer"
-              className={`aspect-[4/3] w-full rounded-[10px] border border-rule object-cover ${
+              className={`aspect-[4/3] w-full rounded-[12px] object-cover ${
                 muted ? "opacity-90" : ""
               }`}
             />
@@ -139,7 +139,7 @@ export default function PostsPage() {
               <figcaption className="mt-1.5 flex items-start gap-1.5 text-[11px] leading-snug text-muted">
                 <span
                   aria-hidden
-                  className="mt-px flex-none font-mono text-[9px] uppercase tracking-wider"
+                  className="mt-px flex-none text-[10px] font-medium"
                 >
                   {post.imageSource === "listing" ? "yours" : "made"}
                 </span>
@@ -154,7 +154,7 @@ export default function PostsPage() {
             value={editText}
             onChange={(e) => setEditText(e.target.value)}
             rows={12}
-            className="w-full resize-none rounded-[10px] border border-rule bg-paper p-3 text-[13px] leading-relaxed outline-none"
+            className="w-full resize-none rounded-[12px] border border-rule bg-white p-3 text-[13px] leading-relaxed outline-none focus:border-pin"
           />
         ) : (
           <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed">
@@ -179,7 +179,7 @@ export default function PostsPage() {
         and change it if you want.
       </p>
 
-      <div className="mt-4 rounded-[12px] border border-open bg-open-soft px-3.5 py-2.5">
+      <div className="mt-4 rounded-[12px] bg-open-soft px-3.5 py-2.5">
         <p className="flex items-center gap-2 text-[13px] font-semibold">
           <span
             aria-hidden
@@ -202,14 +202,14 @@ export default function PostsPage() {
       ) : null}
 
       {note ? (
-        <p className="mt-4 rounded-[12px] border border-open bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
+        <p className="mt-4 rounded-[12px] bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
           {note}
         </p>
       ) : null}
       {error ? (
         <p
           role="alert"
-          className="mt-4 break-words rounded-[12px] border border-pin bg-pin-soft px-3.5 py-2.5 font-mono text-[12px] leading-snug"
+          className="mt-4 break-words rounded-[12px] bg-pin-soft px-3.5 py-2.5 text-[13px] leading-snug"
         >
           {error}
         </p>
@@ -218,14 +218,14 @@ export default function PostsPage() {
       {/* ---------------------------- coming up --------------------------- */}
       <section className="mt-8">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-display text-[15px] font-bold">Coming up</h2>
-          <span className="flex-none font-mono text-[10px] text-muted">
+          <h2 className="text-[15px] font-semibold text-ink">Coming up</h2>
+          <span className="flex-none text-[11px] text-muted">
             {scheduled.length} written{filling ? " · adding more" : ""}
           </span>
         </div>
 
         {scheduled.length === 0 ? (
-          <div className="mt-3 rounded-[14px] border border-dashed border-rule px-4 py-8 text-center">
+          <div className="card mt-3 px-4 py-8 text-center">
             {filling ? (
               <Working label="Writing your next two weeks of posts" />
             ) : (
@@ -239,14 +239,14 @@ export default function PostsPage() {
             {scheduled.map((post) => (
               <li
                 key={post._id}
-                className="rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]"
+                className="card p-4"
               >
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <span className="rounded-full border border-star bg-star/20 px-2 py-0.5 font-mono text-[10px]">
+                  <span className="rounded-full bg-star/15 px-2.5 py-0.5 text-[11px] font-medium text-[#b25000]">
                     {when(post.scheduledFor)}
                   </span>
                   {post.title ? (
-                    <span className="min-w-0 truncate font-mono text-[10px] text-muted">
+                    <span className="min-w-0 truncate text-[12px] text-muted">
                       {post.title}
                     </span>
                   ) : null}
@@ -300,7 +300,7 @@ export default function PostsPage() {
                       <button
                         type="button"
                         onClick={() => void removePost({ id: post._id })}
-                        className="ml-auto font-mono text-[11px] text-muted underline underline-offset-4 hover:text-pin"
+                        className="ml-auto text-[13px] font-medium text-pin hover:opacity-80"
                       >
                         skip this one
                       </button>
@@ -316,19 +316,19 @@ export default function PostsPage() {
       {/* ----------------------------- drafts ----------------------------- */}
       {drafts.length > 0 ? (
         <section className="mt-8">
-          <h2 className="font-display text-[15px] font-bold">
+          <h2 className="text-[15px] font-semibold text-ink">
             Waiting for you
           </h2>
           <ul className="mt-3 space-y-3">
             {drafts.map((post) => (
               <li
                 key={post._id}
-                className="rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]"
+                className="card p-4"
               >
                 <PostBody post={post} />
 
                 {post.status === "failed" && post.error ? (
-                  <p className="mt-3 break-words rounded-[10px] border border-pin bg-pin-soft px-3 py-2 font-mono text-[11px] leading-snug">
+                  <p className="mt-3 break-words rounded-[12px] bg-pin-soft px-3 py-2 text-[12px] leading-snug">
                     {post.error}
                   </p>
                 ) : null}
@@ -355,7 +355,7 @@ export default function PostsPage() {
                   <button
                     type="button"
                     onClick={() => void removePost({ id: post._id })}
-                    className="ml-auto font-mono text-[11px] text-muted underline underline-offset-4 hover:text-pin"
+                    className="ml-auto text-[13px] font-medium text-pin hover:opacity-80"
                   >
                     delete
                   </button>
@@ -369,16 +369,16 @@ export default function PostsPage() {
       {/* ---------------------------- published --------------------------- */}
       <section className="mt-8">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-display text-[15px] font-bold">
+          <h2 className="text-[15px] font-semibold text-ink">
             On your listing
           </h2>
-          <span className="flex-none font-mono text-[10px] text-muted">
+          <span className="flex-none text-[11px] text-muted">
             {published.length} published
           </span>
         </div>
 
         {published.length === 0 ? (
-          <p className="mt-3 rounded-[14px] border border-dashed border-rule px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
+          <p className="card mt-3 px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
             Nothing on your listing yet.
           </p>
         ) : (
@@ -386,13 +386,13 @@ export default function PostsPage() {
             {published.map((post) => (
               <li
                 key={post._id}
-                className="rounded-[14px] border border-rule bg-paper-2 p-4"
+                className="card p-4"
               >
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <span className="flex items-center gap-1.5 rounded-full border border-open bg-open-soft px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-open">
+                  <span className="flex items-center gap-1.5 rounded-full bg-open-soft px-2.5 py-0.5 text-[11px] font-medium text-open-deep">
                     <span aria-hidden>✓</span> live
                   </span>
-                  <span className="flex-none font-mono text-[10px] text-muted">
+                  <span className="flex-none text-[12px] text-muted">
                     {post.publishedAt
                       ? new Date(post.publishedAt).toLocaleDateString("en-IN", {
                           day: "numeric",
@@ -409,7 +409,7 @@ export default function PostsPage() {
                     href={business.mapsUri}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-3 inline-block font-mono text-[11px] underline underline-offset-4 hover:text-pin"
+                    className="mt-3 inline-block text-[13px] font-medium text-pin hover:opacity-80"
                   >
                     see it on your listing →
                   </a>
@@ -421,7 +421,7 @@ export default function PostsPage() {
       </section>
 
       {/* ------------------------- write one yourself --------------------- */}
-      <section className="mt-8 rounded-[14px] border border-rule bg-paper-2 p-4">
+      <section className="card mt-8 p-4">
         <button
           type="button"
           onClick={() => void plan()}
@@ -439,7 +439,7 @@ export default function PostsPage() {
           value={brief}
           onChange={(e) => setBrief(e.target.value)}
           placeholder="e.g. we now stock Kajaria tiles"
-          className="mt-2 w-full rounded-[12px] border border-rule bg-paper px-3.5 py-2.5 text-[14px] outline-none placeholder:text-muted/50"
+          className="mt-2 w-full rounded-[12px] border border-rule bg-white px-3.5 py-2.5 text-[16px] outline-none placeholder:text-muted/60 focus:border-pin"
         />
         <button
           type="button"

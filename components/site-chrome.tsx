@@ -20,7 +20,7 @@ export function UtilityBar({ data }: { data: SiteData }) {
   const today = hours.find((h) => h.day === (new Date().getDay() + 6) % 7);
 
   return (
-    <div className="border-b border-rule bg-paper-3">
+    <div className="hairline-b bg-paper-2">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-5 gap-y-1 px-5 py-1.5 text-[12px]">
         {today ? (
           <span className="hidden sm:inline text-ink-soft">
@@ -28,7 +28,7 @@ export function UtilityBar({ data }: { data: SiteData }) {
               <span className="font-semibold text-pin">Closed today</span>
             ) : (
               <>
-                <span className="font-semibold text-open">Open today</span>{" "}
+                <span className="font-semibold text-open-deep">Open today</span>{" "}
                 {today.open}–{today.close}
               </>
             )}
@@ -67,7 +67,7 @@ export function SiteNav({ data }: { data: SiteData }) {
   ];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-rule bg-paper/95 backdrop-blur-md">
+    <header className="material hairline-b sticky top-0 z-40">
       <nav className="mx-auto flex max-w-5xl items-center gap-4 px-5 py-3">
         <a href={base} className="flex min-w-0 items-center gap-2.5">
           {business.logoUrl ? (
@@ -77,10 +77,10 @@ export function SiteNav({ data }: { data: SiteData }) {
               alt=""
               width={36}
               height={36}
-              className="h-9 w-9 flex-none rounded-[8px] border border-ink bg-white object-contain p-0.5"
+              className="h-9 w-9 flex-none rounded-[10px] bg-white object-contain p-0.5 shadow-card"
             />
           ) : null}
-          <span className="truncate font-display text-[17px] font-bold leading-tight">
+          <span className="truncate text-[17px] font-semibold leading-tight tracking-[-0.01em]">
             {business.orgName}
           </span>
         </a>
@@ -90,7 +90,7 @@ export function SiteNav({ data }: { data: SiteData }) {
             <li key={link.href}>
               <a
                 href={link.href}
-                className="text-[14px] text-ink-soft transition-colors hover:text-pin"
+                className="text-[14px] font-medium text-ink-soft transition-colors hover:text-ink"
               >
                 {link.label}
               </a>
@@ -120,10 +120,10 @@ export function SiteFooter({ data }: { data: SiteData }) {
   const directions = directionsLink(business);
 
   return (
-    <footer className="mt-16 border-t border-rule bg-paper-3">
+    <footer className="hairline-t mt-16 bg-paper-2">
       <div className="mx-auto grid max-w-5xl gap-8 px-5 py-10 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <p className="font-display text-[17px] font-bold">{business.orgName}</p>
+          <p className="text-[17px] font-semibold tracking-[-0.01em]">{business.orgName}</p>
           {business.primaryCategory ? (
             <p className="mt-1 text-[13px] text-ink-soft">
               {business.primaryCategory}
@@ -133,27 +133,27 @@ export function SiteFooter({ data }: { data: SiteData }) {
         </div>
 
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+          <p className="text-[12px] font-semibold text-muted">
             Pages
           </p>
-          <ul className="mt-3 space-y-2 text-[14px]">
+          <ul className="mt-3 space-y-2 text-[13px]">
             <li>
-              <a href={base} className="text-ink-soft hover:text-pin">
+              <a href={base} className="text-ink-soft hover:text-ink">
                 Home
               </a>
             </li>
             <li>
-              <a href={`${base}/services`} className="text-ink-soft hover:text-pin">
+              <a href={`${base}/services`} className="text-ink-soft hover:text-ink">
                 Services
               </a>
             </li>
             <li>
-              <a href={`${base}/about`} className="text-ink-soft hover:text-pin">
+              <a href={`${base}/about`} className="text-ink-soft hover:text-ink">
                 About
               </a>
             </li>
             <li>
-              <a href={`${base}/contact`} className="text-ink-soft hover:text-pin">
+              <a href={`${base}/contact`} className="text-ink-soft hover:text-ink">
                 Contact
               </a>
             </li>
@@ -161,14 +161,14 @@ export function SiteFooter({ data }: { data: SiteData }) {
         </div>
 
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+          <p className="text-[12px] font-semibold text-muted">
             Contact
           </p>
-          <address className="mt-3 space-y-2 text-[14px] not-italic leading-relaxed text-ink-soft">
+          <address className="mt-3 space-y-2 text-[13px] not-italic leading-relaxed text-ink-soft">
             {business.streetAddress ? <p>{business.streetAddress}</p> : null}
             {tel ? (
               <p>
-                <a href={`tel:${tel}`} className="font-semibold hover:text-pin">
+                <a href={`tel:${tel}`} className="font-semibold hover:text-ink">
                   {business.phone}
                 </a>
               </p>
@@ -180,7 +180,7 @@ export function SiteFooter({ data }: { data: SiteData }) {
                 href={`https://wa.me/${whatsapp}`}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-full border border-ink px-2.5 py-1 text-[12px]"
+                className="pressable rounded-full bg-black/5 px-3 py-1.5 text-[12px] font-medium text-ink"
               >
                 WhatsApp
               </a>
@@ -190,7 +190,7 @@ export function SiteFooter({ data }: { data: SiteData }) {
                 href={directions}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-full border border-ink px-2.5 py-1 text-[12px]"
+                className="pressable rounded-full bg-black/5 px-3 py-1.5 text-[12px] font-medium text-ink"
               >
                 Directions
               </a>
@@ -200,7 +200,7 @@ export function SiteFooter({ data }: { data: SiteData }) {
                 href={business.reviewUri}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-full border border-ink px-2.5 py-1 text-[12px]"
+                className="pressable rounded-full bg-black/5 px-3 py-1.5 text-[12px] font-medium text-ink"
               >
                 Leave a review
               </a>
@@ -214,9 +214,9 @@ export function SiteFooter({ data }: { data: SiteData }) {
               href={business.mapsUri}
               target="_blank"
               rel="noreferrer"
-              className="block overflow-hidden rounded-[12px] border border-ink"
+              className="pressable block overflow-hidden rounded-[14px] bg-white shadow-card"
             >
-              <span className="grid h-[120px] place-items-center bg-paper-2 text-[13px] text-ink-soft">
+              <span className="grid h-[120px] place-items-center text-[13px] text-ink-soft">
                 View on Google Maps →
               </span>
             </a>
@@ -230,8 +230,8 @@ export function SiteFooter({ data }: { data: SiteData }) {
         </div>
       </div>
 
-      <div className="border-t border-rule">
-        <p className="mx-auto max-w-5xl px-5 py-4 font-mono text-[10px] text-muted">
+      <div className="hairline-t">
+        <p className="caption mx-auto max-w-5xl px-5 py-4">
           © {new Date().getFullYear()} {business.orgName}. Site by footfall.
         </p>
       </div>
@@ -249,11 +249,11 @@ export function ContactBand({ data }: { data: SiteData }) {
 
   return (
     <section className="mx-auto max-w-5xl px-5">
-      <div className="rounded-[16px] border border-ink bg-ink p-7 text-paper-2 shadow-[4px_5px_0_var(--color-pin)] sm:p-9">
-        <h2 className="text-[clamp(1.5rem,4vw,2.2rem)] text-paper-2">
+      <div className="rounded-[28px] bg-ink p-8 text-white shadow-lift sm:p-10">
+        <h2 className="text-[clamp(1.5rem,4vw,2.2rem)] text-white">
           Come and see us
         </h2>
-        <p className="mt-3 max-w-lg text-[15px] leading-relaxed text-paper-2/80">
+        <p className="mt-3 max-w-lg text-[15px] leading-relaxed text-white/70">
           {business.city
             ? `We're in ${business.city}. Message us on WhatsApp or call — we'll tell you what you need to know before you travel.`
             : "Message us on WhatsApp or call, and we'll tell you what you need before you travel."}
@@ -268,7 +268,7 @@ export function ContactBand({ data }: { data: SiteData }) {
           {tel ? (
             <a
               href={`tel:${tel}`}
-              className="btn btn-ghost border-paper-2 bg-transparent text-paper-2"
+              className="btn bg-white/10 text-white backdrop-blur hover:bg-white/20"
             >
               Call {business.phone}
             </a>

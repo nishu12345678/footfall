@@ -17,12 +17,12 @@ export function Steps({ current }: { current: number }) {
         return (
           <li key={label} className="flex flex-1 flex-col items-center gap-1.5">
             <span
-              className={`grid h-7 w-7 place-items-center rounded-full border font-mono text-[12px] ${
+              className={`grid h-7 w-7 place-items-center rounded-full text-[13px] font-semibold ${
                 done
-                  ? "border-open bg-open text-paper-2"
+                  ? "bg-open text-white"
                   : active
-                    ? "border-pin text-pin"
-                    : "border-rule text-muted"
+                    ? "bg-pin-soft text-pin"
+                    : "bg-paper-3 text-muted"
               }`}
             >
               {done ? "✓" : n}

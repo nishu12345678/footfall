@@ -13,7 +13,7 @@ const AreaMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[248px] w-full animate-pulse rounded-[14px] border border-ink bg-paper-3" />
+      <div className="h-[248px] w-full animate-pulse rounded-[14px] bg-paper-3" />
     ),
   },
 );
@@ -132,7 +132,7 @@ export default function GbpPage() {
   if (data === undefined) {
     return (
       <main className="grid min-h-screen place-items-center px-6">
-        <p className="font-mono text-[12px] text-muted">loading…</p>
+        <p className="text-[13px] text-muted">loading…</p>
       </main>
     );
   }
@@ -223,7 +223,7 @@ export default function GbpPage() {
               setSeen((s) => ({ ...s, [t.id]: true }));
               setDraft("");
             }}
-            className={`-mb-px flex-none border-b-2 pb-2.5 font-display text-[13px] font-semibold transition-colors ${
+            className={`-mb-px flex-none border-b-2 pb-2.5 text-[13px] font-semibold transition-colors ${
               tab === t.id
                 ? "border-pin text-pin"
                 : "border-transparent text-muted hover:text-ink"
@@ -283,7 +283,7 @@ export default function GbpPage() {
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder={`e.g. ${data.business.city ?? "your area"}`}
-                className="min-w-0 flex-1 rounded-[12px] border border-ink bg-paper-2 px-3.5 py-3 text-[15px] outline-none placeholder:text-muted/50"
+                className="min-w-0 flex-1 rounded-[12px] border border-rule bg-white px-4 py-3 text-[16px] outline-none placeholder:text-muted/60 focus:border-pin"
               />
               <button
                 type="submit"
@@ -294,12 +294,12 @@ export default function GbpPage() {
               </button>
             </form>
 
-            <div className="mt-6 rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]">
+            <div className="card mt-6 p-4">
               <div className="flex items-center justify-between gap-3">
-                <p className="font-display text-[14px] font-bold">
+                <p className="text-[15px] font-semibold text-ink">
                   Areas near you
                 </p>
-                <div className="flex flex-none items-center gap-1 rounded-full border border-rule p-0.5">
+                <div className="flex flex-none items-center gap-1 rounded-full bg-paper-3 p-0.5">
                   {[10, 20, 30].map((km) => (
                     <button
                       key={km}
@@ -310,10 +310,10 @@ export default function GbpPage() {
                         void findAreas(km);
                       }}
                       aria-pressed={radiusKm === km}
-                      className={`rounded-full px-2 py-0.5 font-mono text-[10px] transition-colors ${
+                      className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
                         radiusKm === km
-                          ? "bg-ink text-paper-2"
-                          : "text-muted hover:text-ink"
+                          ? "bg-white text-ink shadow-card"
+                          : "text-muted"
                       }`}
                     >
                       {km}km
@@ -337,10 +337,10 @@ export default function GbpPage() {
                           type="button"
                           disabled={added}
                           onClick={() => void addArea({ name: area.name })}
-                          className={`inline-flex items-center gap-1.5 rounded-full border py-1.5 pl-2.5 pr-3 text-[13px] transition-colors ${
+                          className={`pressable inline-flex items-center gap-1.5 rounded-full py-1.5 pl-2.5 pr-3 text-[13px] transition-colors ${
                             added
-                              ? "border-pin bg-pin-soft"
-                              : "border-rule bg-paper hover:border-ink"
+                              ? "bg-pin-soft text-pin"
+                              : "bg-paper-2 hover:bg-paper-3"
                           }`}
                         >
                           <span
@@ -350,7 +350,7 @@ export default function GbpPage() {
                             {added ? "✓" : "+"}
                           </span>
                           {area.name}
-                          <span className="font-mono text-[10px] text-muted">
+                          <span className="text-[11px] text-muted">
                             {area.km}km
                           </span>
                         </button>
@@ -367,7 +367,7 @@ export default function GbpPage() {
             </div>
 
             {data.business.scanRadiusKm ? (
-              <div className="mt-4 rounded-[12px] border border-rule bg-paper-2 px-3.5 py-2.5">
+              <div className="mt-4 rounded-[12px] bg-paper-2 px-3.5 py-2.5">
                 <p className="text-[13px] font-semibold leading-snug">
                   We&rsquo;ll measure your &ldquo;near me&rdquo; ranking across{" "}
                   {data.business.scanRadiusKm}km
@@ -384,13 +384,13 @@ export default function GbpPage() {
             <ul className="mt-3 flex flex-wrap gap-2">
               {data.serviceAreas.map((area) => (
                 <li key={area._id}>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-pin bg-pin-soft py-1.5 pl-3 pr-1.5 text-[13px]">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-pin-soft py-1.5 pl-3 pr-1.5 text-[13px] font-medium text-pin">
                     {area.name}
                     <button
                       type="button"
                       onClick={() => void removeArea({ id: area._id })}
                       aria-label={`remove ${area.name}`}
-                      className="grid h-4 w-4 place-items-center rounded-full text-pin hover:bg-pin hover:text-paper-2"
+                      className="grid h-4 w-4 place-items-center rounded-full text-pin hover:bg-pin hover:text-white"
                     >
                       ×
                     </button>
@@ -422,7 +422,7 @@ export default function GbpPage() {
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder="e.g. tiles shop near me"
-                className="min-w-0 flex-1 rounded-[12px] border border-ink bg-paper-2 px-3.5 py-3 text-[15px] outline-none placeholder:text-muted/50"
+                className="min-w-0 flex-1 rounded-[12px] border border-rule bg-white px-4 py-3 text-[16px] outline-none placeholder:text-muted/60 focus:border-pin"
               />
               <button
                 type="submit"
@@ -437,7 +437,7 @@ export default function GbpPage() {
               {data.keywords.map((kw) => (
                 <li
                   key={kw._id}
-                  className="flex items-center justify-between gap-3 rounded-[12px] border border-rule bg-paper-2 px-3.5 py-2.5"
+                  className="flex items-center justify-between gap-3 rounded-[12px] bg-paper-2 px-3.5 py-2.5"
                 >
                   <span className="min-w-0 truncate text-[14px]">
                     {kw.term}
@@ -446,7 +446,7 @@ export default function GbpPage() {
                     type="button"
                     onClick={() => void removeKeyword({ id: kw._id })}
                     aria-label={`remove ${kw.term}`}
-                    className="flex-none font-mono text-[13px] text-muted hover:text-pin"
+                    className="flex-none text-[13px] text-muted hover:text-pin"
                   >
                     ×
                   </button>
@@ -454,16 +454,16 @@ export default function GbpPage() {
               ))}
             </ul>
 
-            <div className="mt-7 rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]">
+            <div className="card mt-7 p-4">
               <div className="flex items-center justify-between gap-3">
-                <p className="font-display text-[14px] font-bold">
+                <p className="text-[15px] font-semibold text-ink">
                   Researched from Google
                 </p>
                 <button
                   type="button"
                   onClick={() => void runResearch(true)}
                   disabled={thinking}
-                  className="flex-none font-mono text-[11px] underline underline-offset-4 hover:text-pin disabled:opacity-50"
+                  className="flex-none text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
                 >
                   check competition
                 </button>
@@ -478,7 +478,7 @@ export default function GbpPage() {
                   {researched.map((r) => (
                     <li
                       key={r.term}
-                      className="rounded-[10px] border border-rule bg-paper p-2.5"
+                      className="rounded-[12px] bg-paper-2 p-2.5"
                     >
                       <div className="flex items-center gap-2">
                         <button
@@ -490,10 +490,10 @@ export default function GbpPage() {
                           }
                           disabled={tracked.has(r.term)}
                           onClick={() => void addKeyword({ term: r.term })}
-                          className={`grid h-7 w-7 flex-none place-items-center rounded-full border border-ink font-mono text-[15px] leading-none shadow-[2px_2px_0_var(--color-ink)] transition-transform active:translate-x-px active:translate-y-px active:shadow-none ${
+                          className={`pressable grid h-7 w-7 flex-none place-items-center rounded-full text-[15px] leading-none ${
                             tracked.has(r.term)
-                              ? "bg-paper-2 text-pin shadow-none"
-                              : "bg-pin text-paper-2"
+                              ? "bg-paper-3 text-pin"
+                              : "bg-pin text-white"
                           }`}
                         >
                           {tracked.has(r.term) ? "✓" : "+"}
@@ -502,22 +502,20 @@ export default function GbpPage() {
                           {r.term}
                         </span>
                         {r.measured === "volume" && r.volume ? (
-                          <span className="flex-none rounded-full border border-open bg-open-soft px-1.5 py-0.5 font-mono text-[9px] text-open">
+                          <span className="flex-none rounded-full bg-open-soft px-2 py-0.5 text-[11px] font-medium text-open-deep">
                             {r.volume.toLocaleString("en-IN")}/mo
                           </span>
                         ) : null}
                         <span
-                          className={`flex-none rounded-full border px-1.5 py-0.5 font-mono text-[9px] ${
-                            r.demand > 0
-                              ? "border-ink text-ink"
-                              : "border-rule text-muted"
+                          className={`flex-none rounded-full bg-paper-3 px-2 py-0.5 text-[11px] font-medium ${
+                            r.demand > 0 ? "text-ink-soft" : "text-muted"
                           }`}
                           title="demand x winnability"
                         >
                           {r.score}
                         </span>
                       </div>
-                      <p className="mt-1 font-mono text-[9px] leading-snug text-muted">
+                      <p className="mt-1 text-[11px] leading-snug text-muted">
                         {r.why}
                       </p>
                     </li>
@@ -544,15 +542,15 @@ export default function GbpPage() {
               day.
             </p>
 
-            <ul className="mt-6 divide-y divide-rule-soft border-y border-rule">
+            <ul className="inset-group mt-6">
               {hours.map((row) => (
-                <li key={row.day} className="flex items-center gap-3 py-2.5">
+                <li key={row.day} className="inset-row flex items-center gap-3 px-4 py-2.5">
                   <span className="w-[76px] flex-none text-[14px] font-semibold">
                     {DAYS[row.day]}
                   </span>
 
                   {row.closed ? (
-                    <span className="flex-1 font-mono text-[12px] text-muted">
+                    <span className="flex-1 text-[13px] text-muted">
                       closed
                     </span>
                   ) : (
@@ -563,7 +561,7 @@ export default function GbpPage() {
                         onChange={(e) =>
                           patchHour(row.day, { open: e.target.value })
                         }
-                        className="w-[92px] rounded-[10px] border border-rule bg-paper-2 px-2 py-1.5 font-mono text-[12px] outline-none"
+                        className="w-[92px] rounded-[10px] border border-rule bg-white px-2 py-1.5 text-[13px] outline-none focus:border-pin"
                       />
                       <span aria-hidden className="text-muted">
                         –
@@ -574,7 +572,7 @@ export default function GbpPage() {
                         onChange={(e) =>
                           patchHour(row.day, { close: e.target.value })
                         }
-                        className="w-[92px] rounded-[10px] border border-rule bg-paper-2 px-2 py-1.5 font-mono text-[12px] outline-none"
+                        className="w-[92px] rounded-[10px] border border-rule bg-white px-2 py-1.5 text-[13px] outline-none focus:border-pin"
                       />
                     </span>
                   )}
@@ -582,7 +580,7 @@ export default function GbpPage() {
                   <button
                     type="button"
                     onClick={() => patchHour(row.day, { closed: !row.closed })}
-                    className="flex-none font-mono text-[11px] text-muted underline underline-offset-4 hover:text-pin"
+                    className="flex-none text-[13px] font-medium text-pin hover:opacity-80"
                   >
                     {row.closed ? "open" : "closed"}
                   </button>
@@ -614,18 +612,16 @@ export default function GbpPage() {
                         })
                       }
                       aria-pressed={on}
-                      className={`flex w-full items-center gap-3 rounded-[12px] border px-3.5 py-3 text-left text-[14px] transition-colors ${
-                        on
-                          ? "border-open bg-open-soft"
-                          : "border-rule bg-paper-2 hover:border-ink"
+                      className={`pressable flex w-full items-center gap-3 rounded-[12px] px-3.5 py-3 text-left text-[14px] transition-colors ${
+                        on ? "bg-open-soft" : "bg-paper-2 hover:bg-paper-3"
                       }`}
                     >
                       <span
                         aria-hidden
-                        className={`grid h-5 w-5 flex-none place-items-center rounded-[6px] border text-[11px] ${
+                        className={`grid h-5 w-5 flex-none place-items-center rounded-[7px] text-[11px] ${
                           on
-                            ? "border-open bg-open text-paper-2"
-                            : "border-rule text-transparent"
+                            ? "bg-open text-white"
+                            : "bg-paper-3 text-transparent"
                         }`}
                       >
                         ✓
@@ -642,14 +638,14 @@ export default function GbpPage() {
         {error ? (
           <p
             role="alert"
-            className="mt-5 rounded-[12px] border border-pin bg-pin-soft px-4 py-3 text-[14px] leading-snug"
+            className="mt-5 rounded-[12px] bg-pin-soft px-4 py-3 text-[14px] leading-snug"
           >
             {error}
           </p>
         ) : null}
       </div>
 
-      <p className="mt-8 text-center font-mono text-[10px] text-muted">
+      <p className="mt-8 text-center text-[12px] text-muted">
         step 4 of 6 · {TABS.filter((x) => seen[x.id]).length} of {TABS.length}{" "}
         sections done
       </p>
@@ -671,7 +667,7 @@ export default function GbpPage() {
 
       <a
         href={ONBOARDING_STEPS[4].href}
-        className="mt-3 block text-center font-mono text-[11px] text-muted underline underline-offset-4 hover:text-pin"
+        className="mt-3 block text-center text-[13px] font-medium text-pin hover:opacity-80"
       >
         skip the rest of this step
       </a>

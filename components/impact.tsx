@@ -38,7 +38,7 @@ export function Impact() {
         <h2 className="font-display text-[15px] font-bold">
           Before footfall, and after
         </h2>
-        <p className="mt-3 rounded-[14px] border border-dashed border-rule px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
+        <p className="mt-3 rounded-[14px] bg-paper-2 px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
           {data.days > 0
             ? `We've been running your listing for ${data.days} day${data.days === 1 ? "" : "s"}. Once there's a week of it, this compares that week against the week before we started.`
             : "This starts filling in once we've been running your listing for a week. Google's own data lags a couple of days behind."}
@@ -53,7 +53,7 @@ export function Impact() {
         <h2 className="font-display text-[15px] font-bold">
           Before footfall, and after
         </h2>
-        <p className="mt-3 rounded-[14px] border border-dashed border-rule px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
+        <p className="mt-3 rounded-[14px] bg-paper-2 px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
           Google has no data for the {data.days} days before we started, so
           there&rsquo;s nothing honest to compare against yet.
         </p>
@@ -67,7 +67,7 @@ export function Impact() {
         <h2 className="font-display text-[15px] font-bold">
           Before footfall, and after
         </h2>
-        <span className="flex-none font-mono text-[10px] text-muted">
+        <span className="flex-none text-[12px] font-medium text-muted">
           {data.days} days each
         </span>
       </div>
@@ -87,22 +87,22 @@ export function Impact() {
           return (
             <li
               key={row.key}
-              className="rounded-[14px] border border-rule bg-paper-2 p-3.5"
+              className="rounded-[14px] bg-paper-2 p-4"
             >
               <div className="flex items-baseline justify-between gap-3">
                 <span className="text-[14px] font-semibold">{row.label}</span>
                 {change === null ? (
-                  <span className="flex-none font-mono text-[10px] text-muted">
+                  <span className="flex-none text-[11px] font-medium text-muted">
                     new
                   </span>
                 ) : (
                   <span
-                    className={`flex-none rounded-full border px-2 py-0.5 font-mono text-[10px] ${
+                    className={`flex-none rounded-full px-2 py-0.5 text-[11px] font-medium ${
                       up
-                        ? "border-open bg-open-soft text-open"
+                        ? "bg-open-soft text-open-deep"
                         : change === 0
-                          ? "border-rule text-muted"
-                          : "border-pin bg-pin-soft text-pin"
+                          ? "bg-paper-3 text-muted"
+                          : "bg-pin-soft text-pin"
                     }`}
                   >
                     {up ? "▲" : change === 0 ? "—" : "▼"} {Math.abs(change)}%
@@ -120,7 +120,7 @@ export function Impact() {
                   ] as const
                 ).map(([label, value, fill]) => (
                   <div key={label} className="flex items-center gap-2">
-                    <span className="w-12 flex-none font-mono text-[9px] uppercase tracking-wider text-muted">
+                    <span className="w-12 flex-none text-[11px] font-medium text-muted">
                       {label}
                     </span>
                     <span className="h-3 flex-1 overflow-hidden rounded-full bg-paper-3">
@@ -131,7 +131,7 @@ export function Impact() {
                         }}
                       />
                     </span>
-                    <span className="w-12 flex-none text-right font-display text-[13px] font-bold">
+                    <span className="w-12 flex-none text-right font-display text-[13px] font-semibold">
                       {value.toLocaleString("en-IN")}
                     </span>
                   </div>

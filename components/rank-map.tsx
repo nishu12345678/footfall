@@ -12,10 +12,10 @@ export type GridPoint = {
 
 /** Green when you're top 3, amber to 10, red beyond, grey when absent. */
 function colourFor(rank?: number) {
-  if (rank === undefined || rank === null) return { fill: "#7c7565", text: "–" };
-  if (rank <= 3) return { fill: "#12744e", text: String(rank) };
-  if (rank <= 10) return { fill: "#e2a021", text: String(rank) };
-  return { fill: "#dd4327", text: String(rank) };
+  if (rank === undefined || rank === null) return { fill: "#86868b", text: "–" };
+  if (rank <= 3) return { fill: "#248a3d", text: String(rank) };
+  if (rank <= 10) return { fill: "#ff9f0a", text: String(rank) };
+  return { fill: "#ff3b30", text: String(rank) };
 }
 
 /**
@@ -89,8 +89,9 @@ export function RankMap({
             className: "",
             html:
               `<span style="display:grid;place-items:center;width:26px;height:26px;` +
-              `border-radius:999px;border:1.5px solid #14130e;background:${fill};` +
-              `color:#fffdf7;font:700 11px/1 ui-sans-serif,system-ui;">${text}</span>`,
+              `border-radius:999px;border:1.5px solid #ffffff;background:${fill};` +
+              `box-shadow:0 1px 4px rgb(0 0 0 / 0.25);` +
+              `color:#ffffff;font:600 11px/1 ui-sans-serif,system-ui;">${text}</span>`,
             iconSize: [26, 26],
             iconAnchor: [13, 13],
           }),
@@ -116,9 +117,9 @@ export function RankMap({
   const found = points.filter((p) => p.rank !== undefined).length;
 
   return (
-    <div className="overflow-hidden rounded-[14px] border border-ink shadow-[3px_3px_0_var(--color-ink)]">
+    <div className="overflow-hidden rounded-[18px] shadow-card">
       <div ref={hostRef} className="h-[240px] w-full bg-paper-3" />
-      <p className="border-t border-ink bg-paper-3 px-3 py-1.5 font-mono text-[10px] leading-relaxed text-ink-soft">
+      <p className="border-t border-black/10 bg-paper-2 px-4 py-2 text-[12px] leading-relaxed text-ink-soft">
         &ldquo;{keyword}&rdquo; · found at {found} of {points.length} points
       </p>
     </div>

@@ -18,20 +18,17 @@ const fmtDate = (ms: number) =>
 
 const TONE = {
   critical: {
-    ring: "border-pin",
-    chip: "bg-pin text-white",
+    chip: "bg-pin-soft text-pin",
     label: "Fix this",
     mark: "!",
   },
   warn: {
-    ring: "border-star",
-    chip: "bg-star text-white",
+    chip: "bg-star/15 text-[#b25000]",
     label: "Worth doing",
     mark: "•",
   },
   good: {
-    ring: "border-open",
-    chip: "bg-open text-white",
+    chip: "bg-open-soft text-open-deep",
     label: "Already good",
     mark: "✓",
   },
@@ -164,7 +161,7 @@ export default function ReportPage() {
 
   return (
     <main className="mx-auto max-w-md px-5 py-10">
-      <p className="text-[14px] font-bold uppercase tracking-wider text-pin">
+      <p className="text-[13px] font-medium uppercase tracking-[0.05em] text-pin">
         Free listing report
       </p>
       <h1 className="mt-2 text-[1.8rem]">{report.business.name}</h1>
@@ -191,7 +188,7 @@ export default function ReportPage() {
             ["Unanswered", report.counts.unansweredReviews],
           ].map(([label, value]) => (
             <div key={String(label)}>
-              <dt className="text-[13px] uppercase tracking-wider text-muted">
+              <dt className="text-[13px] font-medium uppercase tracking-[0.05em] text-muted">
                 {label}
               </dt>
               <dd className="mt-1 text-[1.6rem] font-extrabold leading-none">
@@ -210,7 +207,7 @@ export default function ReportPage() {
           type="button"
           onClick={readNow}
           disabled={reading}
-          className="text-[14px] font-semibold text-pin underline underline-offset-4 disabled:opacity-60"
+          className="text-[14px] font-semibold text-pin hover:opacity-80 disabled:opacity-60"
         >
           {reading ? "Reading…" : "Refresh"}
         </button>
@@ -222,10 +219,10 @@ export default function ReportPage() {
           return (
             <li
               key={f.id}
-              className={`rounded-[16px] border-l-4 bg-white p-5 shadow-card ${tone.ring}`}
+              className="rounded-[18px] bg-white p-5 shadow-card"
             >
               <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold ${tone.chip}`}
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold ${tone.chip}`}
               >
                 <span aria-hidden>{tone.mark}</span>
                 {tone.label}
@@ -270,13 +267,13 @@ export default function ReportPage() {
             maintain.
           </p>
           {built ? (
-            <p className="mt-4 rounded-xl bg-open-soft p-4 text-[16px] leading-relaxed">
+            <p className="mt-4 rounded-[12px] bg-open-soft p-4 text-[16px] leading-relaxed">
               Your website is live at{" "}
               <a
                 href={shopUrl(built)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold text-open underline underline-offset-4"
+                className="font-semibold text-open-deep hover:opacity-80"
               >
                 {shopHost(built)}
               </a>

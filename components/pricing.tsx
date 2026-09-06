@@ -13,7 +13,7 @@ const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
  */
 export function Pricing() {
   return (
-    <section id="pricing" className="border-y border-rule bg-paper-2 px-5 py-20 sm:py-28">
+    <section id="pricing" className="bg-paper-2 px-5 py-20 sm:py-28">
       <div className="mx-auto max-w-5xl">
         <Reveal>
           <SectionHead
@@ -26,7 +26,7 @@ export function Pricing() {
 
         {/* Free comes first, because it is what most visitors will take. */}
         <Reveal>
-          <div className="mt-12 rounded-[16px] border border-rule bg-white p-7 shadow-card">
+          <div className="card mt-12 p-8">
             <div className="flex flex-wrap items-baseline justify-between gap-4">
               <div>
                 <h3 className="text-[1.5rem]">{PRICING.free.name}</h3>
@@ -34,7 +34,7 @@ export function Pricing() {
                   {PRICING.free.line}
                 </p>
               </div>
-              <p className="text-[2.4rem] font-extrabold leading-none tracking-tight">
+              <p className="text-[2.4rem] font-semibold leading-none">
                 ₹0
               </p>
             </div>
@@ -46,7 +46,7 @@ export function Pricing() {
                 >
                   <span
                     aria-hidden
-                    className="mt-0.5 grid h-5 w-5 flex-none place-items-center rounded-full bg-open text-[11px] text-white"
+                    className="mt-0.5 flex-none text-[15px] font-semibold text-open"
                   >
                     ✓
                   </span>
@@ -60,7 +60,7 @@ export function Pricing() {
           </div>
         </Reveal>
 
-        <p className="mt-10 text-center text-[16px] font-semibold uppercase tracking-wider text-muted">
+        <p className="mt-10 text-center text-[13px] font-medium text-muted">
           To have footfall actually do the work
         </p>
 
@@ -72,14 +72,14 @@ export function Pricing() {
             return (
               <Reveal key={plan.id} delay={i * 80}>
                 <article
-                  className={`relative h-full rounded-[16px] bg-white p-7 ${
+                  className={`card relative h-full p-8 ${
                     featured
-                      ? "border-2 border-pin shadow-lift md:-translate-y-2"
-                      : "border border-rule shadow-card"
+                      ? "shadow-lift ring-1 ring-pin/20 md:-translate-y-2"
+                      : ""
                   }`}
                 >
                   {plan.badge ? (
-                    <span className="absolute -top-3.5 left-7 rounded-full bg-pin px-3 py-1 text-[13px] font-bold text-white">
+                    <span className="absolute -top-3.5 left-8 rounded-full bg-pin px-3 py-1 text-[13px] font-semibold text-white">
                       {plan.badge}
                     </span>
                   ) : null}
@@ -88,7 +88,7 @@ export function Pricing() {
                   <p className="mt-1 text-[16px] text-ink-soft">{plan.line}</p>
 
                   <div className="mt-6 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                    <span className="text-[3rem] font-extrabold leading-none tracking-tight">
+                    <span className="text-[3rem] font-semibold leading-none">
                       {inr(plan.price)}
                     </span>
                     <span className="text-[16px] text-muted">
@@ -100,7 +100,7 @@ export function Pricing() {
                     <span className="text-[17px] text-muted line-through">
                       {inr(plan.listPrice)}
                     </span>
-                    <span className="rounded-full bg-open-soft px-2.5 py-1 text-[13px] font-bold text-open">
+                    <span className="rounded-full bg-open-soft px-2.5 py-1 text-[13px] font-semibold text-open-deep">
                       Launch offer — save {inr(saved)}
                     </span>
                   </p>
@@ -120,7 +120,7 @@ export function Pricing() {
                     {plan.cta}
                   </a>
 
-                  <p className="mt-5 text-[14px] font-semibold uppercase tracking-wider text-muted">
+                  <p className="mt-5 text-[13px] font-medium text-muted">
                     {plan.best}
                   </p>
                 </article>
@@ -131,8 +131,8 @@ export function Pricing() {
 
         {/* One list, because both plans are the same product. */}
         <Reveal delay={140}>
-          <div className="mt-8 rounded-[16px] border border-rule bg-white p-7 shadow-card">
-            <p className="text-[17px] font-bold">
+          <div className="card mt-8 p-8">
+            <p className="text-[17px] font-semibold">
               Both plans include everything:
             </p>
             <ul className="mt-4 grid gap-2.5 sm:grid-cols-2">
@@ -143,7 +143,7 @@ export function Pricing() {
                 >
                   <span
                     aria-hidden
-                    className="mt-0.5 grid h-5 w-5 flex-none place-items-center rounded-full bg-open text-[11px] text-white"
+                    className="mt-0.5 flex-none text-[15px] font-semibold text-open"
                   >
                     ✓
                   </span>
@@ -164,7 +164,7 @@ export function Pricing() {
         </Reveal>
 
         <Reveal delay={220}>
-          <div className="mt-12 rounded-[16px] bg-ink p-8 text-white shadow-lift sm:p-10">
+          <div className="mt-12 rounded-[28px] bg-ink p-8 text-white shadow-lift sm:p-10">
             <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
               <div className="max-w-xl">
                 <h3 className="text-[1.5rem] text-white">

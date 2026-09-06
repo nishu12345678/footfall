@@ -60,13 +60,13 @@ export function MapPack({ className = "" }: { className?: string }) {
           <span className="text-muted" aria-hidden>
             ⌕
           </span>
-          <span className="font-mono text-[14px] text-ink-soft">
+          <span className="text-[14px] text-ink-soft">
             {MAP_PACK.query}
           </span>
           <span className="blink ml-px h-3.5 w-px bg-ink" aria-hidden />
         </div>
 
-        <ol className="divide-y divide-rule-soft-soft">
+        <ol className="divide-y divide-rule-soft">
           {rows.map((row, i) => (
             <li
               key={row.name}
@@ -75,10 +75,8 @@ export function MapPack({ className = "" }: { className?: string }) {
               }`}
             >
               <span
-                className={`flex h-6 w-6 flex-none items-center justify-center rounded-full border text-[13px] font-mono transition-colors duration-500 ${
-                  row.you
-                    ? "border-pin bg-pin text-paper-2"
-                    : "border-rule text-muted"
+                className={`flex h-6 w-6 flex-none items-center justify-center rounded-full text-[13px] font-medium transition-colors duration-500 ${
+                  row.you ? "bg-pin text-white" : "bg-paper-3 text-muted"
                 }`}
                 aria-hidden
               >
@@ -95,14 +93,14 @@ export function MapPack({ className = "" }: { className?: string }) {
                     {row.name}
                   </span>
                   {row.you ? (
-                    <span className="flex-none rounded-full border border-pin px-1.5 py-px font-mono text-[11px] uppercase tracking-wider text-pin">
+                    <span className="flex-none rounded-full bg-pin px-2 py-0.5 text-[11px] font-medium text-white">
                       you
                     </span>
                   ) : null}
                 </span>
                 <span className="mt-0.5 flex items-center gap-1.5 text-[13px] text-muted">
                   <Stars n={Math.round(row.rating)} size={10} />
-                  <span className="font-mono">{row.rating.toFixed(1)}</span>
+                  <span>{row.rating.toFixed(1)}</span>
                   <span aria-hidden>·</span>
                   <span>{row.reviews} reviews</span>
                   <span aria-hidden>·</span>
@@ -110,7 +108,7 @@ export function MapPack({ className = "" }: { className?: string }) {
                 </span>
               </span>
 
-              <span className="flex-none rounded-full border border-open bg-open-soft px-2 py-0.5 font-mono text-[11px] uppercase tracking-wider text-open">
+              <span className="flex-none rounded-full bg-open-soft px-2 py-0.5 text-[11px] font-medium text-open-deep">
                 open
               </span>
             </li>
@@ -118,8 +116,8 @@ export function MapPack({ className = "" }: { className?: string }) {
         </ol>
 
         {/* caption + manual toggle */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule-soft bg-paper-3 px-3 py-2.5">
-          <p className="font-mono text-[13px] leading-snug text-ink-soft">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule-soft bg-paper-2 px-3 py-2.5">
+          <p className="text-[13px] leading-snug text-ink-soft">
             {after ? MAP_PACK.afterLabel : MAP_PACK.beforeLabel}
           </p>
           <div className="flex flex-none items-center gap-1" role="group" aria-label="map pack state">
@@ -132,10 +130,10 @@ export function MapPack({ className = "" }: { className?: string }) {
                 type="button"
                 onClick={() => pick(opt.value)}
                 aria-pressed={after === opt.value}
-                className={`rounded-full border px-2.5 py-1 font-mono text-[12px] transition-colors ${
+                className={`pressable rounded-full px-2.5 py-1 text-[12px] font-medium transition-colors ${
                   after === opt.value
-                    ? "border-rule bg-ink text-paper-2"
-                    : "border-rule text-muted hover:border-rule hover:text-ink"
+                    ? "bg-ink text-white"
+                    : "text-muted hover:text-ink"
                 }`}
               >
                 {opt.label}
@@ -145,7 +143,7 @@ export function MapPack({ className = "" }: { className?: string }) {
         </div>
       </WindowCard>
 
-      <p className="mt-2.5 px-1 font-mono text-[12px] leading-relaxed text-muted">
+      <p className="mt-2.5 px-1 text-[13px] leading-relaxed text-muted">
         {MAP_PACK.note}
       </p>
     </div>

@@ -55,7 +55,7 @@ export default function AboutPage() {
   if (data === undefined) {
     return (
       <main className="grid min-h-screen place-items-center px-6">
-        <p className="font-mono text-[12px] text-muted">loading…</p>
+        <p className="text-[13px] text-muted">loading…</p>
       </main>
     );
   }
@@ -115,7 +115,7 @@ export default function AboutPage() {
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
       <Steps current={3} />
 
-      <div className="mt-7 grid grid-cols-2 border-b border-rule">
+      <div className="mt-7 grid grid-cols-2 gap-1 rounded-full bg-paper-3 p-1">
         {(["offerings", "specialties"] as const).map((t) => (
           <button
             key={t}
@@ -124,10 +124,8 @@ export default function AboutPage() {
               setTab(t);
               setDraft("");
             }}
-            className={`-mb-px border-b-2 pb-2.5 font-display text-[14px] font-semibold transition-colors ${
-              tab === t
-                ? "border-pin text-pin"
-                : "border-transparent text-muted hover:text-ink"
+            className={`rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${
+              tab === t ? "bg-white text-ink shadow-card" : "text-muted"
             }`}
           >
             {COPY[t].tab}
@@ -154,7 +152,7 @@ export default function AboutPage() {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder={copy.placeholder}
-            className="min-w-0 flex-1 rounded-[12px] border border-ink bg-paper-2 px-3.5 py-3 text-[15px] outline-none placeholder:text-muted/50"
+            className="min-w-0 flex-1 rounded-[12px] border border-rule bg-white px-4 py-3 text-[16px] outline-none placeholder:text-muted/60 focus:border-pin"
           />
           <button
             type="submit"
@@ -171,13 +169,13 @@ export default function AboutPage() {
             <ul className="mt-3 flex flex-wrap gap-2">
               {chosen.map((row) => (
                 <li key={row._id}>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-pin bg-pin-soft py-1.5 pl-3 pr-1.5 text-[13px]">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-pin-soft py-1.5 pl-3 pr-1.5 text-[13px] font-medium text-pin">
                     {row.label}
                     <button
                       type="button"
                       onClick={() => void remove({ kind: tab, id: row._id })}
                       aria-label={`remove ${row.label}`}
-                      className="grid h-4 w-4 place-items-center rounded-full text-pin hover:bg-pin hover:text-paper-2"
+                      className="grid h-4 w-4 place-items-center rounded-full text-pin hover:bg-pin hover:text-white"
                     >
                       ×
                     </button>
@@ -188,9 +186,9 @@ export default function AboutPage() {
           </>
         ) : null}
 
-        <div className="mt-8 rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]">
+        <div className="card mt-8 p-4">
           <div className="flex items-center justify-between gap-3">
-            <p className="flex items-center gap-1.5 font-display text-[14px] font-bold">
+            <p className="flex items-center gap-1.5 text-[15px] font-semibold text-ink">
               <span aria-hidden className="text-pin">
                 ✦
               </span>
@@ -200,7 +198,7 @@ export default function AboutPage() {
               type="button"
               onClick={() => void getSuggestions()}
               disabled={thinking}
-              className="flex-none font-mono text-[11px] underline underline-offset-4 hover:text-pin disabled:opacity-50"
+              className="flex-none text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
             >
               more
             </button>
@@ -223,7 +221,7 @@ export default function AboutPage() {
                   <button
                     type="button"
                     onClick={() => void addLabel(idea, "ai")}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-rule bg-paper py-1.5 pl-2.5 pr-3 text-[13px] transition-colors hover:border-ink"
+                    className="pressable inline-flex items-center gap-1.5 rounded-full bg-paper-2 py-1.5 pl-2.5 pr-3 text-[13px] transition-colors hover:bg-paper-3"
                   >
                     <span aria-hidden className="text-pin">
                       +
@@ -245,7 +243,7 @@ export default function AboutPage() {
         {error ? (
           <p
             role="alert"
-            className="mt-5 rounded-[12px] border border-pin bg-pin-soft px-4 py-3 text-[14px] leading-snug"
+            className="mt-5 rounded-[12px] bg-pin-soft px-4 py-3 text-[14px] leading-snug"
           >
             {error}
           </p>

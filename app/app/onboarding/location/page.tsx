@@ -59,7 +59,7 @@ export default function LocationPage() {
   if (business === undefined) {
     return (
       <main className="grid min-h-screen place-items-center px-6">
-        <p className="font-mono text-[12px] text-muted">loading…</p>
+        <p className="text-[13px] text-muted">loading…</p>
       </main>
     );
   }
@@ -172,7 +172,7 @@ export default function LocationPage() {
         {error ? (
           <p
             role="alert"
-            className="mt-5 rounded-[12px] border border-pin bg-pin-soft px-4 py-3 text-[14px] leading-snug"
+            className="mt-5 rounded-[12px] bg-pin-soft px-4 py-3 text-[14px] leading-snug"
           >
             {error}
           </p>
@@ -209,7 +209,7 @@ function Field({
 }) {
   const id = label.replace(/\s+/g, "-");
   const shared =
-    "mt-1.5 w-full rounded-[12px] border border-ink bg-paper-2 px-3.5 py-3 text-[15px] leading-snug outline-none placeholder:text-muted/50";
+    "mt-1.5 w-full rounded-[12px] border border-rule bg-white px-4 py-3 text-[16px] leading-snug outline-none placeholder:text-muted/60 focus:border-pin";
 
   return (
     <div>
@@ -236,7 +236,7 @@ function Field({
         />
       )}
       {hint ? (
-        <p className="mt-1 font-mono text-[10px] text-muted">{hint}</p>
+        <p className="mt-1 text-[12px] text-muted">{hint}</p>
       ) : null}
     </div>
   );

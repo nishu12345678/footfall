@@ -6,8 +6,8 @@
  */
 export function Working({ label }: { label: string }) {
   return (
-    <div className="rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]">
-      <p className="flex items-center gap-2 font-display text-[14px] font-bold">
+    <div className="card p-5">
+      <p className="flex items-center gap-2 font-display text-[14px] font-semibold">
         <span aria-hidden className="text-pin">
           ✦
         </span>
@@ -20,7 +20,7 @@ export function Working({ label }: { label: string }) {
       >
         <span className="sweep block h-full w-1/3 rounded-full bg-pin" />
       </div>
-      <p className="mt-2 font-mono text-[10px] text-muted">
+      <p className="caption mt-2">
         this takes a few seconds
       </p>
     </div>

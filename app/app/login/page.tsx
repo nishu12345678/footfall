@@ -126,11 +126,11 @@ export default function LoginPage() {
         <div className="text-center">
           <span
             aria-hidden
-            className="mx-auto grid h-12 w-12 place-items-center rounded-[14px] border border-ink bg-pin text-[20px] text-paper-2 shadow-[3px_3px_0_var(--color-ink)]"
+            className="mx-auto grid h-12 w-12 place-items-center rounded-[16px] bg-pin text-[20px] text-white shadow-lift"
           >
             ◎
           </span>
-          <h1 className="mt-5 font-display text-[2.4rem] font-bold tracking-tight">
+          <h1 className="mt-5 text-[2.4rem] font-bold tracking-tight">
             {BRAND.name}
           </h1>
           <p className="mt-2 text-[15px] text-ink-soft">
@@ -153,17 +153,15 @@ export default function LoginPage() {
             </button>
 
             <div className="my-6 flex items-center gap-3">
-              <span className="h-px flex-1 bg-rule" aria-hidden />
-              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-                or
-              </span>
-              <span className="h-px flex-1 bg-rule" aria-hidden />
+              <span className="h-px flex-1 bg-rule-soft" aria-hidden />
+              <span className="text-[12px] text-muted">or</span>
+              <span className="h-px flex-1 bg-rule-soft" aria-hidden />
             </div>
 
             <div
               role="group"
               aria-label="sign-in method"
-              className="mb-4 grid grid-cols-2 gap-1 rounded-full border border-ink bg-paper p-1"
+              className="mb-4 grid grid-cols-2 gap-1 rounded-full bg-paper-3 p-1"
             >
               {(["phone", "email"] as const).map((m) => (
                 <button
@@ -171,10 +169,8 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => reset(m)}
                   aria-pressed={method === m}
-                  className={`rounded-full px-4 py-1.5 font-display text-[13px] font-semibold transition-colors ${
-                    method === m
-                      ? "bg-ink text-paper-2"
-                      : "text-ink-soft hover:text-ink"
+                  className={`rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors ${
+                    method === m ? "bg-white text-ink shadow-card" : "text-muted"
                   }`}
                 >
                   {m === "phone" ? "mobile number" : "email"}
@@ -194,7 +190,7 @@ export default function LoginPage() {
                     mobile number
                   </label>
                   <div className="mt-2 flex gap-2">
-                    <span className="flex items-center gap-1.5 rounded-[12px] border border-ink bg-paper-2 px-3 font-mono text-[14px]">
+                    <span className="flex items-center gap-1.5 rounded-[12px] border border-rule bg-white px-3 text-[14px]">
                       <span aria-hidden>🇮🇳</span> +91
                     </span>
                     <input
@@ -206,7 +202,7 @@ export default function LoginPage() {
                       placeholder="93191 02143"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value.slice(0, 12))}
-                      className="min-w-0 flex-1 rounded-[12px] border border-ink bg-paper-2 px-4 py-3.5 font-mono text-[16px] tracking-wide outline-none placeholder:text-muted/60"
+                      className="min-w-0 flex-1 rounded-[12px] border border-rule bg-white px-4 py-3.5 text-[16px] outline-none placeholder:text-muted/60 focus:border-pin"
                     />
                   </div>
                 </>
@@ -224,7 +220,7 @@ export default function LoginPage() {
                     placeholder="you@shopname.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="mt-2 w-full rounded-[12px] border border-ink bg-paper-2 px-4 py-3.5 text-[16px] outline-none placeholder:text-muted/60"
+                    className="mt-2 w-full rounded-[12px] border border-rule bg-white px-4 py-3.5 text-[16px] outline-none placeholder:text-muted/60 focus:border-pin"
                   />
                 </>
               )}
@@ -261,7 +257,7 @@ export default function LoginPage() {
               onChange={(e) =>
                 setCode(e.target.value.replace(/\D/g, "").slice(0, expectedLength))
               }
-              className="mt-2 w-full rounded-[12px] border border-ink bg-paper-2 px-4 py-3.5 text-center font-mono text-[26px] tracking-[0.4em] outline-none placeholder:text-muted/40"
+              className="mt-2 w-full rounded-[12px] border border-rule bg-white px-4 py-3.5 text-center font-mono text-[26px] tracking-[0.4em] outline-none placeholder:text-muted/40 focus:border-pin"
             />
 
             <button
@@ -276,7 +272,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => reset(method)}
-                className="text-ink-soft underline underline-offset-4 hover:text-pin"
+                className="font-medium text-pin hover:opacity-80"
               >
                 {method === "phone" ? "change number" : "change email"}
               </button>
@@ -284,7 +280,7 @@ export default function LoginPage() {
                 type="button"
                 disabled={secondsLeft > 0 || busy !== null}
                 onClick={() => void sendCode()}
-                className="text-ink-soft underline underline-offset-4 hover:text-pin disabled:no-underline disabled:opacity-50"
+                className="font-medium text-pin hover:opacity-80 disabled:opacity-50"
               >
                 {secondsLeft > 0 ? `resend in ${secondsLeft}s` : "resend code"}
               </button>
@@ -295,7 +291,7 @@ export default function LoginPage() {
         {error ? (
           <p
             role="alert"
-            className="mt-5 rounded-[12px] border border-pin bg-pin-soft px-4 py-3 text-[14px] leading-snug text-ink"
+            className="mt-5 rounded-[12px] bg-pin-soft px-4 py-3 text-[14px] leading-snug text-ink"
           >
             {error}
             {detail ? (
@@ -307,7 +303,7 @@ export default function LoginPage() {
         ) : null}
       </div>
 
-      <p className="text-center font-mono text-[11px] leading-relaxed text-muted">
+      <p className="text-center text-[12px] leading-relaxed text-muted">
         no password. we only use this to sign you in.
       </p>
     </main>

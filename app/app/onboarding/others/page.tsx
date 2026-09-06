@@ -26,7 +26,7 @@ export default function OthersPage() {
   if (data === undefined) {
     return (
       <main className="grid min-h-screen place-items-center px-6">
-        <p className="font-mono text-[12px] text-muted">loading…</p>
+        <p className="text-[13px] text-muted">loading…</p>
       </main>
     );
   }
@@ -134,9 +134,9 @@ export default function OthersPage() {
         />
 
         {business.website ? (
-          <div className="mt-6 rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]">
+          <div className="card mt-6 p-4">
             <div className="flex items-center justify-between gap-3">
-              <p className="flex items-center gap-1.5 font-display text-[14px] font-bold">
+              <p className="flex items-center gap-1.5 text-[15px] font-semibold text-ink">
                 <span aria-hidden className="text-pin">
                   ✦
                 </span>
@@ -146,7 +146,7 @@ export default function OthersPage() {
                 type="button"
                 onClick={() => void findFromWebsite()}
                 disabled={finding || uploading}
-                className="font-mono text-[11px] underline underline-offset-4 hover:text-pin disabled:opacity-50"
+                className="text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
               >
                 {finding ? "looking…" : candidates ? "look again" : "find my logo"}
               </button>
@@ -161,7 +161,7 @@ export default function OthersPage() {
                         type="button"
                         onClick={() => void pickCandidate(src)}
                         disabled={uploading}
-                        className="grid aspect-square w-full place-items-center rounded-[10px] border border-rule bg-white p-1.5 transition-colors hover:border-ink disabled:opacity-50"
+                        className="pressable grid aspect-square w-full place-items-center rounded-[12px] bg-paper-2 p-1.5 transition-colors hover:bg-paper-3 disabled:opacity-50"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -173,7 +173,7 @@ export default function OthersPage() {
                     </li>
                   ))}
                 </ul>
-                <p className="mt-2 font-mono text-[10px] leading-relaxed text-muted">
+                <p className="mt-2 text-[12px] leading-relaxed text-muted">
                   tap the one that&rsquo;s yours. some of these will be the
                   website builder&rsquo;s logo, not yours — ignore those.
                 </p>
@@ -196,12 +196,12 @@ export default function OthersPage() {
                   type="button"
                   onClick={() => void setBackground({ background: bg })}
                   aria-pressed={background === bg}
-                  className={`rounded-[14px] border-2 p-3 transition-colors ${
-                    background === bg ? "border-pin" : "border-rule"
+                  className={`pressable rounded-[14px] p-3 transition-colors ${
+                    background === bg ? "bg-pin-soft" : "bg-paper-2"
                   }`}
                 >
                   <span
-                    className={`grid h-20 w-full place-items-center rounded-[10px] border border-ink ${
+                    className={`grid h-20 w-full place-items-center rounded-[10px] shadow-card ${
                       bg === "black" ? "bg-ink" : "bg-white"
                     }`}
                   >
@@ -212,7 +212,11 @@ export default function OthersPage() {
                       className="max-h-14 max-w-[70%] object-contain"
                     />
                   </span>
-                  <span className="mt-2 block text-center font-mono text-[11px] text-muted">
+                  <span
+                    className={`mt-2 block text-center text-[12px] font-medium ${
+                      background === bg ? "text-pin" : "text-muted"
+                    }`}
+                  >
                     {bg} background
                   </span>
                 </button>
@@ -223,17 +227,17 @@ export default function OthersPage() {
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="mt-3 font-mono text-[11px] underline underline-offset-4 hover:text-pin"
+              className="mt-3 text-[13px] font-medium text-pin hover:opacity-80"
             >
               {uploading ? "uploading…" : "replace logo"}
             </button>
 
             <p className="eyebrow mt-8">preview</p>
-            <p className="mt-1 font-mono text-[10px] text-muted">
+            <p className="mt-1 text-[11px] text-muted">
               * image is for representation only
             </p>
 
-            <div className="mt-3 overflow-hidden rounded-[14px] border border-ink shadow-[3px_4px_0_var(--color-ink)]">
+            <div className="window mt-3">
               <div className="relative aspect-[4/3] bg-gradient-to-br from-paper-3 via-paper-2 to-paper">
                 <span
                   aria-hidden
@@ -245,11 +249,11 @@ export default function OthersPage() {
                 />
 
                 <div className="absolute inset-0 flex flex-col justify-center px-6">
-                  <p className="font-display text-[22px] font-bold leading-tight text-ink">
+                  <p className="text-[22px] font-bold leading-tight tracking-[-0.02em] text-ink">
                     {business.orgName}
                   </p>
                   {headline ? (
-                    <p className="mt-1 font-display text-[15px] italic text-open">
+                    <p className="mt-1 text-[15px] italic text-open-deep">
                       {headline}
                     </p>
                   ) : null}
@@ -262,7 +266,7 @@ export default function OthersPage() {
                 </div>
 
                 <span
-                  className={`absolute right-3 top-3 grid h-12 w-12 place-items-center rounded-[10px] border border-ink ${
+                  className={`absolute right-3 top-3 grid h-12 w-12 place-items-center rounded-[10px] shadow-card ${
                     background === "black" ? "bg-ink" : "bg-white"
                   }`}
                 >
@@ -281,15 +285,15 @@ export default function OthersPage() {
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="mt-4 flex w-full flex-col items-center gap-2 rounded-[14px] border-2 border-dashed border-rule bg-paper-2 px-6 py-10 transition-colors hover:border-ink disabled:opacity-50"
+            className="pressable mt-4 flex w-full flex-col items-center gap-2 rounded-[18px] bg-paper-2 px-6 py-10 transition-colors hover:bg-paper-3 disabled:opacity-50"
           >
             <span aria-hidden className="text-[24px]">
               ⬆
             </span>
-            <span className="font-display text-[15px] font-semibold">
+            <span className="text-[15px] font-semibold">
               {uploading ? "uploading…" : "upload your logo"}
             </span>
-            <span className="font-mono text-[10px] text-muted">
+            <span className="text-[12px] text-muted">
               png or jpg · square works best
             </span>
           </button>
@@ -298,7 +302,7 @@ export default function OthersPage() {
         {error ? (
           <p
             role="alert"
-            className="mt-5 rounded-[12px] border border-pin bg-pin-soft px-4 py-3 text-[14px] leading-snug"
+            className="mt-5 rounded-[12px] bg-pin-soft px-4 py-3 text-[14px] leading-snug"
           >
             {error}
           </p>

@@ -61,7 +61,7 @@ export default function WebsiteStepPage() {
   if (data === undefined) {
     return (
       <main className="grid min-h-screen place-items-center px-6">
-        <p className="font-mono text-[12px] text-muted">loading…</p>
+        <p className="text-[13px] text-muted">loading…</p>
       </main>
     );
   }
@@ -108,12 +108,12 @@ export default function WebsiteStepPage() {
           {audit ? (
             <>
               <div className="mt-6 flex items-baseline justify-between gap-3">
-                <h2 className="font-display text-[15px] font-bold">
+                <h2 className="text-[15px] font-semibold text-ink">
                   {failed.length === 0
                     ? "Nothing missing"
                     : `${failed.length} thing${failed.length === 1 ? "" : "s"} to fix`}
                 </h2>
-                <span className="flex-none font-mono text-[10px] text-muted">
+                <span className="flex-none text-[12px] text-muted">
                   {passed.length}/{audit.checks.length} passing
                 </span>
               </div>
@@ -122,17 +122,15 @@ export default function WebsiteStepPage() {
                 {[...failed, ...passed].map((check, i) => (
                   <li
                     key={check.id}
-                    className={`rounded-[12px] border p-3 ${
-                      check.passed
-                        ? "border-rule bg-paper-2"
-                        : "border-pin bg-pin-soft"
+                    className={`rounded-[12px] p-3 ${
+                      check.passed ? "bg-paper-2" : "bg-pin-soft"
                     }`}
                   >
                     <div className="flex items-start gap-2.5">
                       <span
                         aria-hidden
-                        className={`mt-0.5 flex-none font-mono text-[12px] ${
-                          check.passed ? "text-open" : "text-pin"
+                        className={`mt-0.5 flex-none text-[13px] ${
+                          check.passed ? "text-open-deep" : "text-pin"
                         }`}
                       >
                         {check.passed ? "✓" : "✕"}
@@ -157,7 +155,7 @@ export default function WebsiteStepPage() {
           {error ? (
             <p
               role="alert"
-              className="mt-5 break-words rounded-[12px] border border-pin bg-pin-soft px-3.5 py-2.5 font-mono text-[12px] leading-snug"
+              className="mt-5 break-words rounded-[12px] bg-pin-soft px-3.5 py-2.5 text-[13px] leading-snug"
             >
               {error}
             </p>
@@ -194,18 +192,18 @@ export default function WebsiteStepPage() {
 
         {site && !building ? (
           <>
-            <div className="mt-6 overflow-hidden rounded-[14px] border border-ink shadow-[3px_4px_0_var(--color-ink)]">
-              <div className="flex items-center gap-2 border-b border-ink bg-paper-3 px-3 py-2">
-                <span className="h-2.5 w-2.5 rounded-full border border-ink bg-pin" />
-                <span className="h-2.5 w-2.5 rounded-full border border-ink bg-star" />
-                <span className="h-2.5 w-2.5 rounded-full border border-ink bg-open" />
-                <span className="truncate font-mono text-[10px] text-ink-soft">
+            <div className="window mt-6">
+              <div className="window-bar">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
+                <span className="truncate font-mono text-[11px] text-muted">
                   /s/{site.slug}
                 </span>
               </div>
 
-              <div className="bg-paper-2 p-4">
-                <p className="font-display text-[17px] font-bold leading-tight">
+              <div className="p-4">
+                <p className="text-[17px] font-semibold leading-tight">
                   {site.headline}
                 </p>
                 {site.subhead ? (
@@ -218,7 +216,7 @@ export default function WebsiteStepPage() {
                   {site.services.slice(0, 4).map((s) => (
                     <li
                       key={s.name}
-                      className="rounded-full border border-rule bg-paper px-2 py-0.5 text-[11px]"
+                      className="rounded-full bg-paper-2 px-2.5 py-0.5 text-[11px] font-medium text-ink-soft"
                     >
                       {s.name}
                     </li>
@@ -247,7 +245,7 @@ export default function WebsiteStepPage() {
                 type="button"
                 onClick={() => void build()}
                 disabled={building}
-                className="font-mono text-[11px] underline underline-offset-4 hover:text-pin disabled:opacity-50"
+                className="text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
               >
                 rewrite it
               </button>
@@ -268,7 +266,7 @@ export default function WebsiteStepPage() {
         {error ? (
           <p
             role="alert"
-            className="mt-5 break-words rounded-[12px] border border-pin bg-pin-soft px-3.5 py-2.5 font-mono text-[12px] leading-snug"
+            className="mt-5 break-words rounded-[12px] bg-pin-soft px-3.5 py-2.5 text-[13px] leading-snug"
           >
             {error}
           </p>

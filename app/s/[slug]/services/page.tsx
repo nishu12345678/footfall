@@ -62,7 +62,7 @@ export default async function ServicesPage({
       <SiteNav data={data} />
 
       <main className="mx-auto max-w-5xl px-5 pt-12 pb-10">
-        <nav aria-label="Breadcrumb" className="font-mono text-[11px] text-muted">
+        <nav aria-label="Breadcrumb" className="text-[12px] text-muted">
           <a href={base} className="hover:text-pin">
             Home
           </a>
@@ -89,7 +89,7 @@ export default async function ServicesPage({
             return (
               <li
                 key={service.name}
-                className="flex flex-col rounded-[14px] border border-ink bg-paper-2 p-5 shadow-[3px_4px_0_var(--color-ink)]"
+                className="flex flex-col rounded-[18px] bg-paper-2 p-6"
               >
                 <h2 className="text-[1.15rem]">{service.name}</h2>
                 <p className="mt-2 flex-1 text-[14px] leading-relaxed text-ink-soft">

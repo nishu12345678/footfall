@@ -15,7 +15,7 @@ export function Report() {
   return (
     <section
       id="report"
-      className="border-y border-rule bg-paper-2 px-5 py-20 sm:py-28"
+      className="bg-paper-2 px-5 py-20 sm:py-28"
     >
       <div className="mx-auto grid max-w-6xl items-start gap-12 lg:grid-cols-2 lg:gap-16">
         <Reveal>
@@ -32,7 +32,7 @@ export function Report() {
               <li key={step} className="flex items-center gap-3">
                 <span
                   aria-hidden
-                  className="grid h-8 w-8 flex-none place-items-center rounded-full bg-pin text-[15px] font-bold text-white"
+                  className="grid h-8 w-8 flex-none place-items-center rounded-full bg-pin-soft text-[15px] font-semibold text-pin"
                 >
                   {i + 1}
                 </span>
@@ -69,7 +69,7 @@ export function Report() {
                   <li key={check.label} className="flex items-start gap-3.5">
                     <span
                       aria-hidden
-                      className="grid h-10 w-10 flex-none place-items-center rounded-xl bg-paper-2 text-[20px]"
+                      className="grid h-10 w-10 flex-none place-items-center rounded-[12px] bg-paper-2 text-[20px]"
                     >
                       {check.icon}
                     </span>
@@ -88,7 +88,7 @@ export function Report() {
           </Reveal>
 
           <Reveal delay={160}>
-            <div className="flex flex-col gap-2 rounded-[16px] border border-rule bg-white p-5 shadow-card sm:flex-row sm:items-center sm:justify-between">
+            <div className="card flex flex-col gap-2 p-5 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-[16px] font-bold text-open">
                 {REPORT.freeLine}
               </p>

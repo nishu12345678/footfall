@@ -61,6 +61,7 @@ export default async function SiteHome({
   );
   const directions = directionsLink(business);
   const withText = reviews.filter((r) => r.comment);
+  const todayIdx = (new Date().getDay() + 6) % 7;
 
   return (
     <>
@@ -134,7 +135,7 @@ export default async function SiteHome({
               <img
                 src={photos[0].url}
                 alt={`${business.orgName}`}
-                className="aspect-[4/3] w-full rounded-[16px] border border-ink object-cover shadow-[4px_5px_0_var(--color-ink)]"
+                className="aspect-[4/3] w-full rounded-[18px] object-cover shadow-lift"
               />
             ) : null}
           </div>
@@ -156,7 +157,7 @@ export default async function SiteHome({
                 return (
                   <li
                     key={service.name}
-                    className="flex flex-col rounded-[14px] border border-ink bg-paper-2 p-5 shadow-[3px_4px_0_var(--color-ink)]"
+                    className="flex flex-col rounded-[18px] bg-paper-2 p-6"
                   >
                     <h3 className="text-[1.15rem]">{service.name}</h3>
                     <p className="mt-2 flex-1 text-[14px] leading-relaxed text-ink-soft">
@@ -193,7 +194,7 @@ export default async function SiteHome({
                       src={photo.url}
                       alt={photo.caption ?? `${business.orgName} photo ${i + 1}`}
                       loading="lazy"
-                      className="aspect-square w-full rounded-[10px] border border-rule object-cover"
+                      className="aspect-square w-full rounded-[14px] object-cover shadow-card"
                     />
                   </li>
                 ) : null,
@@ -214,7 +215,7 @@ export default async function SiteHome({
                   href={business.reviewUri}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-[14px] underline underline-offset-4 hover:text-pin"
+                  className="text-[14px] font-medium text-pin hover:underline"
                 >
                   Leave a review
                 </a>
@@ -225,7 +226,7 @@ export default async function SiteHome({
               {withText.slice(0, 6).map((review) => (
                 <li
                   key={review._id}
-                  className="rounded-[14px] border border-rule bg-paper-2 p-5"
+                  className="rounded-[18px] bg-paper-2 p-6"
                 >
                   <p className="text-star" aria-label={`${review.rating} out of 5`}>
                     {"★".repeat(review.rating)}
@@ -236,7 +237,7 @@ export default async function SiteHome({
                   <p className="mt-2.5 text-[14px] leading-relaxed text-ink-soft">
                     {review.comment}
                   </p>
-                  <p className="mt-3 font-mono text-[11px] text-muted">
+                  <p className="mt-3 text-[13px] font-medium text-muted">
                     {review.authorName ?? "A customer"} ·{" "}
                     {new Date(review.createdAt).toLocaleDateString("en-IN", {
                       month: "short",
@@ -256,14 +257,16 @@ export default async function SiteHome({
               {hours.length ? (
                 <div>
                   <h2 className="text-[1.5rem]">Opening hours</h2>
-                  <ul className="mt-4 divide-y divide-rule-soft border-y border-rule">
+                  <ul className="mt-4 divide-y divide-black/8">
                     {hours.map((h) => (
                       <li
                         key={h.day}
-                        className="flex items-center justify-between gap-3 py-2.5 text-[15px]"
+                        className={`flex items-center justify-between gap-3 py-2.5 text-[15px]${h.day === todayIdx ? " font-semibold text-open-deep" : ""}`}
                       >
                         <span className="font-semibold">{DAYS[h.day]}</span>
-                        <span className="font-mono text-[13px] text-ink-soft">
+                        <span
+                          className={`text-[14px]${h.day === todayIdx ? " font-semibold text-open-deep" : " text-ink-soft"}`}
+                        >
                           {h.closed ? "Closed" : `${h.open} – ${h.close}`}
                         </span>
                       </li>
@@ -277,10 +280,7 @@ export default async function SiteHome({
                   <h2 className="text-[1.5rem]">Areas we serve</h2>
                   <ul className="mt-4 flex flex-wrap gap-2">
                     {areas.slice(0, 14).map((area) => (
-                      <li
-                        key={area}
-                        className="rounded-full border border-rule bg-paper-2 px-3 py-1.5 text-[13px]"
-                      >
+                      <li key={area} className="chip">
                         {area}
                       </li>
                     ))}
@@ -307,7 +307,7 @@ export default async function SiteHome({
             <h2 className="text-[clamp(1.6rem,4.5vw,2.4rem)]">
               Questions we get asked
             </h2>
-            <div className="mt-6 divide-y divide-rule border-y border-rule">
+            <div className="mt-6 divide-y divide-black/8">
               {site.faqs.map((faq) => (
                 <details key={faq.q} className="group py-1">
                   <summary className="flex cursor-pointer list-none items-start gap-3 py-4 [&::-webkit-details-marker]:hidden">
@@ -316,7 +316,7 @@ export default async function SiteHome({
                     </h3>
                     <span
                       aria-hidden
-                      className="mt-0.5 font-mono text-pin transition-transform group-open:rotate-45"
+                      className="mt-0.5 text-[17px] font-medium text-pin transition-transform group-open:rotate-45"
                     >
                       +
                     </span>

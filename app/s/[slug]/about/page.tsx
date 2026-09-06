@@ -56,7 +56,7 @@ export default async function AboutPage({
       <SiteNav data={data} />
 
       <main className="mx-auto max-w-5xl px-5 pt-12 pb-10">
-        <nav aria-label="Breadcrumb" className="font-mono text-[11px] text-muted">
+        <nav aria-label="Breadcrumb" className="text-[12px] text-muted">
           <a href={base} className="hover:text-pin">
             Home
           </a>
@@ -74,8 +74,8 @@ export default async function AboutPage({
         {/* Only real, checkable numbers go here. */}
         <ul className="mt-8 grid gap-3 sm:grid-cols-3">
           {rating !== null ? (
-            <li className="rounded-[14px] border border-ink bg-paper-2 p-5 text-center shadow-[3px_4px_0_var(--color-ink)]">
-              <p className="font-display text-[2rem] font-bold leading-none">
+            <li className="rounded-[18px] bg-paper-2 p-6 text-center">
+              <p className="text-[28px] font-semibold leading-none tracking-[-0.02em]">
                 {rating}
                 <span className="text-star"> ★</span>
               </p>
@@ -85,16 +85,16 @@ export default async function AboutPage({
             </li>
           ) : null}
           {site.services.length ? (
-            <li className="rounded-[14px] border border-ink bg-paper-2 p-5 text-center shadow-[3px_4px_0_var(--color-ink)]">
-              <p className="font-display text-[2rem] font-bold leading-none">
+            <li className="rounded-[18px] bg-paper-2 p-6 text-center">
+              <p className="text-[28px] font-semibold leading-none tracking-[-0.02em]">
                 {site.services.length}
               </p>
               <p className="mt-1 text-[13px] text-muted">services offered</p>
             </li>
           ) : null}
           {areas.length ? (
-            <li className="rounded-[14px] border border-ink bg-paper-2 p-5 text-center shadow-[3px_4px_0_var(--color-ink)]">
-              <p className="font-display text-[2rem] font-bold leading-none">
+            <li className="rounded-[18px] bg-paper-2 p-6 text-center">
+              <p className="text-[28px] font-semibold leading-none tracking-[-0.02em]">
                 {areas.length}
               </p>
               <p className="mt-1 text-[13px] text-muted">areas served</p>
@@ -114,7 +114,7 @@ export default async function AboutPage({
                       src={photo.url}
                       alt={photo.caption ?? `${business.orgName} photo ${i + 1}`}
                       loading="lazy"
-                      className="aspect-square w-full rounded-[10px] border border-rule object-cover"
+                      className="aspect-square w-full rounded-[14px] object-cover shadow-card"
                     />
                   </li>
                 ) : null,

@@ -10,7 +10,7 @@ import { SectionHead } from "./window-card";
  */
 export function TrustBar() {
   return (
-    <section className="border-y border-rule bg-paper-2 px-5 py-6">
+    <section className="bg-paper-2 px-5 py-6">
       <ul className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-8 gap-y-3">
         {TRUST.map((item) => (
           <li
@@ -58,7 +58,7 @@ export function Trades() {
               <li className="card flex h-full items-start gap-4 p-5 transition-shadow hover:shadow-lift">
                 <span
                   aria-hidden
-                  className="grid h-12 w-12 flex-none place-items-center rounded-xl bg-paper-2 text-[24px]"
+                  className="grid h-12 w-12 flex-none place-items-center rounded-[12px] bg-paper-2 text-[24px]"
                 >
                   {trade.icon}
                 </span>

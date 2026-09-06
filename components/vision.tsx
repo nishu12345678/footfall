@@ -4,13 +4,10 @@ import { WindowCard } from "./window-card";
 
 export function Vision() {
   return (
-    <section className="border-y border-rule bg-paper-2 px-5 py-20 sm:py-28">
+    <section className="bg-paper-2 px-5 py-20 sm:py-28">
       <div className="mx-auto grid max-w-6xl gap-14 lg:grid-cols-2 lg:gap-16">
         <Reveal>
-          <p className="eyebrow">
-            <span className="inline-block h-px w-6 bg-rule" aria-hidden />
-            {VISION.eyebrow}
-          </p>
+          <p className="eyebrow">{VISION.eyebrow}</p>
           <h2 className="mt-4 text-[clamp(2rem,5.4vw,3.4rem)]">
             {VISION.heading}
           </h2>
@@ -21,7 +18,7 @@ export function Vision() {
             ))}
           </div>
 
-          <p className="mt-6 border-l-2 border-pin pl-4 text-[17px] leading-relaxed text-ink">
+          <p className="mt-6 rounded-[12px] bg-pin-soft p-4 text-[17px] leading-relaxed text-ink">
             {VISION.kicker}
           </p>
 
@@ -32,12 +29,12 @@ export function Vision() {
               <img
                 src={FOUNDER.photo}
                 alt={FOUNDER.name}
-                className="h-11 w-11 rounded-full border border-rule object-cover"
+                className="h-11 w-11 rounded-full object-cover shadow-card"
               />
             ) : (
               <span
                 aria-hidden
-                className="grid h-11 w-11 place-items-center rounded-full border border-rule bg-star/25 font-display text-[19px] font-bold"
+                className="grid h-11 w-11 place-items-center rounded-full bg-star/20 font-display text-[19px] font-bold"
               >
                 {FOUNDER.initial}
               </span>
@@ -48,7 +45,7 @@ export function Vision() {
               </span>
               <a
                 href={FOUNDER.href}
-                className="font-mono text-[13px] text-muted underline underline-offset-4 hover:text-pin"
+                className="text-[13px] font-medium text-pin hover:underline"
               >
                 {FOUNDER.handle}
               </a>
@@ -59,7 +56,7 @@ export function Vision() {
         {/* the argument, as two windows side by side */}
         <div className="grid content-start gap-5 sm:grid-cols-2 lg:mt-16">
           <Reveal delay={80}>
-            <WindowCard title="Agency report · this month" className="sm:-rotate-1">
+            <WindowCard title="Agency report · this month">
               <div className="p-4">
                 <dl className="space-y-2.5">
                   {[
@@ -69,15 +66,15 @@ export function Vision() {
                     ["You paid", "₹12,000"],
                   ].map(([k, v]) => (
                     <div key={k} className="flex items-baseline justify-between gap-3">
-                      <dt className="font-mono text-[13px] text-muted">{k}</dt>
-                      <dd className="font-display text-[17px] font-bold">{v}</dd>
+                      <dt className="text-[13px] font-medium text-muted">{k}</dt>
+                      <dd className="font-display text-[17px] font-semibold">{v}</dd>
                     </div>
                   ))}
-                  <div className="flex items-baseline justify-between gap-3 border-t border-rule-soft pt-2.5">
-                    <dt className="font-mono text-[13px] text-pin">
+                  <div className="flex items-baseline justify-between gap-3 border-t border-black/10 pt-2.5">
+                    <dt className="text-[13px] font-medium text-pin">
                       People who walked in
                     </dt>
-                    <dd className="font-display text-[17px] font-bold text-pin">
+                    <dd className="font-display text-[17px] font-semibold text-pin">
                       Unknown
                     </dd>
                   </div>
@@ -87,7 +84,7 @@ export function Vision() {
           </Reveal>
 
           <Reveal delay={160}>
-            <WindowCard title="Your Google listing · right now" className="sm:mt-8 sm:rotate-1">
+            <WindowCard title="Your Google listing · right now" className="sm:mt-8">
               <div className="p-4">
                 <ul className="space-y-2.5">
                   {[
@@ -101,14 +98,14 @@ export function Vision() {
                       key={line}
                       className="flex items-start gap-2 text-[15px] leading-snug text-ink-soft"
                     >
-                      <span className="mt-0.5 flex-none font-mono text-[13px] text-pin" aria-hidden>
+                      <span className="mt-0.5 flex-none text-[13px] font-medium text-pin" aria-hidden>
                         ✕
                       </span>
                       {line}
                     </li>
                   ))}
                 </ul>
-                <p className="mt-3 border-t border-rule-soft pt-2.5 font-mono text-[12px] text-muted">
+                <p className="caption mt-3 border-t border-black/10 pt-2.5">
                   This is the screen people actually search
                 </p>
               </div>

@@ -1,54 +1,62 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------
-   footfall — design tokens
+   footfall — Apple-style design system
 
-   Built for the person this is actually for: a salon owner, a
-   dentist, a sari shop, a kirana, reading it on a phone with the
-   shop open around them. That means high contrast, big type,
-   plain white paper, and nothing clever.
+   Light, quiet, precise. The palette is Apple's: near-black ink
+   (#1d1d1f) on white and #f5f5f7, one confident blue for actions,
+   iOS green for WhatsApp/live, iOS orange for stars. Depth comes
+   from translucent materials and soft ambient shadows, never from
+   hard borders. Type is the platform's own (SF on Apple devices),
+   with size-specific tracking: tight when large, neutral in body.
 
-   Blue carries the brand, green carries every action (the colour
-   of the WhatsApp button they already tap fifty times a day),
-   amber is reserved for review stars.
+   Motion: springs in spirit — fast response, settle without
+   overshoot, interruptible, honest to reduced-motion.
    --------------------------------------------------------------- */
 
 @theme {
   --color-paper: #ffffff;
-  --color-paper-2: #f5f8fd;
-  --color-paper-3: #edf2f9;
-  --color-ink: #0f172a;
-  --color-ink-soft: #475569;
-  --color-muted: #6b7a90;
-  --color-rule: #e2e8f0;
-  --color-rule-soft: #eef2f7;
+  --color-paper-2: #f5f5f7;
+  --color-paper-3: #e8e8ed;
+  --color-ink: #1d1d1f;
+  --color-ink-soft: #515154;
+  --color-muted: #86868b;
+  --color-rule: #d2d2d7;
+  --color-rule-soft: #e8e8ed;
 
-  --color-pin: #2f5bea;
-  --color-pin-soft: #eaefff;
-  --color-open: #17a34a;
-  --color-open-soft: #e7f7ed;
-  --color-star: #f59e0b;
-  --color-chat: #17a34a;
+  --color-pin: #0071e3;
+  --color-pin-soft: #eaf3ff;
+  --color-open: #34c759;
+  --color-open-deep: #248a3d;
+  --color-open-soft: #e9f9ee;
+  --color-star: #ff9f0a;
+  --color-chat: #34c759;
 
-  /* One family, the whole way down. Inter is the most legible thing
-     going at small sizes on a cheap Android screen, which is what
-     this is read on. */
-  --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /* The platform's own face — SF on Apple hardware, the best
+     native grotesk everywhere else. It ships optical sizing and
+     tracking tables no webfont matches. */
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+    "SF Pro Text", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
+    monospace;
 
-  --radius-window: 16px;
+  --radius-window: 18px;
 
-  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.05),
-    0 10px 30px -14px rgb(16 24 40 / 0.14);
-  --shadow-lift: 0 2px 6px rgb(16 24 40 / 0.06),
-    0 20px 44px -18px rgb(16 24 40 / 0.22);
+  /* Ambient, diffuse, no hard edge — depth like a sheet of glass
+     resting above the page, not a box drawn around content. */
+  --shadow-card: 0 0 0 0.5px rgb(0 0 0 / 0.04),
+    0 2px 8px rgb(0 0 0 / 0.04), 0 12px 32px -12px rgb(0 0 0 / 0.1);
+  --shadow-lift: 0 0 0 0.5px rgb(0 0 0 / 0.04),
+    0 4px 16px rgb(0 0 0 / 0.08), 0 24px 60px -20px rgb(0 0 0 / 0.2);
 }
 
 /* --------------------------------- base --------------------------------- */
 
 * {
-  border-color: var(--color-rule);
+  border-color: var(--color-rule-soft);
 }
 
 html {
@@ -60,51 +68,99 @@ body {
   background-color: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-body);
-  /* Larger than a typical SaaS base. The reader is often over forty
-     and holding the phone at arm's length. */
+  /* 17px — the iOS body size. Comfortable at arm's length. */
   font-size: 17px;
-  line-height: 1.6;
+  line-height: 1.47;
   overflow-x: hidden;
+  font-synthesis-weight: none;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Sentence case, set tight and heavy. No all-lowercase styling —
-   it reads as a design-studio affectation to this audience, and it
-   makes Hindi-English mixed text harder to scan. */
+/* Large text tightens as it grows — SF Display behaviour. Weight
+   does the emphasis; size and leading move together. */
 h1,
 h2,
 h3,
 h4 {
   font-family: var(--font-display);
   font-weight: 700;
-  letter-spacing: -0.022em;
-  line-height: 1.12;
+  letter-spacing: -0.016em;
+  line-height: 1.14;
   text-wrap: balance;
+  font-optical-sizing: auto;
 }
 
 h1 {
-  letter-spacing: -0.032em;
-  line-height: 1.06;
+  letter-spacing: -0.028em;
+  line-height: 1.05;
+}
+
+h2 {
+  letter-spacing: -0.022em;
+  line-height: 1.08;
 }
 
 ::selection {
-  background: var(--color-pin);
-  color: #fff;
+  background: rgb(0 113 227 / 0.22);
+  color: inherit;
 }
 
 :focus-visible {
-  outline: 3px solid var(--color-pin);
+  outline: 3px solid rgb(0 113 227 / 0.55);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
-/* ------------------------------- surfaces -------------------------------
-   Was a mac-window frame with traffic lights. That is a developer's
-   visual joke; it means nothing to a shop owner. Now it is just a
-   clean card with a labelled header, like every app they already use. */
+/* ------------------------------- materials ------------------------------
+   Translucency is the structure: chrome floats above content as a
+   blurred material, content scrolls underneath. Bigger surfaces
+   read thicker (more blur, deeper shadow). */
+
+.material {
+  background: rgb(255 255 255 / 0.72);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+}
+
+.material-thick {
+  background: rgb(255 255 255 / 0.82);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  box-shadow: var(--shadow-card);
+}
+
+/* Hairline instead of a 1px border — the light catching an edge. */
+.hairline-b {
+  box-shadow: inset 0 -0.5px 0 rgb(0 0 0 / 0.12);
+}
+
+.hairline-t {
+  box-shadow: inset 0 0.5px 0 rgb(0 0 0 / 0.12);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .material,
+  .material-thick {
+    background: rgb(255 255 255 / 0.97);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .material,
+  .material-thick {
+    background: #ffffff;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-bottom: 1px solid var(--color-rule);
+  }
+}
+
+/* ------------------------------- surfaces ------------------------------- */
 
 .window {
   background: var(--color-paper);
-  border: 1px solid var(--color-rule);
   border-radius: var(--radius-window);
   box-shadow: var(--shadow-card);
   overflow: hidden;
@@ -114,15 +170,17 @@ h1 {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--color-rule-soft);
-  background: var(--color-paper-2);
+  padding: 12px 16px;
+  box-shadow: inset 0 -0.5px 0 rgb(0 0 0 / 0.08);
+  background: rgb(245 245 247 / 0.72);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
 }
 
 .window-title {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.006em;
   color: var(--color-ink-soft);
   white-space: nowrap;
   overflow: hidden;
@@ -131,94 +189,130 @@ h1 {
 
 .card {
   background: var(--color-paper);
-  border: 1px solid var(--color-rule);
   border-radius: var(--radius-window);
   box-shadow: var(--shadow-card);
 }
 
+/* A quiet grouped-list row, like iOS Settings. */
+.inset-group {
+  background: var(--color-paper);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.inset-row + .inset-row {
+  box-shadow: inset 0 0.5px 0 rgb(0 0 0 / 0.08);
+}
+
 /* ------------------------------- controls -------------------------------
-   Big enough to hit with a thumb without looking. 48px minimum height
-   is the whole reason these are sized the way they are. */
+   Pills, like every Apple call-to-action. Instant press feedback on
+   pointer-down; the transform springs back on release. 48px+ tap
+   targets throughout. */
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
+  gap: 8px;
   min-height: 50px;
-  border-radius: 10px;
+  border-radius: 980px;
   border: 1px solid transparent;
-  padding: 13px 26px;
+  padding: 13px 28px;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 16px;
-  letter-spacing: -0.01em;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease,
-    transform 0.1s ease, border-color 0.15s ease;
+  font-size: 17px;
+  letter-spacing: -0.014em;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.32s cubic-bezier(0.25, 1, 0.4, 1),
+    background-color 0.18s ease,
+    box-shadow 0.25s cubic-bezier(0.25, 1, 0.4, 1),
+    border-color 0.18s ease,
+    color 0.18s ease,
+    filter 0.18s ease;
+  will-change: transform;
 }
 
+/* Feedback lives on the press, and it is instant. */
 .btn:active {
-  transform: translateY(1px);
+  transform: scale(0.96);
+  transition-duration: 0.06s;
 }
 
 .btn-primary {
   background: var(--color-pin);
-  border-color: var(--color-pin);
   color: #fff;
-  box-shadow: 0 1px 2px rgb(47 91 234 / 0.2),
-    0 10px 22px -10px rgb(47 91 234 / 0.55);
+  box-shadow: 0 1px 2.5px rgb(0 113 227 / 0.25),
+    0 10px 24px -10px rgb(0 113 227 / 0.5);
 }
 
 .btn-primary:hover {
-  background: #2449c9;
-  border-color: #2449c9;
+  background: #0077ed;
+}
+
+.btn-primary:active {
+  background: #006edb;
 }
 
 /* The green one is the low-friction action — WhatsApp, "talk to a
-   person". Green because that is the colour of the button they
-   already trust. */
+   person". iOS system green: the colour of the button they already
+   trust. */
 .btn-whatsapp {
   background: var(--color-open);
-  border-color: var(--color-open);
   color: #fff;
-  box-shadow: 0 1px 2px rgb(23 163 74 / 0.2),
-    0 10px 22px -10px rgb(23 163 74 / 0.5);
+  box-shadow: 0 1px 2.5px rgb(52 199 89 / 0.3),
+    0 10px 24px -10px rgb(52 199 89 / 0.5);
 }
 
 .btn-whatsapp:hover {
-  background: #128a3e;
-  border-color: #128a3e;
+  background: #30bd53;
+}
+
+.btn-whatsapp:active {
+  background: #2cae4d;
 }
 
 .btn-ghost {
-  background: var(--color-paper);
-  border-color: var(--color-rule);
+  background: rgb(0 0 0 / 0.05);
   color: var(--color-ink);
-  box-shadow: var(--shadow-card);
 }
 
 .btn-ghost:hover {
-  border-color: var(--color-pin);
-  color: var(--color-pin);
+  background: rgb(0 0 0 / 0.08);
 }
 
 .btn-sm {
-  min-height: 42px;
-  padding: 10px 18px;
+  min-height: 40px;
+  padding: 9px 18px;
   font-size: 15px;
-  border-radius: 9px;
+}
+
+/* Generic pressable — cards and rows that respond like objects. */
+.pressable {
+  transition: transform 0.32s cubic-bezier(0.25, 1, 0.4, 1),
+    box-shadow 0.32s cubic-bezier(0.25, 1, 0.4, 1);
+  will-change: transform;
+}
+
+.pressable:active {
+  transform: scale(0.98);
+  transition-duration: 0.06s;
 }
 
 /* -------------------------------- labels -------------------------------- */
 
+/* Sentence case, coloured, confident — the apple.com eyebrow.
+   No uppercase, no letterspacing games. */
 .eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  font-size: 13px;
+  gap: 8px;
+  font-size: 17px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: -0.012em;
   color: var(--color-pin);
 }
 
@@ -226,23 +320,33 @@ h1 {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid var(--color-rule);
-  border-radius: 999px;
-  padding: 7px 15px;
+  border-radius: 980px;
+  padding: 8px 16px;
   font-size: 14px;
   font-weight: 500;
+  letter-spacing: -0.006em;
   color: var(--color-ink-soft);
-  background: var(--color-paper);
-  box-shadow: var(--shadow-card);
+  background: rgb(120 120 128 / 0.08);
 }
 
-/* -------------------------------- motion -------------------------------- */
+/* Small caption text — footnotes, metadata. */
+.caption {
+  font-size: 13px;
+  letter-spacing: -0.003em;
+  color: var(--color-muted);
+}
+
+/* -------------------------------- motion --------------------------------
+   Enter like a spring settling: from the current value, quick out of
+   the gate, gentle into place, no overshoot (critically damped).
+   Gesture-free UI earns no bounce. */
 
 .reveal {
   opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateY(20px) scale(0.99);
+  transition: opacity 0.7s cubic-bezier(0.25, 1, 0.4, 1),
+    transform 0.7s cubic-bezier(0.25, 1, 0.4, 1);
+  will-change: opacity, transform;
 }
 
 .reveal.is-in {
@@ -256,12 +360,12 @@ h1 {
     transform: translateY(0) rotate(var(--tilt, 0deg));
   }
   50% {
-    transform: translateY(-9px) rotate(var(--tilt, 0deg));
+    transform: translateY(-8px) rotate(var(--tilt, 0deg));
   }
 }
 
 .floaty {
-  animation: float-a 7s ease-in-out infinite;
+  animation: float-a 8s ease-in-out infinite;
 }
 
 @keyframes blink {
@@ -270,12 +374,12 @@ h1 {
     opacity: 1;
   }
   50% {
-    opacity: 0.25;
+    opacity: 0.3;
   }
 }
 
 .blink {
-  animation: blink 1.6s steps(1, end) infinite;
+  animation: blink 1.8s ease-in-out infinite;
 }
 
 /* Logo strips and trade rails that scroll on their own. */
@@ -289,7 +393,7 @@ h1 {
 }
 
 .marquee {
-  animation: marquee 38s linear infinite;
+  animation: marquee 42s linear infinite;
 }
 
 .marquee:hover {
@@ -305,15 +409,23 @@ h1 {
   .marquee {
     animation: none !important;
   }
+  /* Reduced motion still gets feedback — a cross-fade, not a slide. */
   .reveal {
-    opacity: 1;
     transform: none;
-    transition: none;
+    transition: opacity 0.25s ease;
+  }
+  .btn,
+  .pressable {
+    transition-property: background-color, box-shadow, border-color, color;
+  }
+  .btn:active,
+  .pressable:active {
+    transform: none;
   }
   *,
   *::before,
   *::after {
-    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }
 

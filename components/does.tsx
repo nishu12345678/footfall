@@ -6,7 +6,7 @@ export function Does() {
   return (
     <section
       id="does"
-      className="border-y border-rule bg-paper-2 px-5 py-20 sm:py-28"
+      className="bg-paper-2 px-5 py-20 sm:py-28"
     >
       <div className="mx-auto max-w-6xl">
         <Reveal>
@@ -25,7 +25,7 @@ export function Does() {
               className={i === 0 ? "md:col-span-2" : ""}
             >
               <article
-                className={`h-full rounded-[16px] border border-rule bg-paper p-6 shadow-card ${
+                className={`card h-full p-6 ${
                   i === 0 ? "md:p-8" : ""
                 }`}
               >
@@ -52,7 +52,7 @@ export function Does() {
                 >
                   {item.body}
                 </p>
-                <p className="mt-4 border-t border-rule-soft pt-3 font-mono text-[13px] text-muted">
+                <p className="mt-4 border-t border-black/10 pt-3 text-[13px] text-muted">
                   {item.detail}
                 </p>
               </article>

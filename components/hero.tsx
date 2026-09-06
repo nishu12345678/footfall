@@ -65,13 +65,13 @@ export function Hero() {
           <Reveal delay={80} className="lg:col-span-4 lg:mt-10">
             <WindowCard title={post.title} live>
               <div className="p-5">
-                <p className="text-[13px] font-semibold uppercase tracking-wider text-muted">
+                <p className="text-[13px] font-medium text-muted">
                   {post.business}
                 </p>
                 <p className="mt-2 text-[16px] leading-relaxed text-ink">
                   {post.body}
                 </p>
-                <div className="mt-3 h-24 rounded-lg border border-rule bg-paper-2">
+                <div className="mt-3 h-24 rounded-[12px] bg-paper-2">
                   <div className="grid h-full place-items-center text-[13px] text-muted">
                     Photo from your profile
                   </div>
@@ -108,8 +108,8 @@ export function Hero() {
                   <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
                     “{review.text}”
                   </p>
-                  <div className="mt-3 rounded-lg border border-rule bg-paper-2 p-3">
-                    <p className="text-[12px] font-semibold uppercase tracking-wider text-muted">
+                  <div className="mt-3 rounded-[12px] bg-paper-2 p-3">
+                    <p className="text-[13px] font-medium text-muted">
                       Owner reply
                     </p>
                     <p className="mt-1 text-[15px] leading-relaxed">
@@ -126,10 +126,10 @@ export function Hero() {
             <Reveal delay={240}>
               <WindowCard title={chat.title}>
                 <div className="space-y-2 p-5">
-                  <p className="max-w-[88%] rounded-2xl rounded-tl-sm bg-paper-3 px-3.5 py-2.5 text-[15px] leading-relaxed">
+                  <p className="max-w-[88%] rounded-[18px] rounded-tl-sm bg-paper-3 px-3.5 py-2.5 text-[15px] leading-relaxed text-ink">
                     {chat.incoming}
                   </p>
-                  <p className="ml-auto max-w-[92%] rounded-2xl rounded-tr-sm bg-open-soft px-3.5 py-2.5 text-[15px] leading-relaxed">
+                  <p className="ml-auto max-w-[92%] rounded-[18px] rounded-tr-sm bg-open px-3.5 py-2.5 text-[15px] leading-relaxed text-white">
                     {chat.outgoing}
                   </p>
                   <p className="border-t border-rule-soft pt-3 text-[13px] font-medium text-open">

@@ -228,7 +228,7 @@ export default function PhotosPage() {
           muted
           playsInline
           preload="metadata"
-          className={`aspect-square w-full rounded-[10px] border object-cover ${className}`}
+          className={`aspect-square w-full rounded-[12px] object-cover ${className}`}
         />
       );
     }
@@ -239,7 +239,7 @@ export default function PhotosPage() {
         alt={item.caption ?? ""}
         loading="lazy"
         referrerPolicy="no-referrer"
-        className={`aspect-square w-full rounded-[10px] border object-cover ${className}`}
+        className={`aspect-square w-full rounded-[12px] object-cover ${className}`}
       />
     );
   }
@@ -280,12 +280,12 @@ export default function PhotosPage() {
       </button>
 
       {/* ------------------------------ why ------------------------------ */}
-      <details className="group mt-3 rounded-[14px] border border-rule bg-paper-2">
+      <details className="group card mt-3">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[14px] font-semibold">
           Why publish photos and videos?
           <span
             aria-hidden
-            className="flex-none font-mono text-[11px] text-muted transition-transform group-open:rotate-90"
+            className="flex-none text-[13px] text-muted transition-transform group-open:rotate-90"
           >
             ›
           </span>
@@ -334,14 +334,14 @@ export default function PhotosPage() {
       ) : null}
 
       {note ? (
-        <p className="mt-4 rounded-[12px] border border-open bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
+        <p className="mt-4 rounded-[12px] bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
           {note}
         </p>
       ) : null}
       {error ? (
         <p
           role="alert"
-          className="mt-4 break-words rounded-[12px] border border-pin bg-pin-soft px-3.5 py-2.5 font-mono text-[12px] leading-snug"
+          className="mt-4 break-words rounded-[12px] bg-pin-soft px-3.5 py-2.5 text-[13px] leading-snug"
         >
           {error}
         </p>
@@ -350,26 +350,26 @@ export default function PhotosPage() {
       {/* ------------------------ your photos ---------------------------- */}
       <section className="mt-8">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-display text-[15px] font-bold">
+          <h2 className="text-[15px] font-semibold text-ink">
             Your photos and videos
           </h2>
           {live.length > 9 ? (
             <button
               type="button"
               onClick={() => setShowAll((s) => !s)}
-              className="flex-none font-mono text-[10px] underline underline-offset-4 hover:text-pin"
+              className="flex-none text-[13px] font-medium text-pin hover:opacity-80"
             >
               {showAll ? "show less" : `view all ${live.length}`}
             </button>
           ) : (
-            <span className="flex-none font-mono text-[10px] text-muted">
+            <span className="flex-none text-[11px] text-muted">
               {live.length} live
             </span>
           )}
         </div>
 
         {live.length === 0 ? (
-          <p className="mt-3 rounded-[14px] border border-dashed border-rule px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
+          <p className="card mt-3 px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
             {syncing
               ? "Checking…"
               : "Nothing on your listing yet. Photos are one of the first things a customer looks at."}
@@ -378,7 +378,7 @@ export default function PhotosPage() {
           <ul className="mt-3 grid grid-cols-3 gap-2">
             {shown.map((item) => (
               <li key={item._id}>
-                <Tile item={item} className="border-rule" />
+                <Tile item={item} />
               </li>
             ))}
           </ul>
@@ -388,16 +388,16 @@ export default function PhotosPage() {
       {/* --------------------------- scheduled --------------------------- */}
       <section className="mt-8">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-display text-[15px] font-bold">
+          <h2 className="text-[15px] font-semibold text-ink">
             Scheduled photos and videos
           </h2>
-          <span className="flex-none font-mono text-[10px] text-muted">
+          <span className="flex-none text-[11px] text-muted">
             {upcoming.length} waiting
           </span>
         </div>
 
         {upcoming.length === 0 ? (
-          <p className="mt-3 rounded-[14px] border border-dashed border-rule px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
+          <p className="card mt-3 px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
             Nothing scheduled. Add a batch and we&rsquo;ll spread them out, four
             a week.
           </p>
@@ -408,28 +408,28 @@ export default function PhotosPage() {
               .map(([monday, items]) => (
                 <div key={monday}>
                   <div className="flex items-baseline justify-between gap-3">
-                    <p className="font-mono text-[10px] uppercase tracking-wider text-muted">
+                    <p className="text-[13px] font-medium uppercase tracking-[0.05em] text-muted">
                       {weekLabel(monday)}
                     </p>
-                    <p className="flex-none font-mono text-[10px] text-muted">
+                    <p className="flex-none text-[11px] text-muted">
                       {items.length} going up
                     </p>
                   </div>
 
-                  <ul className="mt-2 divide-y divide-rule-soft border-y border-rule">
+                  <ul className="inset-group mt-2">
                     {items.map(({ date, item }) => (
                       <li
                         key={item._id}
-                        className="flex items-center gap-3 py-2.5"
+                        className="inset-row flex items-center gap-3 px-3 py-2.5"
                       >
                         <span className="w-16 flex-none">
-                          <Tile item={item} className="border-ink" />
+                          <Tile item={item} />
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="block text-[13px] font-semibold leading-snug">
                             {dayLabel(date)}
                           </span>
-                          <span className="mt-0.5 block font-mono text-[10px] text-muted">
+                          <span className="mt-0.5 block text-[11px] text-muted">
                             {item.mediaType === "video" ? "video" : "photo"} ·{" "}
                             {DROP_HOUR_IST}:00
                           </span>
@@ -437,7 +437,7 @@ export default function PhotosPage() {
                             type="button"
                             onClick={() => void publishNow(item._id)}
                             disabled={publishing !== null}
-                            className="mt-1 font-mono text-[10px] underline underline-offset-4 hover:text-pin disabled:opacity-50"
+                            className="mt-1 text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
                           >
                             {publishing === item._id
                               ? "sending…"
@@ -448,7 +448,7 @@ export default function PhotosPage() {
                           type="button"
                           onClick={() => void removePhoto({ id: item._id })}
                           aria-label="remove"
-                          className="grid h-6 w-6 flex-none place-items-center rounded-full border border-rule font-mono text-[12px] text-muted hover:border-pin hover:text-pin"
+                          className="pressable grid h-7 w-7 flex-none place-items-center rounded-full bg-black/5 text-[13px] text-ink hover:bg-black/10"
                         >
                           ×
                         </button>
@@ -463,17 +463,17 @@ export default function PhotosPage() {
 
       {failed.length > 0 ? (
         <section className="mt-8">
-          <h2 className="font-display text-[15px] font-bold text-pin">
+          <h2 className="text-[15px] font-semibold text-pin">
             Google wouldn&rsquo;t take these
           </h2>
           <ul className="mt-3 grid grid-cols-3 gap-2">
             {failed.map((item) => (
               <li key={item._id}>
-                <Tile item={item} className="border-pin opacity-60" />
+                <Tile item={item} className="opacity-60" />
                 <button
                   type="button"
                   onClick={() => void publishNow(item._id)}
-                  className="mt-1 w-full font-mono text-[9px] underline underline-offset-2 hover:text-pin"
+                  className="mt-1 w-full text-[12px] font-medium text-pin hover:opacity-80"
                 >
                   try again
                 </button>
@@ -484,19 +484,19 @@ export default function PhotosPage() {
       ) : null}
 
       {/* -------------------------- guidelines --------------------------- */}
-      <details className="group mt-8 rounded-[14px] border border-rule bg-paper-2">
+      <details className="group card mt-8">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[14px] font-semibold">
           What Google accepts
           <span
             aria-hidden
-            className="flex-none font-mono text-[11px] text-muted transition-transform group-open:rotate-90"
+            className="flex-none text-[13px] text-muted transition-transform group-open:rotate-90"
           >
             ›
           </span>
         </summary>
         <div className="space-y-3.5 border-t border-rule-soft px-4 py-3.5">
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-wider text-muted">
+            <p className="text-[13px] font-medium uppercase tracking-[0.05em] text-muted">
               Photos
             </p>
             <ul className="mt-1.5 space-y-1 text-[13px] leading-relaxed">
@@ -506,7 +506,7 @@ export default function PhotosPage() {
             </ul>
           </div>
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-wider text-muted">
+            <p className="text-[13px] font-medium uppercase tracking-[0.05em] text-muted">
               Videos
             </p>
             <ul className="mt-1.5 space-y-1 text-[13px] leading-relaxed">

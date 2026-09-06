@@ -28,7 +28,7 @@ export function LegalPage({
         >
           <span
             aria-hidden
-            className="grid h-6 w-6 place-items-center rounded-full border border-ink bg-pin text-[11px] text-paper-2"
+            className="grid h-6 w-6 place-items-center rounded-[10px] bg-pin text-[11px] text-white"
           >
             ◎
           </span>
@@ -38,7 +38,7 @@ export function LegalPage({
         <h1 className="mt-10 font-display text-[34px] leading-tight font-bold tracking-tight text-ink sm:text-[42px]">
           {title}
         </h1>
-        <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-muted">
+        <p className="mt-3 text-[13px] font-medium text-muted">
           Last updated {updated}
         </p>
         <p className="mt-6 text-[16px] leading-relaxed text-ink-soft">
@@ -47,8 +47,8 @@ export function LegalPage({
 
         <div className="mt-12 space-y-10">{children}</div>
 
-        <div className="mt-16 border-t border-rule pt-6">
-          <p className="font-mono text-[10px] leading-relaxed text-muted">
+        <div className="mt-16 border-t border-black/10 pt-6">
+          <p className="caption leading-relaxed">
             footfall is an independent product. It is not affiliated with,
             endorsed by, or a product of Google. Google, Google Business Profile
             and Google Maps are trademarks of Google LLC.
@@ -71,7 +71,7 @@ export function Section({
   return (
     <section id={`s${n}`} className="scroll-mt-8">
       <h2 className="font-display text-[22px] leading-snug font-bold tracking-tight text-ink">
-        <span className="mr-2 font-mono text-[13px] text-pin">{n}.</span>
+        <span className="mr-2 font-semibold text-pin">{n}.</span>
         {title}
       </h2>
       <div className="mt-4 space-y-4 text-[15px] leading-relaxed text-ink-soft">
@@ -87,7 +87,7 @@ export function P({ children }: { children: React.ReactNode }) {
 
 export function UL({ children }: { children: React.ReactNode }) {
   return (
-    <ul className="ml-1 space-y-2.5 border-l border-rule pl-5">{children}</ul>
+    <ul className="ml-1 space-y-2.5 border-l border-black/10 pl-5">{children}</ul>
   );
 }
 
@@ -98,7 +98,7 @@ export function LI({ children }: { children: React.ReactNode }) {
 /** A pulled-out block for the clauses Google's reviewers look for. */
 export function Callout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="border border-ink bg-paper-2 p-5 text-[15px] leading-relaxed text-ink">
+    <div className="rounded-[14px] bg-paper-2 p-5 text-[15px] leading-relaxed text-ink">
       {children}
     </div>
   );

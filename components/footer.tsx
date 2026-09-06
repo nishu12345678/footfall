@@ -2,7 +2,7 @@ import { BRAND, FOOTER } from "@/lib/content";
 
 export function Footer() {
   return (
-    <footer className="mt-auto px-5 py-14">
+    <footer className="hairline-t mt-auto bg-paper-2 px-5 py-14">
       <div className="mx-auto max-w-6xl">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div>
@@ -12,20 +12,20 @@ export function Footer() {
             >
               <span
                 aria-hidden
-                className="grid h-6 w-6 place-items-center rounded-full border border-rule bg-pin text-[13px] text-paper-2"
+                className="grid h-6 w-6 place-items-center rounded-full bg-pin text-[13px] text-white"
               >
                 ◎
               </span>
               {BRAND.name}
             </a>
-            <p className="mt-3 max-w-[26ch] text-[16px] leading-relaxed text-ink-soft">
+            <p className="mt-3 max-w-[26ch] text-[13px] leading-relaxed text-ink-soft">
               {BRAND.tagline}
             </p>
           </div>
 
           {FOOTER.columns.map((col) => (
             <div key={col.title}>
-              <p className="font-mono text-[12px] uppercase tracking-[0.16em] text-muted">
+              <p className="text-[12px] font-semibold text-muted">
                 {col.title}
               </p>
               <ul className="mt-4 space-y-2.5">
@@ -33,7 +33,7 @@ export function Footer() {
                   <li key={link.label}>
                     <a
                       href={link.href}
-                      className="text-[16px] text-ink-soft transition-colors hover:text-pin"
+                      className="text-[13px] text-ink-soft transition-colors hover:text-ink"
                     >
                       {link.label}
                     </a>
@@ -44,11 +44,11 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="mt-12 flex flex-col gap-3 border-t border-rule pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="font-mono text-[12px] leading-relaxed text-muted">
+        <div className="mt-12 flex flex-col gap-3 border-t border-black/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <p className="caption leading-relaxed">
             {FOOTER.legal}
           </p>
-          <p className="font-mono text-[12px] text-muted">{FOOTER.copyright}</p>
+          <p className="caption">{FOOTER.copyright}</p>
         </div>
       </div>
     </footer>

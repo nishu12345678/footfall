@@ -13,11 +13,7 @@ export function Proof() {
     <section id="proof" className="px-5 py-20 sm:py-28">
       <div className="mx-auto max-w-6xl">
         <Reveal className="text-center">
-          <p className="eyebrow justify-center">
-            <span className="inline-block h-px w-6 bg-rule" aria-hidden />
-            {PROOF.eyebrow}
-            <span className="inline-block h-px w-6 bg-rule" aria-hidden />
-          </p>
+          <p className="eyebrow justify-center">{PROOF.eyebrow}</p>
 
           <p className="mt-6 font-display text-[clamp(3rem,10vw,6rem)] font-bold leading-none">
             {PROOF.stat.value}
@@ -33,9 +29,9 @@ export function Proof() {
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {PROOF.quotes.map((quote, i) => (
             <Reveal key={quote.text} delay={i * 70}>
-              <figure className="relative h-full rounded-[16px] border border-rule bg-paper-2 p-5 shadow-card">
+              <figure className="card relative h-full p-5">
                 {quote.placeholder ? (
-                  <span className="absolute -top-2.5 right-3 rounded-full border border-rule bg-star px-2 py-0.5 font-mono text-[11px] uppercase tracking-wider">
+                  <span className="absolute -top-2.5 right-3 rounded-full bg-star/15 px-2.5 py-0.5 text-[11px] font-semibold text-[#b25000]">
                     sample
                   </span>
                 ) : null}
@@ -46,11 +42,11 @@ export function Proof() {
                 <blockquote className="mt-1 text-[16px] leading-relaxed text-ink">
                   {quote.text}
                 </blockquote>
-                <figcaption className="mt-4 border-t border-rule-soft pt-3">
-                  <span className="block font-display text-[15px] font-bold">
+                <figcaption className="mt-4 border-t border-black/10 pt-3">
+                  <span className="block font-display text-[15px] font-semibold">
                     {quote.name}
                   </span>
-                  <span className="font-mono text-[12px] text-muted">
+                  <span className="text-[12px] text-muted">
                     {quote.meta}
                   </span>
                 </figcaption>

@@ -14,7 +14,7 @@ const RankMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[268px] w-full animate-pulse rounded-[14px] border border-ink bg-paper-3" />
+      <div className="h-[268px] w-full animate-pulse rounded-[14px] bg-paper-3" />
     ),
   },
 );
@@ -210,17 +210,15 @@ export default function PerformancePage() {
       </p>
 
       {/* range */}
-      <div className="mt-5 flex items-center gap-1 rounded-full border border-ink bg-paper p-1">
+      <div className="mt-5 flex items-center gap-1 rounded-full bg-paper-3 p-1">
         {RANGES.map((r) => (
           <button
             key={r.days}
             type="button"
             onClick={() => setDays(r.days)}
             aria-pressed={days === r.days}
-            className={`flex-1 rounded-full px-3 py-1.5 font-display text-[13px] font-semibold transition-colors ${
-              days === r.days
-                ? "bg-ink text-paper-2"
-                : "text-ink-soft hover:text-ink"
+            className={`flex-1 rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${
+              days === r.days ? "bg-white text-ink shadow-card" : "text-muted"
             }`}
           >
             {r.label}
@@ -228,7 +226,7 @@ export default function PerformancePage() {
         ))}
       </div>
 
-      <p className="mt-2 flex flex-wrap items-center gap-x-2 font-mono text-[10px] text-muted">
+      <p className="mt-2 flex flex-wrap items-center gap-x-2 text-[12px] text-muted">
         {rangeLabel ? <span>{rangeLabel}</span> : <span>no data in range</span>}
         <span aria-hidden>·</span>
         <span>
@@ -258,14 +256,14 @@ export default function PerformancePage() {
       </div>
 
       {note ? (
-        <p className="mt-3 rounded-[12px] border border-open bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
+        <p className="mt-3 rounded-[12px] bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
           {note}
         </p>
       ) : null}
       {error ? (
         <p
           role="alert"
-          className="mt-3 break-words rounded-[12px] border border-pin bg-pin-soft px-3.5 py-2.5 font-mono text-[12px] leading-snug"
+          className="mt-3 break-words rounded-[12px] bg-pin-soft px-3.5 py-2.5 text-[13px] leading-snug"
         >
           {error}
         </p>
@@ -279,16 +277,18 @@ export default function PerformancePage() {
             type="button"
             onClick={() => setChart(m.key)}
             aria-pressed={chart === m.key}
-            className={`rounded-[14px] border p-3 text-center transition-colors ${
-              chart === m.key
-                ? "border-pin bg-pin-soft shadow-[2px_3px_0_var(--color-pin)]"
-                : "border-ink bg-paper-2 shadow-[2px_3px_0_var(--color-ink)]"
+            className={`pressable rounded-[14px] p-3 text-center shadow-card transition-colors ${
+              chart === m.key ? "bg-pin-soft" : "bg-white"
             }`}
           >
-            <p className="font-mono text-[10px] uppercase tracking-wide text-muted">
+            <p
+              className={`text-[11px] font-medium ${
+                chart === m.key ? "text-pin" : "text-muted"
+              }`}
+            >
               {m.label}
             </p>
-            <p className="mt-1 font-display text-[22px] font-bold leading-none">
+            <p className="mt-1 text-[22px] font-bold leading-none tracking-[-0.02em]">
               {window.length ? totals[m.key].toLocaleString("en-IN") : "—"}
             </p>
           </button>
@@ -297,8 +297,8 @@ export default function PerformancePage() {
 
       {/* daily trend */}
       {window.length > 1 ? (
-        <div className="mt-4 rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_4px_0_var(--color-ink)]">
-          <p className="font-mono text-[10px] uppercase tracking-wide text-muted">
+        <div className="card mt-4 p-4">
+          <p className="text-[13px] font-medium uppercase tracking-[0.05em] text-muted">
             {chart} per day
           </p>
           <div
@@ -318,7 +318,7 @@ export default function PerformancePage() {
               );
             })}
           </div>
-          <div className="mt-2 flex justify-between font-mono text-[9px] text-muted">
+          <div className="mt-2 flex justify-between text-[11px] text-muted">
             <span>{pretty(window[0].date)}</span>
             <span>peak {peak}</span>
             <span>{pretty(window[window.length - 1].date)}</span>
@@ -327,7 +327,7 @@ export default function PerformancePage() {
       ) : null}
 
       {window.length === 0 ? (
-        <p className="mt-3 font-mono text-[11px] leading-relaxed text-muted">
+        <p className="mt-3 text-[13px] leading-relaxed text-muted">
           Nothing pulled for this range yet. Google&rsquo;s data also lags a few
           days, so the most recent days often read zero.
         </p>
@@ -338,16 +338,16 @@ export default function PerformancePage() {
       {/* keywords */}
       <section className="mt-7">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-display text-[15px] font-bold">
+          <h2 className="text-[15px] font-semibold text-ink">
             Rank for targeted keywords
           </h2>
-          <span className="flex-none font-mono text-[10px] text-muted">
+          <span className="flex-none text-[12px] text-muted">
             {ago(business.ranksCheckedAt)}
           </span>
         </div>
 
         {keywords.length === 0 ? (
-          <p className="mt-3 rounded-[14px] border border-dashed border-rule px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
+          <p className="card mt-3 px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
             No keywords yet. Add them in setup and we&rsquo;ll track your
             position weekly.
           </p>
@@ -355,13 +355,13 @@ export default function PerformancePage() {
 
         {groups.map((group) => (
           <div key={group.key} className="mt-5">
-            <h3 className="font-display text-[13px] font-bold">
+            <h3 className="text-[13px] font-semibold">
               {group.title}
             </h3>
             <p className="mt-1 text-[12px] leading-relaxed text-muted">
               {group.note}
             </p>
-            <ul className="mt-2 divide-y divide-rule-soft border-y border-rule">
+            <ul className="inset-group mt-2">
               {[...group.rows]
                 .sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999))
                 .map((kw) => {
@@ -371,16 +371,16 @@ export default function PerformancePage() {
                       : null;
                   const checked = kw.checkedAt !== undefined;
                   return (
-                    <li key={kw._id} className="py-3">
+                    <li key={kw._id} className="inset-row px-4 py-3">
                       <div className="flex items-center gap-3">
                         <span className="min-w-0 flex-1 truncate text-[14px]">
                           {kw.term}
                         </span>
                         {moved !== null && moved !== 0 ? (
                           <span
-                            className={`flex-none rounded-full px-1.5 py-0.5 font-mono text-[10px] ${
+                            className={`flex-none rounded-full px-2 py-0.5 text-[11px] font-medium ${
                               moved > 0
-                                ? "bg-open-soft text-open"
+                                ? "bg-open-soft text-open-deep"
                                 : "bg-pin-soft text-pin"
                             }`}
                           >
@@ -388,14 +388,14 @@ export default function PerformancePage() {
                           </span>
                         ) : null}
                         <span
-                          className={`flex-none rounded-full border px-2 py-0.5 font-display text-[13px] font-bold ${
+                          className={`flex-none rounded-full px-2.5 py-0.5 text-[12px] font-semibold ${
                             kw.rank === undefined
-                              ? "border-rule text-muted"
+                              ? "bg-paper-3 text-muted"
                               : kw.rank <= 3
-                                ? "border-open bg-open-soft text-open"
+                                ? "bg-open-soft text-open-deep"
                                 : kw.rank <= 10
-                                  ? "border-star bg-star/20"
-                                  : "border-pin bg-pin-soft text-pin"
+                                  ? "bg-star/15 text-[#b25000]"
+                                  : "bg-pin-soft text-pin"
                           }`}
                         >
                           {checked ? (kw.rank ?? "nowhere") : "—"}
@@ -417,7 +417,7 @@ export default function PerformancePage() {
                                 }}
                               />
                             </div>
-                            <span className="flex-none font-mono text-[10px] text-muted">
+                            <span className="flex-none text-[11px] text-muted">
                               seen at {kw.coverageFound ?? 0}/{kw.coverageTotal}{" "}
                               spots
                               {kw.avgRank ? ` · avg ${kw.avgRank}` : ""}
@@ -431,7 +431,7 @@ export default function PerformancePage() {
                           type="button"
                           onClick={() => void drawGrid(kw.term)}
                           disabled={gridding !== null}
-                          className="mt-1.5 font-mono text-[10px] text-muted underline underline-offset-4 hover:text-pin disabled:opacity-50"
+                          className="mt-1.5 text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
                         >
                           {gridding === kw.term
                             ? "checking around you…"
@@ -446,7 +446,7 @@ export default function PerformancePage() {
                       business.lat &&
                       business.lng ? (
                         <div className="mt-3">
-                          <p className="mb-1.5 font-mono text-[10px] text-muted">
+                          <p className="mb-1.5 text-[11px] text-muted">
                             Showing &ldquo;{kw.term}&rdquo; from several points
                             around you
                           </p>
@@ -470,7 +470,7 @@ export default function PerformancePage() {
         ))}
 
         {keywords.length > 0 ? (
-          <p className="mt-3 rounded-[12px] border border-rule bg-paper-2 px-3.5 py-2.5 text-[13px] leading-relaxed text-ink-soft">
+          <p className="mt-3 rounded-[12px] bg-white px-3.5 py-2.5 text-[13px] leading-relaxed text-ink-soft shadow-card">
             {business.ranksCheckedAt === undefined
               ? "Checking where you rank right now…"
               : rankedCount === 0
@@ -484,26 +484,26 @@ export default function PerformancePage() {
 
       {/* competitors */}
       <section className="mt-7">
-        <h2 className="font-display text-[15px] font-bold">
+        <h2 className="text-[15px] font-semibold text-ink">
           Competitors ahead of you
         </h2>
         {competitors.length === 0 ? (
-          <p className="mt-3 rounded-[14px] border border-dashed border-rule px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
+          <p className="card mt-3 px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
             Run a rank check and we&rsquo;ll fill this in from the map results
             around your shop.
           </p>
         ) : (
-          <ul className="mt-3 divide-y divide-rule-soft border-y border-rule">
+          <ul className="inset-group mt-3">
             {competitors.map((c) => (
-              <li key={c._id} className="flex items-center gap-3 py-3">
+              <li key={c._id} className="inset-row flex items-center gap-3 px-4 py-3">
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[14px]">{c.name}</span>
-                  <span className="font-mono text-[11px] text-muted">
+                  <span className="text-[12px] text-muted">
                     ★ {c.rating ?? "—"} · {c.reviewCount ?? 0} reviews
                     {c.category ? ` · ${c.category}` : ""}
                   </span>
                 </span>
-                <span className="flex-none font-display text-[15px] font-bold">
+                <span className="flex-none text-[15px] font-semibold">
                   {c.averageRank ?? "—"}
                 </span>
               </li>

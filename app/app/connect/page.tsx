@@ -46,7 +46,7 @@ export default async function ConnectPage({
         {error ? (
           <p
             role="alert"
-            className="mt-6 rounded-[12px] border border-pin bg-pin-soft px-4 py-3 text-[14px] leading-snug"
+            className="mt-6 rounded-[12px] bg-pin-soft px-4 py-3 text-[14px] leading-snug"
           >
             {error}
           </p>
@@ -56,7 +56,7 @@ export default async function ConnectPage({
           <span aria-hidden>◎</span> connect google business profile
         </a>
 
-        <p className="mt-4 text-center font-mono text-[11px] leading-relaxed text-muted">
+        <p className="mt-4 text-center text-[12px] leading-relaxed text-muted">
           you&rsquo;ll be asked to allow us to manage your business listings.
           that permission is what lets us do the work.
         </p>

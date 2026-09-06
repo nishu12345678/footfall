@@ -85,7 +85,7 @@ export default function ProcessingPage() {
             />
             <h1 className="mt-6 text-[1.9rem]">processing</h1>
             <p className="mt-3 text-[15px] text-ink-soft">{message}</p>
-            <p className="mt-1 font-mono text-[11px] text-muted">
+            <p className="mt-1 text-[13px] text-muted">
               please don&rsquo;t close or refresh this window
             </p>
           </div>
@@ -104,9 +104,9 @@ export default function ProcessingPage() {
                   <button
                     type="button"
                     onClick={() => void link(loc)}
-                    className="w-full rounded-[14px] border border-ink bg-paper-2 p-4 text-left shadow-[3px_3px_0_var(--color-ink)] transition-transform hover:-translate-y-0.5"
+                    className="card pressable w-full p-4 text-left"
                   >
-                    <span className="block font-display text-[16px] font-bold">
+                    <span className="block text-[16px] font-semibold">
                       {loc.title}
                     </span>
                     {loc.address ? (
@@ -115,7 +115,7 @@ export default function ProcessingPage() {
                       </span>
                     ) : null}
                     {loc.category ? (
-                      <span className="mt-2 inline-block font-mono text-[10px] uppercase tracking-wider text-muted">
+                      <span className="mt-2 inline-block text-[12px] font-medium text-muted">
                         {loc.category}
                       </span>
                     ) : null}
@@ -130,7 +130,7 @@ export default function ProcessingPage() {
           <div className="text-center">
             <span
               aria-hidden
-              className="mx-auto grid h-16 w-16 place-items-center rounded-full border border-ink bg-open text-[30px] text-paper-2 shadow-[3px_3px_0_var(--color-ink)]"
+              className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-open text-[30px] text-white shadow-lift"
             >
               ✓
             </span>
@@ -163,7 +163,7 @@ export default function ProcessingPage() {
         {phase === "error" ? (
           <div>
             <h1 className="text-[1.9rem]">that didn&rsquo;t work</h1>
-            <p className="mt-3 rounded-[12px] border border-pin bg-pin-soft px-4 py-3 font-mono text-[12px] leading-relaxed break-words">
+            <p className="mt-3 rounded-[12px] bg-pin-soft px-4 py-3 text-[13px] leading-relaxed break-words">
               {error}
             </p>
             <a href="/app/connect" className="btn btn-primary mt-7 w-full">

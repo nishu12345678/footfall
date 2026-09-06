@@ -52,6 +52,7 @@ export default async function ContactPage({
     `Hi ${business.orgName}, I found you on your website and I'd like to know more.`,
   );
   const directions = directionsLink(business);
+  const todayIdx = (new Date().getDay() + 6) % 7;
 
   return (
     <>
@@ -71,7 +72,7 @@ export default async function ContactPage({
       <SiteNav data={data} />
 
       <main className="mx-auto max-w-5xl px-5 pt-12 pb-10">
-        <nav aria-label="Breadcrumb" className="font-mono text-[11px] text-muted">
+        <nav aria-label="Breadcrumb" className="text-[12px] text-muted">
           <a href={base} className="hover:text-pin">
             Home
           </a>
@@ -87,7 +88,7 @@ export default async function ContactPage({
         </p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-[14px] border border-ink bg-paper-2 p-5 shadow-[3px_4px_0_var(--color-ink)]">
+          <div className="rounded-[18px] bg-paper-2 p-6">
             <h2 className="text-[1.2rem]">Where we are</h2>
             {business.streetAddress ? (
               <address className="mt-3 text-[15px] not-italic leading-relaxed text-ink-soft">
@@ -112,7 +113,7 @@ export default async function ContactPage({
             ) : null}
           </div>
 
-          <div className="rounded-[14px] border border-ink bg-paper-2 p-5 shadow-[3px_4px_0_var(--color-ink)]">
+          <div className="rounded-[18px] bg-paper-2 p-6">
             <h2 className="text-[1.2rem]">Talk to us</h2>
             <div className="mt-4 flex flex-col gap-2">
               {wa ? (
@@ -136,7 +137,7 @@ export default async function ContactPage({
                   href={business.reviewUri}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-1 text-center font-mono text-[11px] underline underline-offset-4 hover:text-pin"
+                  className="mt-1 text-center text-[13px] font-medium text-muted hover:text-pin"
                 >
                   been before? leave us a review
                 </a>
@@ -148,14 +149,16 @@ export default async function ContactPage({
         {hours.length ? (
           <section className="mt-10">
             <h2 className="text-[1.5rem]">When we&rsquo;re open</h2>
-            <ul className="mt-4 max-w-md divide-y divide-rule-soft border-y border-rule">
+            <ul className="mt-4 max-w-md divide-y divide-black/8">
               {hours.map((h) => (
                 <li
                   key={h.day}
-                  className="flex items-center justify-between gap-3 py-2.5 text-[15px]"
+                  className={`flex items-center justify-between gap-3 py-2.5 text-[15px]${h.day === todayIdx ? " font-semibold text-open-deep" : ""}`}
                 >
                   <span className="font-semibold">{DAYS[h.day]}</span>
-                  <span className="font-mono text-[13px] text-ink-soft">
+                  <span
+                    className={`text-[14px]${h.day === todayIdx ? " font-semibold text-open-deep" : " text-ink-soft"}`}
+                  >
                     {h.closed ? "Closed" : `${h.open} – ${h.close}`}
                   </span>
                 </li>
@@ -169,7 +172,7 @@ export default async function ContactPage({
             href={business.mapsUri}
             target="_blank"
             rel="noreferrer"
-            className="mt-10 block overflow-hidden rounded-[14px] border border-ink shadow-[3px_4px_0_var(--color-ink)]"
+            className="card pressable mt-10 block overflow-hidden"
           >
             <span className="grid h-[180px] place-items-center bg-paper-2 text-[15px] text-ink-soft">
               Open {business.orgName} on Google Maps →

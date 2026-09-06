@@ -152,7 +152,7 @@ export default function BillingPage() {
     <main className="mx-auto max-w-md px-5 py-10">
       {status.active ? (
         <section className="card p-6">
-          <p className="text-[14px] font-bold uppercase tracking-wider text-open">
+          <p className="text-[13px] font-medium uppercase tracking-[0.05em] text-open-deep">
             Active
           </p>
           <h1 className="mt-2 text-[1.7rem]">Your plan is running</h1>
@@ -177,13 +177,13 @@ export default function BillingPage() {
       )}
 
       {error ? (
-        <p className="mt-5 rounded-xl border border-pin bg-pin-soft p-4 text-[16px] leading-relaxed text-ink">
+        <p className="mt-5 rounded-[12px] bg-pin-soft p-4 text-[16px] leading-relaxed text-ink">
           {error}
         </p>
       ) : null}
 
       {waiting && !status.active ? (
-        <p className="mt-5 rounded-xl border border-ink bg-paper-2 p-4 text-[16px] leading-relaxed text-ink">
+        <p className="mt-5 rounded-[14px] bg-paper-2 p-4 text-[16px] leading-relaxed text-ink">
           Payment verified. Waiting for Razorpay&rsquo;s confirmation&hellip;
           <br />
           <span className="font-mono text-[12px] text-muted">
@@ -199,16 +199,14 @@ export default function BillingPage() {
             return (
               <section
                 key={plan.id}
-                className={`rounded-[16px] bg-white p-6 ${
-                  featured
-                    ? "border-2 border-pin shadow-lift"
-                    : "border border-rule shadow-card"
+                className={`rounded-[18px] bg-white p-6 ${
+                  featured ? "shadow-lift" : "shadow-card"
                 }`}
               >
                 <div className="flex items-baseline justify-between gap-3">
                   <h2 className="text-[1.4rem]">{plan.name}</h2>
                   {plan.badge ? (
-                    <span className="rounded-full bg-pin px-2.5 py-1 text-[12px] font-bold text-white">
+                    <span className="rounded-full bg-pin-soft px-2.5 py-1 text-[12px] font-semibold text-pin">
                       {plan.badge}
                     </span>
                   ) : null}
@@ -256,11 +254,11 @@ export default function BillingPage() {
       {status.receipts && status.receipts.length > 0 ? (
         <section className="mt-10">
           <h2 className="text-[1.2rem]">Your payments</h2>
-          <ul className="mt-4 divide-y divide-rule-soft border-y border-rule-soft">
+          <ul className="inset-group mt-4">
             {status.receipts.map((r) => (
               <li
                 key={`${r.paymentId}`}
-                className="flex items-center justify-between gap-3 py-3"
+                className="inset-row flex items-center justify-between gap-3 px-4 py-3"
               >
                 <span>
                   <span className="block text-[16px] font-semibold capitalize">

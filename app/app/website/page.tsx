@@ -47,13 +47,13 @@ export default function WebsitePage() {
 
       {site ? (
         <>
-          <div className="mt-6 rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_4px_0_var(--color-ink)]">
+          <div className="card mt-6 p-4">
             <div className="flex items-center justify-between gap-3">
               <span
-                className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10px] ${
+                className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
                   site.published
-                    ? "border-open bg-open-soft text-open"
-                    : "border-rule text-muted"
+                    ? "bg-open-soft text-open-deep"
+                    : "bg-paper-3 text-ink-soft"
                 }`}
               >
                 <span
@@ -64,7 +64,7 @@ export default function WebsitePage() {
                 />
                 {site.published ? "Live" : "Hidden"}
               </span>
-              <span className="font-mono text-[10px] text-muted">
+              <span className="text-[12px] text-muted">
                 updated{" "}
                 {new Date(site.updatedAt).toLocaleDateString("en-IN", {
                   day: "numeric",
@@ -106,15 +106,15 @@ export default function WebsitePage() {
                 onClick={() =>
                   void setPublished({ published: !site.published })
                 }
-                className="ml-auto font-mono text-[11px] underline underline-offset-4 hover:text-pin"
+                className="ml-auto text-[13px] font-medium text-pin hover:opacity-80"
               >
                 {site.published ? "hide it" : "make it live"}
               </button>
             </div>
           </div>
 
-          <div className="mt-4 rounded-[14px] border border-rule bg-paper-2 p-4">
-            <p className="font-display text-[14px] font-bold">
+          <div className="card mt-4 p-4">
+            <p className="text-[15px] font-semibold text-ink">
               What&rsquo;s on it
             </p>
             <ul className="mt-2 space-y-1.5 text-[13px] leading-snug text-ink-soft">
@@ -139,7 +139,7 @@ export default function WebsitePage() {
           </button>
         </>
       ) : (
-        <div className="mt-6 rounded-[14px] border border-ink bg-paper-2 p-5 shadow-[3px_4px_0_var(--color-ink)]">
+        <div className="card mt-6 p-5">
           {business.website ? (
             <p className="text-[14px] leading-relaxed text-ink-soft">
               You already have a website at{" "}
@@ -172,7 +172,7 @@ export default function WebsitePage() {
       {error ? (
         <p
           role="alert"
-          className="mt-4 break-words rounded-[12px] border border-pin bg-pin-soft px-3.5 py-2.5 font-mono text-[12px] leading-snug"
+          className="mt-4 break-words rounded-[12px] bg-pin-soft px-3.5 py-2.5 text-[13px] leading-snug"
         >
           {error}
         </p>

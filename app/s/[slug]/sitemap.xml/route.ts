@@ -3,7 +3,16 @@ import { loadSite } from "@/lib/site-data";
 /**
  * A sitemap per generated site. Small, but it tells Google the four pages
  * exist and when they last changed — the competitor's has no lastmod at all.
+ *
+ * Rendered on request, never at build. Without this, `next build`
+ * prerenders the route with a placeholder slug, which means a live query
+ * against NEXT_PUBLIC_CONVEX_URL in the middle of the frontend build; a
+ * deployment with nothing pushed to it yet failed the whole build with
+ * "Could not find public function for 'site:bySlug'". The Cache-Control
+ * header below is what keeps this cheap.
  */
+export const dynamic = "force-dynamic";
+
 export const GET = async (
   request: Request,
   { params }: { params: Promise<{ slug: string }> },

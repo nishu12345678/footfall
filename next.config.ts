@@ -15,7 +15,18 @@ import type { NextConfig } from "next";
 const SITE_DOMAIN = (process.env.NEXT_PUBLIC_SITE_DOMAIN ?? "footfall.zone")
   .replace(/\./g, "\\.");
 
-const RESERVED = ["www", "app", "api", "admin", "mail", "static", "cdn", "dev"];
+const RESERVED = [
+  "www",
+  "app",
+  "api",
+  "admin",
+  "mail",
+  "static",
+  "cdn",
+  "dev",
+  "stage",
+  "staging",
+];
 
 const SHOP_HOST = `(?<slug>(?!(?:${RESERVED.join("|")})\\.)[a-z0-9][a-z0-9-]{0,61})\\.${SITE_DOMAIN}`;
 

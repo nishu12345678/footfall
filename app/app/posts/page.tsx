@@ -242,7 +242,7 @@ export default function PostsPage() {
                 className="card p-5"
               >
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <span className="rounded-full bg-star/15 px-2.5 py-0.5 text-[11px] font-medium text-[#8a5a13]">
+                  <span className="flex-none whitespace-nowrap rounded-full bg-star/15 px-2.5 py-1 text-[11px] font-medium leading-none text-[#8a5a13]">
                     {when(post.scheduledFor)}
                   </span>
                   {post.title ? (

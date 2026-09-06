@@ -31,7 +31,7 @@ export function Proof() {
             <Reveal key={quote.text} delay={i * 70}>
               <figure className="card relative h-full p-8">
                 {quote.placeholder ? (
-                  <span className="absolute -top-2.5 right-3 rounded-full bg-star/15 px-2.5 py-0.5 text-[11px] font-semibold text-[#b25000]">
+                  <span className="absolute -top-2.5 right-3 whitespace-nowrap rounded-full bg-star/15 px-2.5 py-1 text-[11px] font-semibold leading-none text-[#8a5a13]">
                     sample
                   </span>
                 ) : null}

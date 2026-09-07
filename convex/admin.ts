@@ -26,6 +26,12 @@ const APP_TABLES = [
   "googleAccounts",
   "googleLinkTokens",
   "subscriptions",
+  "paymentEvents",
+  "refunds",
+  "messages",
+  "emails",
+  "emailSuppressions",
+  "postGenerations",
   "websiteChecks",
   "businesses",
 ] as const;
@@ -265,5 +271,38 @@ export const removeBusiness = internalMutation({
     }
 
     return { dryRun, business: business.orgName, removed: counted };
+  },
+});
+
+/**
+ * One-off, for the move from MSG91 to Twilio: phone sign-in accounts were
+ * keyed on the provider id "msg91", and the provider is now "twilio". Same
+ * numbers, same users — only the label changes, so nobody gets a second
+ * account on their next sign-in. Safe to run again.
+ *
+ *   npx convex run admin:migratePhoneProvider
+ */
+export const migratePhoneProvider = internalMutation({
+  args: {},
+  returns: v.object({ accounts: v.number(), codes: v.number() }),
+  handler: async (ctx) => {
+    let accounts = 0;
+    const rows = await ctx.db
+      .query("authAccounts")
+      .withIndex("providerAndAccountId", (q) => q.eq("provider", "msg91"))
+      .collect();
+    for (const row of rows) {
+      await ctx.db.patch(row._id, { provider: "twilio" });
+      accounts += 1;
+    }
+    let codes = 0;
+    const pending = await ctx.db.query("authVerificationCodes").collect();
+    for (const row of pending) {
+      if (row.provider === "msg91") {
+        await ctx.db.patch(row._id, { provider: "twilio" });
+        codes += 1;
+      }
+    }
+    return { accounts, codes };
   },
 });

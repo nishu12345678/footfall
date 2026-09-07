@@ -3,7 +3,7 @@
 import { useAction, useQuery } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
-import { Steps } from "@/components/steps";
+import { OnboardingTop, nextHref, useEditMode } from "@/components/onboarding-frame";
 import { Working } from "@/components/working";
 import { shopUrl } from "@/lib/site-host";
 
@@ -11,6 +11,7 @@ type Check = { id: string; label: string; passed: boolean; detail: string };
 
 export default function WebsiteStepPage() {
   const data = useQuery(api.site.mine);
+  const edit = useEditMode();
   const generate = useAction(api.site.generateSite);
   const review = useAction(api.site.reviewExistingSite);
 
@@ -86,7 +87,7 @@ export default function WebsiteStepPage() {
   if (hasOwnSite) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-12">
-        <Steps current={5} />
+        <OnboardingTop step={5} edit={edit} />
 
         <div className="mt-9 flex-1">
           <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">your website</h1>
@@ -162,8 +163,8 @@ export default function WebsiteStepPage() {
           ) : null}
         </div>
 
-        <a href="/app/onboarding/others" className="btn btn-primary mt-10 w-full">
-          next
+        <a href={nextHref(5, edit)} className="btn btn-primary mt-10 w-full">
+          {edit ? "done" : "next"}
         </a>
       </main>
     );
@@ -172,7 +173,7 @@ export default function WebsiteStepPage() {
   /* --------------------------- no website yet --------------------------- */
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-12">
-      <Steps current={5} />
+      <OnboardingTop step={5} edit={edit} />
 
       <div className="mt-9 flex-1">
         <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
@@ -274,10 +275,10 @@ export default function WebsiteStepPage() {
       </div>
 
       <a
-        href="/app/onboarding/others"
+        href={nextHref(5, edit)}
         className={`btn mt-10 w-full ${site ? "btn-primary" : "btn-ghost"}`}
       >
-        {site ? "next" : "skip for now"}
+        {edit ? "done" : site ? "next" : "skip for now"}
       </a>
     </main>
   );

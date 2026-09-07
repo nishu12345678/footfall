@@ -11,7 +11,14 @@ import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { paidAction, paidMutation } from "./access";
-import { MOCK_AUTH_CODE, accountsUrl, googleMocked, infoBase, tokenUrl } from "./googleHosts";
+import {
+  MOCK_AUTH_CODE,
+  accountsUrl,
+  googleMocked,
+  infoBase,
+  revokeUrl,
+  tokenUrl,
+} from "./googleHosts";
 
 /**
  * Google Business Profile connection.
@@ -98,6 +105,125 @@ export const patchAccessToken = internalMutation({
   },
   handler: async (ctx, { accountId, accessToken, expiresAt }) => {
     await ctx.db.patch(accountId, { accessToken, expiresAt });
+  },
+});
+
+/* ------------------------------ disconnect ------------------------------
+   The owner takes our access back. Three things have to happen, in an
+   order that leaves nothing dangling if one of them fails:
+
+     1. Google is asked to revoke the token, so the grant is gone on their
+        side too — not just forgotten on ours.
+     2. The stored tokens are deleted.
+     3. The business is unlinked from the listing and the agent paused, so
+        no cron tries to post with credentials that no longer exist.
+
+   The account itself is untouched: they still sign in with their number,
+   email or Google identity, and reconnecting picks the same business row
+   back up.                                                              */
+
+export const forgetAccount = internalMutation({
+  args: { userId: v.id("users") },
+  returns: v.object({
+    hadAccount: v.boolean(),
+    businessId: v.union(v.id("businesses"), v.null()),
+  }),
+  handler: async (ctx, { userId }) => {
+    const account = await ctx.db
+      .query("googleAccounts")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (account) await ctx.db.delete(account._id);
+
+    // Any link still in flight for this user is dead too.
+    const business = await ctx.db
+      .query("businesses")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (business) {
+      await ctx.db.patch(business._id, {
+        gbpAccountName: undefined,
+        gbpLocationName: undefined,
+        agentActive: false,
+      });
+      await ctx.db.insert("agentActions", {
+        businessId: business._id,
+        type: "seo",
+        title: "Google Business Profile disconnected",
+        detail:
+          "Access was revoked at Google and the agent paused. Reconnect to start again.",
+        createdAt: Date.now(),
+      });
+    }
+    return { hadAccount: Boolean(account), businessId: business?._id ?? null };
+  },
+});
+
+/**
+ * Tells Google to revoke a token. Best effort: Google answers 200 for a
+ * token it has already forgotten and 400 for one it never knew. Either
+ * way the local copy is deleted afterwards.
+ */
+async function revokeAtGoogle(token: string): Promise<boolean> {
+  try {
+    const res = await fetch(revokeUrl(), {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ token }),
+    });
+    if (!res.ok) {
+      console.log(`[google] revoke -> ${res.status} ${(await res.text()).slice(0, 200)}`);
+    }
+    return res.ok;
+  } catch (error) {
+    console.error("[google] revoke failed", error);
+    return false;
+  }
+}
+
+export const disconnect = action({
+  args: {},
+  returns: v.object({
+    ok: v.boolean(),
+    revoked: v.boolean(),
+    hadAccount: v.boolean(),
+  }),
+  handler: async (
+    ctx,
+  ): Promise<{ ok: boolean; revoked: boolean; hadAccount: boolean }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+
+    const account: Doc<"googleAccounts"> | null = await ctx.runQuery(
+      internal.google.accountForUser,
+      { userId },
+    );
+
+    // Revoking the refresh token kills every access token minted from it.
+    // Fall back to the access token when Google never gave us a refresh.
+    let revoked = false;
+    if (account) {
+      revoked = await revokeAtGoogle(account.refreshToken ?? account.accessToken);
+      if (!revoked && account.refreshToken) {
+        revoked = await revokeAtGoogle(account.accessToken);
+      }
+    }
+
+    const result: { hadAccount: boolean } = await ctx.runMutation(
+      internal.google.forgetAccount,
+      { userId },
+    );
+
+    await ctx.scheduler.runAfter(0, internal.email.sendToUser, {
+      userId,
+      template: "google_disconnected",
+      dedupeKey: `google_disconnected:${userId}:${Date.now()}`,
+    });
+
+    console.log(
+      `[google] disconnected user ${userId} (revoked at Google: ${revoked})`,
+    );
+    return { ok: true, revoked, hadAccount: result.hadAccount };
   },
 });
 

@@ -483,6 +483,13 @@ export function handleGoogleMock(req: MockRequest): MockResponse {
   const origin = req.origin.replace(/\/+$/, "");
 
   if (path === "oauth2/token") return token(method, req.body);
+  // Google's revocation endpoint. Real Google answers 200 with an empty
+  // body and refuses the token from then on; the mock does the same.
+  if (path === "oauth2/revoke") {
+    if (method !== "POST") return notFound();
+    state.revoked = true;
+    return ok({});
+  }
   if (path.startsWith("_control/")) return control(path.slice(9));
 
   if (!req.bearer) {

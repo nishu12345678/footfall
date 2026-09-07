@@ -3,7 +3,7 @@
 import { useAction, useMutation, useQuery } from "convex/react";
 import { useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
-import { Steps } from "@/components/steps";
+import { OnboardingTop, nextHref, useEditMode } from "@/components/onboarding-frame";
 
 type Background = "black" | "white";
 
@@ -15,6 +15,7 @@ export default function OthersPage() {
   const finish = useMutation(api.branding.finishOnboarding);
   const findLogos = useAction(api.branding.findLogoCandidates);
   const useLogoFromUrl = useAction(api.branding.useLogoFromUrl);
+  const edit = useEditMode();
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -104,7 +105,7 @@ export default function OthersPage() {
     setError(null);
     try {
       await finish({});
-      window.location.href = "/app";
+      window.location.href = edit ? nextHref(6, edit) : "/app";
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setBusy(false);
@@ -112,8 +113,8 @@ export default function OthersPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-12">
-      <Steps current={6} />
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-8 sm:py-12">
+      <OnboardingTop step={6} edit={edit} />
 
       <div className="mt-9 flex-1">
         <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">your logo</h1>
@@ -324,7 +325,7 @@ export default function OthersPage() {
           disabled={busy}
           className="btn btn-primary disabled:opacity-40"
         >
-          {busy ? "finishing…" : "save & finish"}
+          {busy ? (edit ? "saving…" : "finishing…") : edit ? "save changes" : "save & finish"}
         </button>
       </div>
     </main>

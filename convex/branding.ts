@@ -74,21 +74,30 @@ export const finishOnboarding = paidMutation({
   handler: async (ctx) => {
     const business = await ownedBusiness(ctx);
 
+    const first = !business.onboardingComplete;
     await ctx.db.patch(business._id, {
-      onboardingStep: 5,
+      onboardingStep: 6,
       onboardingComplete: true,
       agentActive: true,
       agentStartedAt: business.agentStartedAt ?? Date.now(),
     });
 
-    await ctx.db.insert("agentActions", {
-      businessId: business._id,
-      type: "seo",
-      title: "Setup complete — agent is running",
-      detail:
-        "We'll start posting, replying to reviews and tracking your rank.",
-      createdAt: Date.now(),
-    });
+    // Editing a finished setup lands here too; only the first time is news.
+    if (first) {
+      await ctx.db.insert("agentActions", {
+        businessId: business._id,
+        type: "seo",
+        title: "Setup complete — agent is running",
+        detail:
+          "We'll draft posts for you to approve, reply to reviews and track your rank.",
+        createdAt: Date.now(),
+      });
+      await ctx.scheduler.runAfter(0, internal.email.sendToUser, {
+        userId: business.userId,
+        template: "setup_complete",
+        dedupeKey: `setup_complete:${business._id}`,
+      });
+    }
   },
 });
 

@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paidMutation, paidQuery } from "./access";
@@ -193,6 +194,9 @@ export const addCustomer = paidMutation({
 
     if (existing) {
       await ctx.db.patch(existing._id, { reviewLinkSentAt: Date.now() });
+      await ctx.scheduler.runAfter(0, internal.messaging.sendReviewInvite, {
+        customerId: existing._id,
+      });
       return { id: existing._id, repeat: true };
     }
 
@@ -204,14 +208,10 @@ export const addCustomer = paidMutation({
       source: "manual",
     });
 
-    await ctx.db.insert("agentActions", {
-      businessId: business._id,
-      type: "review_reply",
-      title: "Review link sent",
-      detail: service
-        ? `To ${normalised.slice(-10)}, asking about ${service}`
-        : `To ${normalised.slice(-10)}`,
-      createdAt: Date.now(),
+    // The message itself goes through Twilio (WhatsApp, then SMS). The
+    // feed entry is written by the send, so it says what actually happened.
+    await ctx.scheduler.runAfter(0, internal.messaging.sendReviewInvite, {
+      customerId: id,
     });
 
     return { id, repeat: false };

@@ -38,9 +38,13 @@ export async function hasActivePlan(
     .withIndex("by_user", (q) => q.eq("userId", userId as never))
     .collect();
 
+  // "paid" and "partially_refunded" grant; a full refund ends the period
+  // by moving expiresAt back, so the date check covers it too.
   const now = Date.now();
   return rows.some(
-    (r) => r.status === "paid" && (r.expiresAt ?? 0) > now,
+    (r) =>
+      (r.status === "paid" || r.status === "partially_refunded") &&
+      (r.expiresAt ?? 0) > now,
   );
 }
 

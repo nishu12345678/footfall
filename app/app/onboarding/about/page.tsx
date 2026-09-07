@@ -3,7 +3,7 @@
 import { useAction, useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
-import { Steps } from "@/components/steps";
+import { OnboardingTop, nextHref, useEditMode } from "@/components/onboarding-frame";
 import { Working } from "@/components/working";
 
 type Tab = "offerings" | "specialties";
@@ -28,6 +28,7 @@ export default function AboutPage() {
   const add = useMutation(api.about.add);
   const remove = useMutation(api.about.remove);
   const complete = useMutation(api.about.complete);
+  const edit = useEditMode();
   const suggest = useAction(api.about.suggest);
 
   const [tab, setTab] = useState<Tab>("offerings");
@@ -108,12 +109,12 @@ export default function AboutPage() {
       return;
     }
     await complete({});
-    window.location.href = "/app/onboarding/gbp";
+    window.location.href = nextHref(3, edit);
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-12">
-      <Steps current={3} />
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-8 sm:py-12">
+      <OnboardingTop step={3} edit={edit} />
 
       <div className="mt-9 grid grid-cols-2 gap-1 rounded-full bg-paper-3 p-1">
         {(["offerings", "specialties"] as const).map((t) => (
@@ -256,7 +257,7 @@ export default function AboutPage() {
         disabled={chosen.length === 0}
         className="btn btn-primary mt-10 w-full disabled:cursor-not-allowed disabled:opacity-40"
       >
-        {tab === "offerings" ? "save info & next" : "save & next"}
+        {tab === "offerings" ? "save info & next" : edit ? "save changes" : "save & next"}
       </button>
     </main>
   );

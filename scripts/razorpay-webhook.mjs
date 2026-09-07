@@ -15,6 +15,14 @@
  * "created". Run it twice and the period must not double. Add
  * --bad-signature and the backend must answer 400 and write nothing.
  *
+ * More of the lifecycle:
+ *   --amount 100                  wrong amount -> row goes to "mismatch"
+ *   --event payment.failed        declined attempt -> "attempted" + reason
+ *   --event payment.authorized    blocked, not captured -> "authorized"
+ *   --event refund.processed --payment pay_XXX [--amount 50000]
+ *                                 partial/full refund on a paid row
+ *   --event-id evt_1              replay the same id: answered "duplicate"
+ *
  * The secret comes from --secret, RAZORPAY_WEBHOOK_SECRET, or convex/.env.local,
  * and the target from --url, NEXT_PUBLIC_CONVEX_SITE_URL, or .env.local.
  */
@@ -77,8 +85,11 @@ const site = (
 const order = args.order;
 const event = args.event ?? "payment.captured";
 const payment = args.payment ?? `pay_fake_${Date.now()}`;
+const amount = Number(args.amount ?? 199900);
+const eventId = args["event-id"] ?? `evt_fake_${Date.now()}`;
+const isRefund = event.startsWith("refund.");
 
-if (!order || !secret) {
+if ((!order && !isRefund) || !secret) {
   console.error(
     [
       "usage: npm run webhook:fake -- --order order_XXXX [--payment pay_XXXX]",
@@ -96,21 +107,53 @@ if (!order || !secret) {
   process.exit(1);
 }
 
+const paymentStatus =
+  event === "payment.failed"
+    ? "failed"
+    : event === "payment.authorized"
+      ? "authorized"
+      : "captured";
+
+const payload = isRefund
+  ? {
+      refund: {
+        entity: {
+          id: args.refund ?? `rfnd_fake_${Date.now()}`,
+          entity: "refund",
+          payment_id: payment,
+          amount,
+          currency: "INR",
+          status: event.split(".")[1],
+          speed_processed: "normal",
+          notes: { reason: "fake webhook" },
+        },
+      },
+    }
+  : {
+      payment: {
+        entity: {
+          id: payment,
+          entity: "payment",
+          order_id: order,
+          amount,
+          currency: "INR",
+          status: paymentStatus,
+          method: "upi",
+          ...(paymentStatus === "failed"
+            ? {
+                error_code: "BAD_REQUEST_ERROR",
+                error_description: "Payment failed (fake webhook)",
+                error_reason: "payment_failed",
+              }
+            : {}),
+        },
+      },
+    };
+
 const body = JSON.stringify({
   entity: "event",
   event,
-  payload: {
-    payment: {
-      entity: {
-        id: payment,
-        entity: "payment",
-        order_id: order,
-        status: "captured",
-        currency: "INR",
-        method: "upi",
-      },
-    },
-  },
+  payload,
   created_at: Math.floor(Date.now() / 1000),
 });
 
@@ -121,7 +164,7 @@ if (args.flags.has("bad-signature")) {
 
 const url = `${site}/razorpay/webhook`;
 console.log(`POST ${url}`);
-console.log(`event=${event} order=${order} payment=${payment}`);
+console.log(`event=${event} id=${eventId} order=${order ?? "-"} payment=${payment} amount=${amount}`);
 
 let res;
 try {
@@ -130,7 +173,7 @@ try {
     headers: {
       "content-type": "application/json",
       "x-razorpay-signature": signature,
-      "x-razorpay-event-id": `evt_fake_${Date.now()}`,
+      "x-razorpay-event-id": eventId,
     },
     body,
   });

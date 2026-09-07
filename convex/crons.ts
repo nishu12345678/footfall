@@ -47,7 +47,8 @@ crons.daily(
 );
 
 // Refills the content plan before it runs out, so the profile never goes
-// quiet. Google posts lose prominence after about seven days.
+// quiet. Google posts lose prominence after about seven days. The refill
+// is drafts only: the owner approves and schedules them.
 crons.weekly(
   "top up the post plan",
   { dayOfWeek: "sunday", hourUTC: 3, minuteUTC: 0 }, // 08:30 IST Sunday
@@ -60,6 +61,22 @@ crons.daily(
   "warn about plans running out",
   { hourUTC: 4, minuteUTC: 0 }, // 09:30 IST
   internal.billing.remindExpiring,
+);
+
+// The webhook and the browser can both miss a payment. Every open order
+// is checked against Razorpay's own record until it settles or expires.
+crons.interval(
+  "reconcile open payments",
+  { minutes: 15 },
+  internal.billing.reconcilePending,
+);
+
+// Orders nobody finished are closed after a day, so the billing screen
+// stops offering "check status" on something that will never land.
+crons.daily(
+  "expire stale orders",
+  { hourUTC: 20, minuteUTC: 30 }, // 02:00 IST
+  internal.billing.expireStaleOrders,
 );
 
 crons.weekly(

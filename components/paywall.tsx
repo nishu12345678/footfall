@@ -21,6 +21,8 @@ const FREE_PATHS = [
   "/app/billing",
   "/app/report",
   "/app/connect",
+  // Signing out and disconnecting Google must work with a lapsed plan.
+  "/app/settings",
 ];
 
 export function Paywall({ children }: { children: ReactNode }) {

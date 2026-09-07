@@ -234,7 +234,7 @@ export default function Privacy() {
             personal details.
           </LI>
           <LI>
-            <Term>MSG91 and Resend</Term> &mdash; deliver your sign-in code by
+            <Term>Twilio and Resend</Term> &mdash; deliver your sign-in code by
             SMS and email respectively.
           </LI>
         </UL>

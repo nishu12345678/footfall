@@ -1,4 +1,5 @@
 import { Steps } from "@/components/steps";
+import { BackButton } from "@/components/back-button";
 
 /**
  * Step 1 of onboarding — the one thing the owner has to do themselves.
@@ -12,7 +13,8 @@ export default async function ConnectPage({
   const { error } = await searchParams;
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-12">
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-8 sm:py-12">
+      <BackButton fallback="/app/report" className="-ml-2 mb-4" />
       <Steps current={1} />
 
       <div className="mt-10 flex flex-1 flex-col justify-center">

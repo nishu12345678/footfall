@@ -71,12 +71,16 @@ GOOGLE_API_MOCK_URL=http://127.0.0.1:3000/api/mock/google
 # AUTH_GOOGLE_ID=
 # AUTH_GOOGLE_SECRET=
 
-# Only for real SMS and email codes. Unneeded with OTP_DEV_ECHO.
-# MSG91_AUTH_KEY=
-# MSG91_SENDER_ID=
-# MSG91_TEMPLATE_ID=
-# AUTH_RESEND_KEY=
-# AUTH_EMAIL_FROM=
+# SMS/WhatsApp through Twilio, email through Resend. Unneeded with
+# OTP_DEV_ECHO: sends are logged (see the messages / emails tables) and
+# skipped.
+# TWILIO_ACCOUNT_SID=
+# TWILIO_AUTH_TOKEN=
+# TWILIO_MESSAGING_SERVICE_SID=   # or TWILIO_FROM_NUMBER=+91...
+# TWILIO_WHATSAPP_FROM=           # optional
+# RESEND_API_KEY=
+# EMAIL_FROM="footfall <hello@footfall.zone>"
+# RESEND_WEBHOOK_SECRET=
 ```
 
 Not in that file: `CONVEX_SITE_URL` and `CONVEX_CLOUD_URL` (Convex sets
@@ -102,7 +106,7 @@ with `npx convex env list`, adding `--deployment <name>` for a cloud one.
 
 | Key | Where | Needed for | Without it |
 |---|---|---|---|
-| `OTP_DEV_ECHO=1` | Convex | Signing in with phone or email while MSG91 and Resend are unset. The code is printed in the `npx convex dev` log. | You cannot sign in. |
+| `OTP_DEV_ECHO=1` | Convex | Signing in with phone or email while Twilio and Resend are unset. The code is printed in the `npx convex dev` log, and every send is still logged to the `messages` / `emails` tables as "skipped". | You cannot sign in. |
 | `GOOGLE_MOCK_ENABLED=1` | `.env.local` | The fake Google at `/api/mock/google` | Route answers 404 |
 | `GOOGLE_API_MOCK_URL=http://127.0.0.1:3000/api/mock/google` | Convex | Backend talks to the fake Google | Backend calls the real Google APIs, which fail without a listing |
 | `SITE_URL=http://localhost:3000` | Convex | Where the OAuth callback sends the browser back | Lands on the wrong host |
@@ -114,7 +118,9 @@ with `npx convex env list`, adding `--deployment <name>` for a cloud one.
 | `SERPAPI_KEY` | Convex | Rank checks and the geo-grid. Every pin per keyword is one paid search, so leave this blank unless you are testing ranking. | Rank check errors; the rest of Performance works from the mock's metrics |
 | `DATAFORSEO_AUTH` | Convex | Keyword search volumes | Keywords show without volumes |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Convex | Only for the real Google consent screen. Not needed with the mock. | Nothing, with the mock on |
-| `MSG91_*`, `AUTH_RESEND_KEY` | Convex | Real SMS and email codes | Nothing, with `OTP_DEV_ECHO` on |
+| `TWILIO_*` | Convex | Real SMS (sign-in codes, plan reminders) and WhatsApp (review invites) | Nothing, with `OTP_DEV_ECHO` on; sends are logged as "skipped" |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Convex | Every email: sign-in codes, welcome, receipts, payment failures, refunds, plan reminders, posts/reviews awaiting approval, Google disconnected | Nothing, with `OTP_DEV_ECHO` on; sends are logged as "skipped" |
+| `RESEND_WEBHOOK_SECRET` | Convex | Delivered / bounced / complained landing on the `emails` table via `<CONVEX_SITE_URL>/resend/webhook` | Rows stop at "sent" |
 
 ## Turn the fake Google on
 

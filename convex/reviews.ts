@@ -607,6 +607,17 @@ export const noteHeld = internalMutation({
         "We've written a reply, but a low rating goes out under your name only when you say so.",
       createdAt: Date.now(),
     });
+    const business = await ctx.db.get(businessId);
+    if (business) {
+      // One email per day at most, however many syncs find the same review.
+      const day = new Date().toISOString().slice(0, 10);
+      await ctx.scheduler.runAfter(0, internal.email.sendToUser, {
+        userId: business.userId,
+        template: "reviews_need_approval",
+        dedupeKey: `reviews_need_approval:${businessId}:${day}`,
+        params: { count: held },
+      });
+    }
   },
 });
 

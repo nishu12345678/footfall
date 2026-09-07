@@ -315,10 +315,26 @@ describe("the owner's own path is unchanged", () => {
     expect(await get(b.offeringId)).not.toBeNull();
   });
 
-  test("posts.publishPost sends the owner's post to the owner's listing", async () => {
-    const result = await signedInAs(t, a).action(api.posts.publishPost, {
-      id: a.postId,
-    });
+  test("posts.publishPost refuses a draft until the owner approves it", async () => {
+    const me = signedInAs(t, a);
+    const refused = await me.action(api.posts.publishPost, { id: a.postId });
+    expect(refused.ok).toBe(false);
+    expect(refused.error).toMatch(/approve/i);
+    expect(calls).toHaveLength(0);
+    expect((await get(a.postId))?.status).toBe("draft");
+
+    // Scheduling is gated the same way.
+    await expect(
+      me.mutation(api.posts.schedulePost, { id: a.postId }),
+    ).rejects.toThrow(/approve/i);
+  });
+
+  test("posts.publishPost sends the owner's approved post to the owner's listing", async () => {
+    const me = signedInAs(t, a);
+    await me.mutation(api.posts.approvePost, { id: a.postId });
+    expect((await get(a.postId))?.status).toBe("approved");
+
+    const result = await me.action(api.posts.publishPost, { id: a.postId });
     expect(result.ok).toBe(true);
     expect(calls).toHaveLength(1);
     expect(calls[0]).toContain("accounts/A/locations/A/localPosts");

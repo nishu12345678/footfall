@@ -4,6 +4,8 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { BRAND } from "@/lib/content";
+import { BRAND_ASSETS } from "@/lib/brand";
+import { BackButton } from "@/components/back-button";
 
 type Method = "phone" | "email";
 type Step = "identify" | "code";
@@ -72,7 +74,7 @@ export default function LoginPage() {
     setDetail(null);
     try {
       if (method === "phone") {
-        await signIn("msg91", { phone: e164 });
+        await signIn("twilio", { phone: e164 });
       } else {
         await signIn("email-otp", { email: cleanEmail });
       }
@@ -97,7 +99,7 @@ export default function LoginPage() {
     const value = code.replace(/\D/g, "");
     try {
       if (method === "phone") {
-        await signIn("msg91", { phone: e164, code: value });
+        await signIn("twilio", { phone: e164, code: value });
       } else {
         await signIn("email-otp", { email: cleanEmail, code: value });
       }
@@ -121,15 +123,28 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-12">
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-8 sm:py-12">
+      {/* Back: a page back to the site from the first step; a step back to
+          the number/email from the code step. */}
+      {step === "code" ? (
+        <BackButton
+          fallback="/app/login"
+          onClick={() => reset(method)}
+          className="-ml-2"
+        />
+      ) : (
+        <BackButton fallback="/" label="Back" className="-ml-2" />
+      )}
       <div className="flex flex-1 flex-col justify-center">
         <div className="text-center">
-          <span
-            aria-hidden
-            className="mx-auto grid h-12 w-12 place-items-center rounded-[16px] bg-pin text-[20px] text-white shadow-lift"
-          >
-            ◎
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={BRAND_ASSETS.logo}
+            alt=""
+            width={48}
+            height={48}
+            className="mx-auto h-12 w-12 rounded-[16px] shadow-lift"
+          />
           <h1 className="mt-5 text-[2.4rem] font-bold tracking-tight">
             {BRAND.name}
           </h1>

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { PRICING } from "@/lib/content";
 import { shopHost, shopUrl } from "@/lib/site-host";
+import { BackButton } from "@/components/back-button";
 
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
@@ -87,7 +88,8 @@ export default function ReportPage() {
 
   if (!report.connected) {
     return (
-      <main className="mx-auto max-w-xl px-6 py-14">
+      <main className="mx-auto max-w-xl px-6 py-10 sm:py-14">
+        <BackButton fallback="/" className="-ml-2 mb-4" />
         <h1 className="text-[clamp(1.9rem,5vw,2.2rem)]">
           Connect your Google profile
         </h1>
@@ -162,7 +164,8 @@ export default function ReportPage() {
   };
 
   return (
-    <main className="mx-auto max-w-xl px-6 py-12">
+    <main className="mx-auto max-w-xl px-6 py-8 sm:py-12">
+      <BackButton fallback={report.paid ? "/app" : "/"} className="-ml-2 mb-4" />
       <p className="text-[13px] font-medium uppercase tracking-[0.05em] text-pin">
         Free listing report
       </p>

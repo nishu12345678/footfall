@@ -4,6 +4,7 @@ import { useAction } from "convex/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { Steps } from "@/components/steps";
+import { BackButton } from "@/components/back-button";
 
 type Location = {
   name: string;
@@ -73,7 +74,14 @@ export default function ProcessingPage() {
   }, [listLocations, link]);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-12">
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-8 sm:py-12">
+      {/* No way back while the link is in flight — leaving mid-exchange is
+          what the "don't close this window" line is about. */}
+      {phase !== "working" && phase !== "linked" ? (
+        <BackButton fallback="/app/connect" className="-ml-2 mb-4" />
+      ) : (
+        <div className="mb-4 h-11" aria-hidden />
+      )}
       <Steps current={phase === "linked" ? 2 : 1} />
 
       <div className="mt-10 flex flex-1 flex-col justify-center">

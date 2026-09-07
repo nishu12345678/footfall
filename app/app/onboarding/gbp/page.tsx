@@ -3,7 +3,7 @@
 import { useAction, useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
-import { Steps } from "@/components/steps";
+import { OnboardingTop, nextHref, useEditMode } from "@/components/onboarding-frame";
 import { Working } from "@/components/working";
 import { ONBOARDING_STEPS } from "@/lib/onboarding";
 import dynamic from "next/dynamic";
@@ -55,6 +55,7 @@ export default function GbpPage() {
   const setHours = useMutation(api.gbp.setHours);
   const toggleAttribute = useMutation(api.gbp.toggleAttribute);
   const complete = useMutation(api.gbp.complete);
+  const edit = useEditMode();
   const researchKeywords = useAction(api.keywords.research);
   const seedAreas = useMutation(api.gbp.seedServiceAreas);
   const nearbyAreas = useAction(api.gbp.nearbyAreas);
@@ -202,7 +203,7 @@ export default function GbpPage() {
     setBusy(true);
     try {
       await complete({});
-      window.location.href = "/app/onboarding/website";
+      window.location.href = nextHref(4, edit);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setBusy(false);
@@ -210,8 +211,8 @@ export default function GbpPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-12">
-      <Steps current={4} />
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-8 sm:py-12">
+      <OnboardingTop step={4} edit={edit} />
 
       <div className="mt-9 flex gap-5 overflow-x-auto border-b border-rule">
         {TABS.map((t) => (
@@ -670,15 +671,17 @@ export default function GbpPage() {
           : tab === "attributes"
             ? busy
               ? "saving…"
-              : "save & make my website"
+              : edit
+                ? "save changes"
+                : "save & make my website"
             : "save & next"}
       </button>
 
       <a
-        href={ONBOARDING_STEPS[4].href}
+        href={edit ? "/app/settings" : ONBOARDING_STEPS[4].href}
         className="mt-4 block text-center text-[13px] font-medium text-pin hover:opacity-80"
       >
-        skip the rest of this step
+        {edit ? "back to settings without saving the rest" : "skip the rest of this step"}
       </a>
     </main>
   );

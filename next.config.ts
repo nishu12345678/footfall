@@ -45,7 +45,10 @@ const nextConfig: NextConfig = {
           destination: "/s/:slug/:path*",
         },
       ],
-      afterFiles: [],
+      // Browsers and link previewers still ask for /favicon.ico by
+      // convention. Serve the one in public/brand rather than keeping a
+      // second copy at the root.
+      afterFiles: [{ source: "/favicon.ico", destination: "/brand/favicon.ico" }],
       fallback: [],
     };
   },

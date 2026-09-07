@@ -44,6 +44,16 @@ export const metadata: Metadata = {
     description:
       "Stop paying for Instagram posts nobody sees. footfall works on the listing your customers actually search.",
     type: "website",
+    images: ["/brand/og-image.png"],
+  },
+  icons: {
+    icon: [
+      { url: "/brand/favicon.ico", sizes: "any" },
+      { url: "/brand/logo-32.png", type: "image/png", sizes: "32x32" },
+      { url: "/brand/logo-16.png", type: "image/png", sizes: "16x16" },
+    ],
+    apple: "/brand/logo-180.png",
+    shortcut: "/brand/favicon.ico",
   },
 };
 

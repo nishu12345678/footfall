@@ -3,7 +3,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
-import { Steps } from "@/components/steps";
+import { OnboardingTop, nextHref, saveLabel, useEditMode } from "@/components/onboarding-frame";
 
 type Fields = {
   orgName: string;
@@ -35,6 +35,7 @@ const EMPTY: Fields = {
 export default function LocationPage() {
   const business = useQuery(api.businesses.mine);
   const save = useMutation(api.businesses.updateLocation);
+  const edit = useEditMode();
 
   const [fields, setFields] = useState<Fields>(EMPTY);
   const [loaded, setLoaded] = useState(false);
@@ -96,7 +97,7 @@ export default function LocationPage() {
         email: fields.email.trim() || undefined,
         website: fields.website.trim() || undefined,
       });
-      window.location.href = "/app/onboarding/about";
+      window.location.href = nextHref(2, edit);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setBusy(false);
@@ -104,8 +105,8 @@ export default function LocationPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-12">
-      <Steps current={2} />
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-8 sm:py-12">
+      <OnboardingTop step={2} edit={edit} />
 
       <form
         className="mt-10 flex-1"
@@ -185,7 +186,7 @@ export default function LocationPage() {
           disabled={busy || !fields.orgName.trim()}
           className="btn btn-primary mt-10 w-full disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {busy ? "saving…" : "save & next"}
+          {saveLabel(edit, busy)}
         </button>
       </form>
     </main>

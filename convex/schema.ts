@@ -185,19 +185,64 @@ export default defineSchema({
 
   /* ------------------------------ content ----------------------------- */
 
+  /**
+   * A post moves Generate -> Review -> Approve -> Schedule -> Publish.
+   *
+   *   draft      written (by the agent or the owner), waiting for approval
+   *   approved   the owner has read it and said yes; not yet given a slot
+   *   scheduled  approved and given a slot; the morning cron publishes it
+   *   published  live on the listing
+   *   failed     Google refused it; the owner can fix and approve again
+   *
+   * Nothing reaches "scheduled" without passing "approved" first.
+   */
   posts: defineTable({
     businessId: v.id("businesses"),
     title: v.optional(v.string()),
     body: v.string(),
     imageUrl: v.optional(v.string()),
-    status: v.string(), // "draft" | "scheduled" | "published" | "failed"
+    status: v.string(), // "draft" | "approved" | "scheduled" | "published" | "failed"
     imageSource: v.optional(v.string()), // "listing" | "made"
     imageNote: v.optional(v.string()),
     scheduledFor: v.optional(v.number()),
     publishedAt: v.optional(v.number()),
     gbpPostName: v.optional(v.string()),
     error: v.optional(v.string()),
-    generatedBy: v.string(), // "ai" | "user"
+    generatedBy: v.string(), // "ai" | "user" | "google"
+    /** When the owner approved it, and whether a person or a backfill did. */
+    approvedAt: v.optional(v.number()),
+    approvedBy: v.optional(v.string()), // "owner" | "backfill"
+    /** The generation run that produced it, if the agent wrote it. */
+    generationId: v.optional(v.id("postGenerations")),
+    editedAt: v.optional(v.number()),
+  })
+    .index("by_business", ["businessId"])
+    .index("by_business_status", ["businessId", "status"])
+    .index("by_status_due", ["status", "scheduledFor"]),
+
+  /**
+   * One row per "generate posts" run, so the screen can show progress,
+   * the owner can stop it, and a second click can't start a second run.
+   *
+   * The action itself is scheduled, not awaited from the browser: it checks
+   * `cancelRequestedAt` before every post and stops between posts. A run
+   * that hasn't sent a heartbeat for a while is treated as dead.
+   */
+  postGenerations: defineTable({
+    businessId: v.id("businesses"),
+    userId: v.id("users"),
+    mode: v.string(), // "plan" | "single"
+    brief: v.optional(v.string()),
+    requested: v.number(),
+    produced: v.number(),
+    status: v.string(), // "running" | "done" | "cancelled" | "failed" | "timed_out"
+    startedAt: v.number(),
+    heartbeatAt: v.number(),
+    finishedAt: v.optional(v.number()),
+    cancelRequestedAt: v.optional(v.number()),
+    error: v.optional(v.string()),
+    /** Who asked: the owner from the screen, or the weekly cron. */
+    source: v.string(), // "owner" | "cron"
   })
     .index("by_business", ["businessId"])
     .index("by_business_status", ["businessId", "status"]),
@@ -306,15 +351,28 @@ export default defineSchema({
 
   subscriptions: defineTable({
     userId: v.id("users"),
-    plan: v.string(), // "monthly" | "yearly"
+    plan: v.string(), // "monthly" | "yearly" | "comp"
     /** What Razorpay was actually asked for, in paise. Never trusted from
         the browser — the server picks it from its own plan table. */
     amountPaise: v.number(),
     currency: v.string(),
     razorpayOrderId: v.string(),
     razorpayPaymentId: v.optional(v.string()),
-    /** "created" until the money is captured, then "paid". Only "paid"
-        rows grant access. */
+    /**
+     * The order's life, in the order it happens:
+     *
+     *   created      order opened, Checkout not yet finished
+     *   attempted    Checkout reported a failed/declined attempt; the
+     *                order is still open and can be retried
+     *   authorized   money blocked at the bank, not yet captured
+     *   paid         captured — the only state that grants access
+     *   failed       gave up on this order (a new one is opened to retry)
+     *   expired      never paid; closed by the daily sweep
+     *   mismatch     Razorpay's payment didn't match what we asked for
+     *                (amount / currency / order). Held for a person.
+     *   refunded     paid, then fully refunded — access ends
+     *   partially_refunded  paid, part of it returned — access stays
+     */
     status: v.string(),
     paidAt: v.optional(v.number()),
     startsAt: v.optional(v.number()),
@@ -323,9 +381,133 @@ export default defineSchema({
         Razorpay's webhook. Both can arrive; whichever lands first wins and
         the other is ignored. Worth keeping when reconciling a dispute. */
     confirmedBy: v.optional(v.string()),
+    /** Razorpay's own status for the last payment we saw on this order. */
+    paymentStatus: v.optional(v.string()),
+    /** Razorpay's reason for the last failure, verbatim, for support. */
+    failureCode: v.optional(v.string()),
+    failureReason: v.optional(v.string()),
+    /** How many Checkout attempts Razorpay reported on this order. */
+    attempts: v.optional(v.number()),
+    /** Running total returned to the customer, in paise. */
+    refundedPaise: v.optional(v.number()),
+    /** Set when the sweep or a refund ends access before expiresAt. */
+    endedAt: v.optional(v.number()),
+    endedReason: v.optional(v.string()),
+    updatedAt: v.optional(v.number()),
+    /** When each customer-facing email went, so retries can't send twice. */
+    receiptEmailedAt: v.optional(v.number()),
+    failureEmailedAt: v.optional(v.number()),
+    expiringEmailedAt: v.optional(v.number()),
+    expiredEmailedAt: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
+    .index("by_order", ["razorpayOrderId"])
+    .index("by_payment", ["razorpayPaymentId"])
+    .index("by_status", ["status"]),
+
+  /**
+   * Every webhook Razorpay sends, keyed by its x-razorpay-event-id. Razorpay
+   * retries and can deliver the same event more than once, and out of
+   * order; the row is written before the event is acted on, so a repeat is
+   * seen and skipped. Doubles as the audit trail when a payment is disputed.
+   */
+  paymentEvents: defineTable({
+    eventId: v.string(),
+    event: v.string(),
+    razorpayOrderId: v.optional(v.string()),
+    razorpayPaymentId: v.optional(v.string()),
+    razorpayRefundId: v.optional(v.string()),
+    /** "processed" | "duplicate" | "ignored" | "failed" */
+    outcome: v.string(),
+    note: v.optional(v.string()),
+    receivedAt: v.number(),
+  })
+    .index("by_event_id", ["eventId"])
     .index("by_order", ["razorpayOrderId"]),
+
+  /** One row per Razorpay refund, full or partial. */
+  refunds: defineTable({
+    subscriptionId: v.id("subscriptions"),
+    userId: v.id("users"),
+    razorpayRefundId: v.string(),
+    razorpayPaymentId: v.string(),
+    amountPaise: v.number(),
+    /** "created" | "processed" | "failed" — Razorpay's own states. */
+    status: v.string(),
+    speed: v.optional(v.string()),
+    reason: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    emailedAt: v.optional(v.number()),
+  })
+    .index("by_refund_id", ["razorpayRefundId"])
+    .index("by_payment", ["razorpayPaymentId"])
+    .index("by_subscription", ["subscriptionId"]),
+
+  /* ----------------------------- messaging ---------------------------------
+     Every SMS and WhatsApp message the product sends goes through Twilio and
+     leaves a row here. "sent" means Twilio accepted it; "delivered" means the
+     handset got it. A message is never reported as delivered on our say-so. */
+
+  messages: defineTable({
+    userId: v.optional(v.id("users")),
+    businessId: v.optional(v.id("businesses")),
+    channel: v.string(), // "sms" | "whatsapp"
+    to: v.string(), // E.164, no "whatsapp:" prefix
+    body: v.string(),
+    /** "otp" | "review_invite" | "plan_expiring" | "plan_expired" | ... */
+    purpose: v.string(),
+    /** Same key twice means the second is dropped as a duplicate. */
+    dedupeKey: v.optional(v.string()),
+    /** "queued" | "sent" | "delivered" | "undelivered" | "failed" | "skipped" */
+    status: v.string(),
+    providerSid: v.optional(v.string()),
+    providerStatus: v.optional(v.string()),
+    errorCode: v.optional(v.string()),
+    errorMessage: v.optional(v.string()),
+    attempts: v.number(),
+    nextAttemptAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_sid", ["providerSid"])
+    .index("by_dedupe", ["dedupeKey"])
+    .index("by_business", ["businessId"])
+    .index("by_user", ["userId"]),
+
+  /* ------------------------------- email -----------------------------------
+     Same discipline for email, through Resend. */
+
+  emails: defineTable({
+    userId: v.optional(v.id("users")),
+    businessId: v.optional(v.id("businesses")),
+    to: v.string(),
+    subject: v.string(),
+    /** "otp" | "welcome" | "receipt" | "payment_failed" | "refund" | ... */
+    purpose: v.string(),
+    dedupeKey: v.optional(v.string()),
+    /** "queued" | "sent" | "delivered" | "delayed" | "bounced" |
+        "complained" | "failed" | "skipped" */
+    status: v.string(),
+    resendId: v.optional(v.string()),
+    error: v.optional(v.string()),
+    attempts: v.number(),
+    nextAttemptAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_dedupe", ["dedupeKey"])
+    .index("by_resend_id", ["resendId"])
+    .index("by_user", ["userId"])
+    .index("by_to", ["to"]),
+
+  /** Addresses that bounced or complained. We stop writing to them. */
+  emailSuppressions: defineTable({
+    email: v.string(),
+    reason: v.string(), // "bounced" | "complained" | "invalid"
+    detail: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_email", ["email"]),
 
   /* ------------------------------ free report ------------------------------
      What we found when we looked at the shop's website. Cached because it

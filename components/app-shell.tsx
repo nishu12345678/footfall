@@ -2,6 +2,10 @@
 
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { LINKS } from "@/lib/content";
+
+/** The founder's WhatsApp, same as the marketing site's "Talk on WhatsApp". */
+const SUPPORT_WHATSAPP = LINKS.whatsapp;
 
 function IconHouse() {
   return (
@@ -102,6 +106,25 @@ function IconStar() {
   );
 }
 
+function IconGear() {
+  return (
+    <svg
+      aria-hidden
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
+    </svg>
+  );
+}
+
 const NAV = [
   { href: "/app", label: "Home", Icon: IconHouse },
   { href: "/app/performance", label: "Performance", Icon: IconChart },
@@ -148,12 +171,19 @@ export function AppHeader({
         </span>
 
         <a
-          href="https://wa.me/"
+          href={SUPPORT_WHATSAPP}
           target="_blank"
           rel="noreferrer"
           className="pressable flex-none rounded-full bg-black/5 px-3.5 py-1.5 text-[13px] font-semibold text-ink"
         >
           Help
+        </a>
+        <a
+          href="/app/settings"
+          aria-label="Settings"
+          className="pressable grid h-9 w-9 flex-none place-items-center rounded-full bg-black/5 text-ink"
+        >
+          <IconGear />
         </a>
       </div>
     </header>

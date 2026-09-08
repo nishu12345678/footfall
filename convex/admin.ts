@@ -306,3 +306,218 @@ export const migratePhoneProvider = internalMutation({
     return { accounts, codes };
   },
 });
+
+/* ------------------------------ erase a user -----------------------------
+   Everything one person left behind, gone: their business and all its
+   content, their payments and message/email logs, their sign-in accounts
+   and sessions, their files. This is the "delete my account" of last
+   resort, run by hand:
+
+     npx convex run admin:eraseUser '{"email":"owner@example.com"}'
+     npx convex run admin:eraseUser '{"phone":"919319102143","dryRun":false}'
+
+   dryRun defaults to TRUE: the first run only counts, so the blast radius
+   is read before anything goes. Receipts note: subscriptions and refunds
+   are deleted with the rest — if you need the money trail for accounts,
+   export it first (Razorpay keeps its own copy either way).             */
+
+export const eraseUser = internalMutation({
+  args: {
+    userId: v.optional(v.id("users")),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, { userId, email, phone, dryRun = true }) => {
+    // ---- find the user, by whichever handle was given
+    let user = userId ? await ctx.db.get(userId) : null;
+    if (!user && email) {
+      user = await ctx.db
+        .query("users")
+        .withIndex("email", (q) => q.eq("email", email.trim().toLowerCase()))
+        .first();
+    }
+    if (!user && phone) {
+      const digits = phone.replace(/\D/g, "");
+      const all = await ctx.db.query("users").collect();
+      user = all.find((u) => (u.phone ?? "").replace(/\D/g, "") === digits) ?? null;
+    }
+    if (!user) throw new ConvexError("No such user.");
+    const uid = user._id;
+
+    const counted: Record<string, number> = {};
+    const bump = (table: string, n: number) => {
+      if (n > 0) counted[table] = (counted[table] ?? 0) + n;
+    };
+    const storageIds = new Set<string>();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const zap = async (table: string, rows: any[]) => {
+      bump(table, rows.length);
+      for (const row of rows) {
+        if (row.storageId) storageIds.add(row.storageId);
+        const fromUrl = ourStorageId(row.imageUrl) ?? ourStorageId(row.url);
+        if (fromUrl) storageIds.add(fromUrl);
+        if (!dryRun) await ctx.db.delete(row._id);
+      }
+    };
+
+    // ---- the business and everything hanging off it
+    const business = await ctx.db
+      .query("businesses")
+      .withIndex("by_user", (q) => q.eq("userId", uid))
+      .first();
+    if (business) {
+      for (const table of BUSINESS_TABLES) {
+        await zap(
+          table,
+          await ctx.db
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .query(table as any)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .withIndex("by_business", (q: any) => q.eq("businessId", business._id))
+            .collect(),
+        );
+      }
+      await zap(
+        "postGenerations",
+        await ctx.db
+          .query("postGenerations")
+          .withIndex("by_business", (q) => q.eq("businessId", business._id))
+          .collect(),
+      );
+      const logo = ourStorageId(business.logoUrl);
+      if (logo) storageIds.add(logo);
+      bump("businesses", 1);
+      if (!dryRun) await ctx.db.delete(business._id);
+    }
+
+    // ---- Google connection
+    await zap(
+      "googleAccounts",
+      await ctx.db
+        .query("googleAccounts")
+        .withIndex("by_user", (q) => q.eq("userId", uid))
+        .collect(),
+    );
+    await zap(
+      "googleLinkTokens",
+      (await ctx.db.query("googleLinkTokens").collect()).filter(
+        (t) => t.userId === uid,
+      ),
+    );
+
+    // ---- money: orders, their webhook events, refunds
+    const subs = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_user", (q) => q.eq("userId", uid))
+      .collect();
+    for (const sub of subs) {
+      await zap(
+        "paymentEvents",
+        await ctx.db
+          .query("paymentEvents")
+          .withIndex("by_order", (q) => q.eq("razorpayOrderId", sub.razorpayOrderId))
+          .collect(),
+      );
+      await zap(
+        "refunds",
+        await ctx.db
+          .query("refunds")
+          .withIndex("by_subscription", (q) => q.eq("subscriptionId", sub._id))
+          .collect(),
+      );
+    }
+    await zap("subscriptions", subs);
+
+    // ---- message and email logs (rows keyed by user or by their business)
+    const messages = await ctx.db
+      .query("messages")
+      .withIndex("by_user", (q) => q.eq("userId", uid))
+      .collect();
+    await zap("messages", messages);
+    const emails = await ctx.db
+      .query("emails")
+      .withIndex("by_user", (q) => q.eq("userId", uid))
+      .collect();
+    await zap("emails", emails);
+    if (user.email) {
+      await zap(
+        "emailSuppressions",
+        await ctx.db
+          .query("emailSuppressions")
+          .withIndex("by_email", (q) => q.eq("email", user.email!.toLowerCase()))
+          .collect(),
+      );
+    }
+
+    // ---- sign-in: sessions, refresh tokens, accounts, codes, the user
+    const sessions = await ctx.db
+      .query("authSessions")
+      .withIndex("userId", (q) => q.eq("userId", uid))
+      .collect();
+    for (const s of sessions) {
+      await zap(
+        "authRefreshTokens",
+        await ctx.db
+          .query("authRefreshTokens")
+          .withIndex("sessionId", (q) => q.eq("sessionId", s._id))
+          .collect(),
+      );
+      await zap(
+        "authVerifiers",
+        (await ctx.db.query("authVerifiers").collect()).filter(
+          (x) => x.sessionId === s._id,
+        ),
+      );
+    }
+    await zap("authSessions", sessions);
+
+    const authAccounts = await ctx.db
+      .query("authAccounts")
+      .withIndex("userIdAndProvider", (q) => q.eq("userId", uid))
+      .collect();
+    for (const a of authAccounts) {
+      await zap(
+        "authVerificationCodes",
+        await ctx.db
+          .query("authVerificationCodes")
+          .withIndex("accountId", (q) => q.eq("accountId", a._id))
+          .collect(),
+      );
+    }
+    await zap("authAccounts", authAccounts);
+
+    for (const identifier of [user.email, user.phone].filter(Boolean) as string[]) {
+      await zap(
+        "authRateLimits",
+        await ctx.db
+          .query("authRateLimits")
+          .withIndex("identifier", (q) => q.eq("identifier", identifier))
+          .collect(),
+      );
+    }
+
+    bump("users", 1);
+    if (!dryRun) await ctx.db.delete(uid);
+
+    // ---- their files
+    bump("files", storageIds.size);
+    if (!dryRun) {
+      for (const id of storageIds) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await ctx.storage.delete(id as any);
+        } catch {
+          /* already gone */
+        }
+      }
+    }
+
+    return {
+      dryRun,
+      user: user.email ?? user.phone ?? String(uid),
+      business: business?.orgName ?? null,
+      removed: counted,
+    };
+  },
+});

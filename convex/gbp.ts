@@ -644,13 +644,18 @@ export const nearbyAreas = paidAction({
 
     // Overpass asks callers to identify themselves, and individual mirrors
     // drop connections often enough that one endpoint isn't reliable.
+    //
+    // Worldwide mirrors only. overpass.osm.ch used to sit in this list and
+    // it is the *Swiss* instance: it answers 200 with a perfectly valid,
+    // perfectly empty result for any Indian coordinate, which the screen
+    // then reported as "no areas near you".
     const MIRRORS = [
       "https://overpass-api.de/api/interpreter",
-      "https://overpass.osm.ch/api/interpreter",
       "https://overpass.kumi.systems/api/interpreter",
     ];
 
     let data: any = null;
+    let empty: any = null;
     let lastError = "";
 
     for (const mirror of MIRRORS) {
@@ -668,19 +673,35 @@ export const nearbyAreas = paidAction({
           lastError = `${mirror} -> ${res.status}`;
           continue;
         }
-        data = await res.json();
-        break;
+        const body = await res.json();
+        // A busy Overpass answers 200 with a "remark" (usually a timeout)
+        // and no elements. That is a failure, not an empty map.
+        if (body?.remark && !(body.elements ?? []).length) {
+          lastError = `${mirror} -> remark: ${String(body.remark).slice(0, 120)}`;
+          continue;
+        }
+        if ((body.elements ?? []).length > 0) {
+          data = body;
+          break;
+        }
+        // Valid but empty: believable only if no other mirror disagrees,
+        // so keep it and ask the next one.
+        empty = body;
       } catch (error) {
         lastError = `${mirror} -> ${error instanceof Error ? error.message : String(error)}`;
       }
     }
 
+    if (!data && empty) data = empty;
     if (!data) {
       console.error(`[overpass] all mirrors failed. ${lastError}`);
       throw new ConvexError(
         "Couldn't reach the map service just now. Add your areas by hand, or try again in a minute.",
       );
     }
+    console.log(
+      `[overpass] ${(data.elements ?? []).length} places within ${radiusKm}km of ${business.lat},${business.lng}`,
+    );
     const toRad = (x: number) => (x * Math.PI) / 180;
     const distance = (lat: number, lng: number) => {
       const dLat = toRad(lat - business.lat!);

@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useAction } from "convex/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { Steps } from "@/components/steps";
 import { BackButton } from "@/components/back-button";
+import { friendlyError } from "@/lib/errors";
 
 type Location = {
   name: string;
@@ -42,7 +44,7 @@ export default function ProcessingPage() {
         setLinked(location);
         setPhase("linked");
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(friendlyError(e));
         setPhase("error");
       }
     },
@@ -67,7 +69,7 @@ export default function ProcessingPage() {
         setLocations(found);
         setPhase("choose");
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(friendlyError(e));
         setPhase("error");
       }
     })();
@@ -151,12 +153,12 @@ export default function ProcessingPage() {
               <strong>{linked?.title}</strong> is connected. We can now improve
               your ranking and reply to your reviews.
             </p>
-            <a
+            <Link
               href="/app/onboarding/location"
               className="btn btn-primary mt-10 w-full"
             >
               continue setup
-            </a>
+            </Link>
           </div>
         ) : null}
 
@@ -171,9 +173,9 @@ export default function ProcessingPage() {
               marketing before, or you signed in with a different Google
               account.
             </p>
-            <a href="/app/connect" className="btn btn-ghost mt-9 w-full">
+            <Link href="/app/connect" className="btn btn-ghost mt-9 w-full">
               try another google account
-            </a>
+            </Link>
           </div>
         ) : null}
 
@@ -185,9 +187,9 @@ export default function ProcessingPage() {
             <p className="mt-4 rounded-[12px] bg-pin-soft px-4 py-3 text-[13px] leading-relaxed break-words">
               {error}
             </p>
-            <a href="/app/connect" className="btn btn-primary mt-9 w-full">
+            <Link href="/app/connect" className="btn btn-primary mt-9 w-full">
               try again
-            </a>
+            </Link>
           </div>
         ) : null}
       </div>

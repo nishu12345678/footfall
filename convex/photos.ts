@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
   action,
   internalAction,
@@ -102,10 +102,10 @@ export const syncForUser = internalAction({
     const business = await ctx.runQuery(internal.google.businessForUser, {
       userId,
     });
-    if (!business) throw new Error("Connect your Google profile first.");
+    if (!business) throw new ConvexError("Connect your Google profile first.");
 
     const parent = parentFor(business);
-    if (!parent) throw new Error("No Google listing linked.");
+    if (!parent) throw new ConvexError("No Google listing linked.");
 
     const token: string = await ctx.runAction(internal.google.accessTokenFor, {
       userId,
@@ -117,7 +117,7 @@ export const syncForUser = internalAction({
     const text = await res.text();
     if (!res.ok) {
       console.error(`[gbp/media] ${res.status} ${text.slice(0, 400)}`);
-      throw new Error(`Google refused (${res.status}): ${text.slice(0, 200)}`);
+      throw new ConvexError("Google refused that request. Try again, or reconnect your profile from Settings.");
     }
 
     const data = JSON.parse(text || "{}");
@@ -150,7 +150,7 @@ export const generateUploadUrl = paidMutation({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -163,13 +163,13 @@ export const savePhoto = paidMutation({
   },
   handler: async (ctx, { storageId, caption, mediaType }) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const business = await ctx.db
       .query("businesses")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
-    if (!business) throw new Error("Connect your Google profile first.");
+    if (!business) throw new ConvexError("Connect your Google profile first.");
 
     // A storage id can't be ownership-checked after the fact. That's fine:
     // generateUploadUrl only ever hands a URL to its own caller, so the
@@ -192,7 +192,7 @@ export const removePhoto = paidMutation({
   handler: async (ctx, { id }) => {
     const { row } = await ownedRow(ctx, id);
     if (row.status === "published") {
-      throw new Error("This one is already on Google. Remove it there.");
+      throw new ConvexError("This one is already on Google. Remove it there.");
     }
     await ctx.db.delete(row._id);
   },
@@ -282,7 +282,7 @@ export const publishPhoto = paidAction({
   args: { id: v.id("photos") },
   handler: async (ctx, { id }): Promise<{ ok: boolean; error?: string }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
     return await ctx.runAction(internal.photos.pushPhoto, {
       photoId: id,
       userId,
@@ -362,7 +362,7 @@ export const syncFromGoogle = paidAction({
   args: {},
   handler: async (ctx): Promise<{ added: number; total: number }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
     return await ctx.runAction(internal.photos.syncForUser, { userId });
   },
 });

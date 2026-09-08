@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
   internalAction,
   internalMutation,
@@ -186,10 +186,10 @@ export const updateDraft = paidMutation({
   handler: async (ctx, { id, body }) => {
     const { row: post } = await ownedRow(ctx, id);
     if (post.status === "published") {
-      throw new Error("Published posts can't be edited here.");
+      throw new ConvexError("Published posts can't be edited here.");
     }
     const text = body.trim().slice(0, 1500);
-    if (!text) throw new Error("A post needs some words.");
+    if (!text) throw new ConvexError("A post needs some words.");
     await ctx.db.patch(post._id, {
       body: text,
       editedAt: Date.now(),
@@ -204,7 +204,7 @@ export const removePost = paidMutation({
   handler: async (ctx, { id }) => {
     const { row: post } = await ownedRow(ctx, id);
     if (post.status === "published") {
-      throw new Error("Published posts can only be removed from Google itself.");
+      throw new ConvexError("Published posts can only be removed from Google itself.");
     }
     await ctx.db.delete(post._id);
   },
@@ -224,9 +224,9 @@ export const approvePost = paidMutation({
       return { status: post.status, already: true };
     }
     if (post.status === "published") {
-      throw new Error("That post is already on your listing.");
+      throw new ConvexError("That post is already on your listing.");
     }
-    if (!post.body.trim()) throw new Error("A post needs some words before it can be approved.");
+    if (!post.body.trim()) throw new ConvexError("A post needs some words before it can be approved.");
     await ctx.db.patch(post._id, {
       status: "approved",
       approvedAt: Date.now(),
@@ -268,18 +268,18 @@ export const schedulePost = paidMutation({
       return { scheduledFor: post.scheduledFor ?? null, already: true };
     }
     if (post.status !== "approved" && post.status !== "scheduled") {
-      throw new Error(
+      throw new ConvexError(
         post.status === "published"
           ? "That post is already on your listing."
           : "Approve the post first, then schedule it.",
       );
     }
-    if (!post.approvedAt) throw new Error("Approve the post first, then schedule it.");
+    if (!post.approvedAt) throw new ConvexError("Approve the post first, then schedule it.");
 
     let when: number;
     if (at !== undefined) {
       if (!Number.isFinite(at) || at < Date.now() - 60_000) {
-        throw new Error("Pick a time that hasn't passed.");
+        throw new ConvexError("Pick a time that hasn't passed.");
       }
       when = at;
     } else {
@@ -293,7 +293,7 @@ export const schedulePost = paidMutation({
         .filter((r) => r._id !== post._id && r.scheduledFor)
         .map((r) => r.scheduledFor as number);
       when = nextSlots(1, taken)[0];
-      if (!when) throw new Error("No free slot in the next few weeks.");
+      if (!when) throw new ConvexError("No free slot in the next few weeks.");
     }
 
     await ctx.db.patch(post._id, { status: "scheduled", scheduledFor: when });
@@ -418,7 +418,7 @@ export const draftBody = internalAction({
     if (!c) return null;
 
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("OPENAI_API_KEY is not set.");
+    if (!apiKey) throw new ConvexError("The writing assistant isn't set up on this server yet.");
 
     const angle = ANGLES[Math.floor(Math.random() * ANGLES.length)];
 
@@ -649,7 +649,7 @@ export const publishPost = paidAction({
     { id },
   ): Promise<{ ok: boolean; name?: string; error?: string }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const { row: post }: Owned<"posts"> = await ctx.runQuery(
       internal.posts.ownedPost,
@@ -783,7 +783,7 @@ export const openRun = internalMutation({
     const now = Date.now();
     for (const r of running) {
       if (r.heartbeatAt > now - RUN_STALE_MS) {
-        throw new Error("Posts are already being written. Wait for it to finish, or stop it.");
+        throw new ConvexError("Posts are already being written. Wait for it to finish, or stop it.");
       }
       // Dead: the action crashed or the deployment restarted mid-run.
       await ctx.db.patch(r._id, {
@@ -879,13 +879,13 @@ export const startGeneration = paidMutation({
   returns: v.id("postGenerations"),
   handler: async (ctx, { mode, count, brief }): Promise<Id<"postGenerations">> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
     const business = await ctx.db
       .query("businesses")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
-    if (!business) throw new Error("Connect your Google profile first.");
-    if (!business.gbpLocationName) throw new Error("Connect your Google profile first.");
+    if (!business) throw new ConvexError("Connect your Google profile first.");
+    if (!business.gbpLocationName) throw new ConvexError("Connect your Google profile first.");
 
     const requested = mode === "single" ? 1 : Math.min(Math.max(count ?? 6, 1), 9);
     const id: Id<"postGenerations"> = await ctx.runMutation(internal.posts.openRun, {
@@ -906,9 +906,9 @@ export const stopGeneration = paidMutation({
   args: { id: v.id("postGenerations") },
   handler: async (ctx, { id }) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
     const run = await ctx.db.get(id);
-    if (!run || run.userId !== userId) throw new Error("Not found.");
+    if (!run || run.userId !== userId) throw new ConvexError("Not found.");
     if (run.status !== "running") return { status: run.status };
     // Already dead: say so now rather than leaving the screen "stopping…".
     if (run.heartbeatAt < Date.now() - RUN_STALE_MS) {
@@ -930,7 +930,7 @@ async function researchTopics(
   count: number,
 ): Promise<{ topic: string; targets?: string }[]> {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not set.");
+  if (!apiKey) throw new ConvexError("The writing assistant isn't set up on this server yet.");
 
   const now = new Date();
   const month = now.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
@@ -1000,7 +1000,7 @@ async function researchTopics(
 
   if (!research.ok) {
     console.error(`[openai] plan ${research.status}`);
-    throw new Error("Couldn't plan the posts just now. Try again.");
+    throw new ConvexError("Couldn't plan the posts just now. Try again.");
   }
 
   const payload = await research.json();
@@ -1008,10 +1008,10 @@ async function researchTopics(
   try {
     topics = JSON.parse(payload?.choices?.[0]?.message?.content ?? "{}").topics ?? [];
   } catch {
-    throw new Error("The planner returned something we couldn't read.");
+    throw new ConvexError("Couldn't plan the posts just now. Try again.");
   }
   topics = topics.filter((t) => t?.topic).slice(0, count);
-  if (topics.length === 0) throw new Error("No topics came back. Try again.");
+  if (topics.length === 0) throw new ConvexError("No topics came back. Try again.");
   return topics;
 }
 

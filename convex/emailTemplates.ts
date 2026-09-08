@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 /**
  * Every email the product sends, in one place, as plain functions.
  *
@@ -108,7 +109,7 @@ const TEMPLATES: Record<string, Template> = {
     text: [
       greet(p),
       "",
-      `The payment for the ${String(p.plan)} plan didn't complete${p.reason ? ` — ${String(p.reason)}` : ""}. Nothing has been charged.`,
+      `The payment for the ${String(p.plan)} plan didn't complete. ${p.reason ? String(p.reason) : ""} Nothing has been charged.`.replace(/\s+/g, " "),
       "",
       "If money left your account, the bank will return it within 5-7 working days; Razorpay never keeps a failed payment.",
       "",
@@ -234,7 +235,7 @@ const TEMPLATES: Record<string, Template> = {
 
 export function render(template: string, params: Params): Rendered {
   const fn = TEMPLATES[template];
-  if (!fn) throw new Error(`Unknown email template: ${template}`);
+  if (!fn) throw new ConvexError(`Unknown email template: ${template}`);
   const { subject, text, cta } = fn(params);
   return { subject, text, html: wrap(subject, text, cta) };
 }

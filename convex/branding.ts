@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { action, internalMutation, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
@@ -173,15 +173,15 @@ export const findLogoCandidates = paidAction({
   args: {},
   handler: async (ctx): Promise<string[]> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const business = await ctx.runQuery(internal.google.businessForUser, {
       userId,
     });
-    if (!business) throw new Error("Connect your Google profile first.");
+    if (!business) throw new ConvexError("Connect your Google profile first.");
 
     const key = process.env.FIRECRAWL_API_KEY;
-    if (!key) throw new Error("FIRECRAWL_API_KEY is not set.");
+    if (!key) throw new ConvexError("Website reading isn't set up on this server yet.");
 
     const targets: string[] = [];
     if (business.website) targets.push(business.website);
@@ -230,7 +230,7 @@ export const findLogoCandidates = paidAction({
     }
 
     if (targets.length === 0) {
-      throw new Error(
+      throw new ConvexError(
         "We couldn't find your business online to read a logo from.",
       );
     }
@@ -257,15 +257,15 @@ export const useLogoFromUrl = paidAction({
     { url, background },
   ): Promise<{ ok: boolean; url: string | null }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const res = await fetch(url);
     if (!res.ok)
-      throw new Error(`Could not download that image (${res.status}).`);
+      throw new ConvexError("Couldn't download that image. Try uploading it instead.");
 
     const type = res.headers.get("content-type") ?? "image/png";
     if (!type.startsWith("image/"))
-      throw new Error("That link isn't an image.");
+      throw new ConvexError("That link isn't an image.");
 
     const blob = await res.blob();
     const storageId = await ctx.storage.store(blob);
@@ -289,7 +289,7 @@ export const attachLogo = internalMutation({
       .query("businesses")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
-    if (!business) throw new Error("Connect your Google profile first.");
+    if (!business) throw new ConvexError("Connect your Google profile first.");
 
     const url = await ctx.storage.getUrl(storageId);
     await ctx.db.patch(business._id, {

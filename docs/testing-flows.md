@@ -79,6 +79,15 @@ Bounces and complaints: point a Resend webhook at
 To force a resend of a deduped email in testing, delete its row from
 `emails` (a `failed` row is retried automatically on the next trigger).
 
+Only a Resend complaint about the *recipient* (`Invalid \`to\` field`,
+422) suppresses an address. A bad `from` or an unverified domain is our
+problem and never locks the owner out. If an address was suppressed by
+mistake:
+
+```
+npx convex run email:unsuppress '{"email":"owner@example.com"}' [--deployment <name>]
+```
+
 ## SMS / WhatsApp (Twilio)
 
 | Flow | Channel | Dedupe |

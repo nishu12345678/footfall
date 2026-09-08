@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
 import { resumeHref, resumeLabel } from "@/lib/onboarding";
+import { friendlyError } from "@/lib/errors";
 
 export default function HomePage() {
   const data = useQuery(api.dashboard.home);
@@ -26,7 +28,7 @@ export default function HomePage() {
       await refresh({});
       setNote("Listing refreshed from Google.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setBusy(false);
     }
@@ -45,7 +47,7 @@ export default function HomePage() {
     >
       {/* Setup isn't finished — say so, and offer the exact step they left. */}
       {!business.onboardingComplete ? (
-        <a
+        <Link
           href={resumeHref(business)}
           className="pressable mb-6 flex items-center gap-3 rounded-[14px] bg-star/15 p-5 shadow-card"
         >
@@ -61,7 +63,7 @@ export default function HomePage() {
           <span aria-hidden className="flex-none text-muted">
             ›
           </span>
-        </a>
+        </Link>
       ) : null}
 
       {/* ---------------------------- reviews ---------------------------- */}
@@ -322,7 +324,7 @@ function Counter({
 }) {
   return (
     <li className="inset-row">
-      <a href={href} className="flex items-center gap-3 px-5 py-4">
+      <Link href={href} className="flex items-center gap-3 px-5 py-4">
         <span className="min-w-0 flex-1">
           <span className="block text-[14px] font-semibold leading-tight">
             {label}
@@ -332,7 +334,7 @@ function Counter({
         <span aria-hidden className="flex-none text-muted">
           ›
         </span>
-      </a>
+      </Link>
     </li>
   );
 }

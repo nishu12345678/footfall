@@ -1,10 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { PRICING } from "@/lib/content";
 import { BackButton } from "@/components/back-button";
+import { describePaymentFailure } from "@/convex/paymentText";
+import { friendlyError } from "@/lib/errors";
 
 /* Razorpay Checkout attaches itself to window. */
 declare global {
@@ -162,7 +165,7 @@ export default function BillingPage() {
       } catch (e) {
         fail(
           "Couldn't start the payment",
-          e instanceof Error ? e.message : "Check your connection and try again.",
+          friendlyError(e, "Check your connection and try again."),
         );
         return;
       }
@@ -212,7 +215,7 @@ export default function BillingPage() {
               if (result.state === "failed") {
                 fail(
                   "That payment didn't go through",
-                  result.reason ?? "Nothing has been charged. You can try again.",
+                  `${describePaymentFailure(null, result.reason)} Nothing has been charged.`,
                 );
                 return;
               }
@@ -227,7 +230,7 @@ export default function BillingPage() {
               setError({
                 title: "Payment made, confirmation pending",
                 body:
-                  (e instanceof Error ? e.message : String(e)) +
+                  (friendlyError(e)) +
                   " We'll keep checking with Razorpay and this page updates by itself. If money left your account it is either credited to your plan or returned.",
               });
             }
@@ -249,7 +252,7 @@ export default function BillingPage() {
           timeout: 15 * 60, // seconds; Checkout closes itself after this
         } as unknown as Record<string, unknown>);
       } catch (e) {
-        fail("Couldn't open Razorpay", e instanceof Error ? e.message : String(e));
+        fail("Couldn't open Razorpay", friendlyError(e));
         return;
       }
 
@@ -266,7 +269,7 @@ export default function BillingPage() {
         }).catch(() => undefined);
         setError({
           title: "That attempt didn't go through",
-          body: `${f?.description ?? "The bank declined it."} Nothing has been charged — you can try another card or UPI in the same window.`,
+          body: `${describePaymentFailure(f?.code, f?.description ?? f?.reason)} Nothing has been charged — you can try again in the same window.`,
         });
       });
 
@@ -288,7 +291,7 @@ export default function BillingPage() {
       } else if (r.state === "failed") {
         setError({
           title: "That payment didn't go through",
-          body: r.reason ?? "Nothing has been charged. You can try again.",
+          body: `${describePaymentFailure(null, r.reason)} Nothing has been charged.`,
         });
         setPhase("idle");
         setWatching(null);
@@ -300,13 +303,13 @@ export default function BillingPage() {
       } else {
         setError({
           title: "Not confirmed yet",
-          body: `Razorpay says: ${r.state}${r.reason ? ` (${r.reason})` : ""}. If you paid, it will land within a few minutes. If you didn't, just try again.`,
+          body: "Razorpay hasn't confirmed a payment on this order. If you paid, it will land within a few minutes and this page will update. If you didn't, just try again.",
         });
       }
     } catch (e) {
       setError({
         title: "Couldn't check just now",
-        body: e instanceof Error ? e.message : String(e),
+        body: friendlyError(e),
       });
     } finally {
       setChecking(false);
@@ -349,9 +352,9 @@ export default function BillingPage() {
             . There is no auto-debit; we&rsquo;ll email you a week before it
             ends.
           </p>
-          <a href="/app" className="btn btn-primary mt-8 w-full">
+          <Link href="/app" className="btn btn-primary mt-8 w-full">
             Go to my listing
-          </a>
+          </Link>
           {!extendOk ? (
             <button
               type="button"
@@ -394,11 +397,8 @@ export default function BillingPage() {
         <div className="mt-5 rounded-[14px] bg-pin-soft p-4 text-[15px] leading-relaxed text-ink">
           <p className="font-semibold">Your last attempt didn&rsquo;t go through</p>
           <p className="mt-1">
-            {lastFailure.failureReason}
-            {lastFailure.failureCode ? (
-              <span className="font-mono text-[12px] text-muted"> · {lastFailure.failureCode}</span>
-            ) : null}
-            . Nothing was charged. Pick a plan below to try again.
+            {lastFailure.failureText ?? describePaymentFailure(lastFailure.failureCode, lastFailure.failureReason)}{" "}
+            Nothing was charged. Pick a plan below to try again.
           </p>
         </div>
       ) : null}

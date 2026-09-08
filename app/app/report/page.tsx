@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useAction, useQuery } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { PRICING } from "@/lib/content";
 import { shopHost, shopUrl } from "@/lib/site-host";
 import { BackButton } from "@/components/back-button";
+import { friendlyError } from "@/lib/errors";
 
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
@@ -64,7 +66,7 @@ export default function ReportPage() {
     try {
       await refresh({});
     } catch (e) {
-      setNote(e instanceof Error ? e.message : String(e));
+      setNote(friendlyError(e));
     } finally {
       setReading(false);
     }
@@ -98,9 +100,9 @@ export default function ReportPage() {
           exactly what is holding it back. Free, and it takes about 40
           seconds. Nothing is published and nothing changes.
         </p>
-        <a href="/app/connect" className="btn btn-primary mt-9 w-full">
+        <Link href="/app/connect" className="btn btn-primary mt-9 w-full">
           Connect Google Business Profile
-        </a>
+        </Link>
       </main>
     );
   }
@@ -138,7 +140,7 @@ export default function ReportPage() {
       const r = await generateSite({});
       setBuilt(r.slug);
     } catch (e) {
-      setNote(e instanceof Error ? e.message : String(e));
+      setNote(friendlyError(e));
     } finally {
       setBuilding(false);
     }
@@ -157,7 +159,7 @@ export default function ReportPage() {
             : "We couldn't read the site just now.",
       );
     } catch (e) {
-      setNote(e instanceof Error ? e.message : String(e));
+      setNote(friendlyError(e));
     } finally {
       setChecking(false);
     }
@@ -319,12 +321,12 @@ export default function ReportPage() {
               month.
             </p>
           ) : null}
-          <a
+          <Link
             href="/app/billing"
             className="btn mt-6 w-full border-white bg-white text-pin hover:bg-white/90"
           >
             See the plans
-          </a>
+          </Link>
           <p className="mt-3 text-center text-[14px] text-white/60">
             Your report stays free either way.
           </p>

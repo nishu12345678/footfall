@@ -5,8 +5,10 @@ import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
 import { Working } from "@/components/working";
+import { AutoTextarea } from "@/components/textarea";
 import type { Id } from "@/convex/_generated/dataModel";
 import { thumb } from "@/lib/images";
+import { friendlyError } from "@/lib/errors";
 
 function when(timestamp?: number) {
   if (!timestamp) return "";
@@ -114,7 +116,7 @@ export default function PostsPage() {
       const msg = await fn();
       if (msg) setNote(msg);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setActing(null);
     }
@@ -133,7 +135,7 @@ export default function PostsPage() {
       });
       if (mode === "single") setBrief("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setStarting(false);
     }
@@ -145,7 +147,7 @@ export default function PostsPage() {
     try {
       await stopGeneration({ id: run.id });
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setStopping(false);
     }
@@ -178,11 +180,11 @@ export default function PostsPage() {
         ) : null}
 
         {editing === post._id ? (
-          <textarea
+          <AutoTextarea
             value={editText}
             onChange={(e) => setEditText(e.target.value)}
-            rows={12}
-            className="w-full resize-none rounded-[12px] border border-rule bg-white p-3 text-[13px] leading-relaxed outline-none focus:border-pin"
+            minRows={6}
+            className="w-full rounded-[12px] border border-rule bg-white p-3 text-[13px] leading-relaxed outline-none focus:border-pin"
           />
         ) : (
           <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed">{post.body}</p>

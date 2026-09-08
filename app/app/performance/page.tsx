@@ -8,6 +8,7 @@ import { Relevance } from "@/components/relevance";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
 import { Working } from "@/components/working";
 import dynamic from "next/dynamic";
+import { friendlyError } from "@/lib/errors";
 
 const RankMap = dynamic(
   () => import("@/components/rank-map").then((m) => m.RankMap),
@@ -88,7 +89,7 @@ export default function PerformancePage() {
     autoRan.current = true;
     setAutoSyncing(true);
     void syncMetrics({ days: 90 })
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .catch((e) => setError(friendlyError(e)))
       .finally(() => setAutoSyncing(false));
   }, [data, stale, syncMetrics]);
 
@@ -102,7 +103,7 @@ export default function PerformancePage() {
     autoRanks.current = true;
     setBusy("ranks");
     void checkRanks({})
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .catch((e) => setError(friendlyError(e)))
       .finally(() => setBusy(null));
   }, [data, checkRanks]);
 
@@ -125,7 +126,7 @@ export default function PerformancePage() {
         );
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setBusy(null);
     }
@@ -138,7 +139,7 @@ export default function PerformancePage() {
       await runGeoGrid({ keyword, size: 3, stepKm: 2 });
       setGridFor(keyword);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setGridding(null);
     }

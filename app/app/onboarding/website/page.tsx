@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useAction, useQuery } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { OnboardingTop, nextHref, useEditMode } from "@/components/onboarding-frame";
 import { Working } from "@/components/working";
 import { shopUrl } from "@/lib/site-host";
+import { friendlyError } from "@/lib/errors";
 
 type Check = { id: string; label: string; passed: boolean; detail: string };
 
@@ -35,7 +37,7 @@ export default function WebsiteStepPage() {
       setAuditing(true);
       void review({})
         .then(setAudit)
-        .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+        .catch((e) => setError(friendlyError(e)))
         .finally(() => setAuditing(false));
       return;
     }
@@ -43,7 +45,7 @@ export default function WebsiteStepPage() {
 
     setBuilding(true);
     void generate({})
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .catch((e) => setError(friendlyError(e)))
       .finally(() => setBuilding(false));
   }, [data, generate, review]);
 
@@ -53,7 +55,7 @@ export default function WebsiteStepPage() {
     try {
       await generate({});
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setBuilding(false);
     }
@@ -71,9 +73,9 @@ export default function WebsiteStepPage() {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
         <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
-        <a href="/app/connect" className="btn btn-primary mt-8 w-full">
+        <Link href="/app/connect" className="btn btn-primary mt-8 w-full">
           connect google
-        </a>
+        </Link>
       </main>
     );
   }
@@ -163,9 +165,9 @@ export default function WebsiteStepPage() {
           ) : null}
         </div>
 
-        <a href={nextHref(5, edit)} className="btn btn-primary mt-10 w-full">
+        <Link href={nextHref(5, edit)} className="btn btn-primary mt-10 w-full">
           {edit ? "done" : "next"}
-        </a>
+        </Link>
       </main>
     );
   }
@@ -274,12 +276,12 @@ export default function WebsiteStepPage() {
         ) : null}
       </div>
 
-      <a
+      <Link
         href={nextHref(5, edit)}
         className={`btn mt-10 w-full ${site ? "btn-primary" : "btn-ghost"}`}
       >
         {edit ? "done" : site ? "next" : "skip for now"}
-      </a>
+      </Link>
     </main>
   );
 }

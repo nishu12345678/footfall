@@ -5,6 +5,7 @@ import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
 import { shopUrl } from "@/lib/site-host";
+import { friendlyError } from "@/lib/errors";
 
 export default function WebsitePage() {
   const data = useQuery(api.site.mine);
@@ -26,7 +27,7 @@ export default function WebsitePage() {
     try {
       await generate({});
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setBusy(false);
     }

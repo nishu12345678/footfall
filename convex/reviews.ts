@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
   action,
   internalAction,
@@ -99,7 +99,7 @@ export const syncForUser = internalAction({
       userId,
     });
     if (!business?.gbpAccountName || !business.gbpLocationName) {
-      throw new Error("No Google listing linked.");
+      throw new ConvexError("No Google listing linked.");
     }
 
     const token: string = await ctx.runAction(internal.google.accessTokenFor, {
@@ -128,7 +128,7 @@ export const syncForUser = internalAction({
       if (!res.ok) {
         console.error(`[gbp/reviews] ${res.status} ${text.slice(0, 400)}`);
         if (page > 0) break; // keep what we already have
-        throw new Error(
+        throw new ConvexError(
           `Google refused (${res.status}): ${text.slice(0, 200)}`,
         );
       }
@@ -206,7 +206,7 @@ export const syncFromGoogle = paidAction({
     ctx,
   ): Promise<{ added: number; total: number; average: number | null }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
     return await ctx.runAction(internal.reviews.syncForUser, { userId });
   },
 });
@@ -631,7 +631,7 @@ export const approveReply = paidAction({
     { id, text },
   ): Promise<{ ok: boolean; error?: string }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const { row: review }: Owned<"reviews"> = await ctx.runQuery(
       internal.reviews.ownedReview,
@@ -653,7 +653,7 @@ export const rewriteReply = paidAction({
   args: { id: v.id("reviews") },
   handler: async (ctx, { id }): Promise<string | null> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const text: string | null = await ctx.runAction(
       internal.reviews.draftReply,
@@ -693,7 +693,7 @@ export const answerNow = paidAction({
   args: {},
   handler: async (ctx): Promise<{ published: number; held: number }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
     return await ctx.runAction(internal.reviews.answerNewReviews, { userId });
   },
 });

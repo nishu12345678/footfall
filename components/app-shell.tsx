@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { LINKS } from "@/lib/content";
@@ -178,13 +179,13 @@ export function AppHeader({
         >
           Help
         </a>
-        <a
+        <Link
           href="/app/settings"
           aria-label="Settings"
           className="pressable grid h-9 w-9 flex-none place-items-center rounded-full bg-black/5 text-ink"
         >
           <IconGear />
-        </a>
+        </Link>
       </div>
     </header>
   );
@@ -203,7 +204,7 @@ export function BottomNav() {
               : pathname.startsWith(item.href);
           return (
             <li key={item.href} className="flex-1">
-              <a
+              <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={`flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium tracking-[0.01em] transition-colors ${
@@ -212,7 +213,7 @@ export function BottomNav() {
               >
                 <item.Icon />
                 {item.label}
-              </a>
+              </Link>
             </li>
           );
         })}
@@ -257,9 +258,9 @@ export function NeedsConnect() {
       <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">
         Everything here comes from your Google listing.
       </p>
-      <a href="/app/connect" className="btn btn-primary mt-8 w-full">
+      <Link href="/app/connect" className="btn btn-primary mt-8 w-full">
         connect google
-      </a>
+      </Link>
     </main>
   );
 }

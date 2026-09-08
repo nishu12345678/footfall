@@ -3,6 +3,7 @@
 import { useAction, useQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
+import { friendlyError } from "@/lib/errors";
 
 /**
  * Relevance is the first of Google's three local ranking factors, and it is
@@ -38,7 +39,7 @@ export function Relevance() {
       if (r.error) setError(r.error);
       else setNote(`${r.pushed} services written to your Google listing.`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setPushing(false);
     }

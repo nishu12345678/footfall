@@ -28,6 +28,7 @@ import type * as http from "../http.js";
 import type * as keywords from "../keywords.js";
 import type * as lists from "../lists.js";
 import type * as messaging from "../messaging.js";
+import type * as paymentText from "../paymentText.js";
 import type * as performance from "../performance.js";
 import type * as photos from "../photos.js";
 import type * as postimage from "../postimage.js";
@@ -62,6 +63,7 @@ declare const fullApi: ApiFromModules<{
   keywords: typeof keywords;
   lists: typeof lists;
   messaging: typeof messaging;
+  paymentText: typeof paymentText;
   performance: typeof performance;
   photos: typeof photos;
   postimage: typeof postimage;

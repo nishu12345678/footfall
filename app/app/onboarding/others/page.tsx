@@ -1,9 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { OnboardingTop, nextHref, useEditMode } from "@/components/onboarding-frame";
+import { friendlyError } from "@/lib/errors";
 
 type Background = "black" | "white";
 
@@ -16,6 +19,7 @@ export default function OthersPage() {
   const findLogos = useAction(api.branding.findLogoCandidates);
   const useLogoFromUrl = useAction(api.branding.useLogoFromUrl);
   const edit = useEditMode();
+  const router = useRouter();
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -36,9 +40,9 @@ export default function OthersPage() {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
         <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
-        <a href="/app/connect" className="btn btn-primary mt-8 w-full">
+        <Link href="/app/connect" className="btn btn-primary mt-8 w-full">
           connect google
-        </a>
+        </Link>
       </main>
     );
   }
@@ -65,7 +69,7 @@ export default function OthersPage() {
       const { storageId } = await res.json();
       await saveLogo({ storageId, background });
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setUploading(false);
     }
@@ -81,7 +85,7 @@ export default function OthersPage() {
         setError("We couldn't find a logo on your website. Upload one instead.");
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setFinding(false);
     }
@@ -94,7 +98,7 @@ export default function OthersPage() {
       await useLogoFromUrl({ url, background });
       setCandidates(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setUploading(false);
     }
@@ -105,9 +109,9 @@ export default function OthersPage() {
     setError(null);
     try {
       await finish({});
-      window.location.href = edit ? nextHref(6, edit) : "/app";
+      router.push(edit ? nextHref(6, edit) : "/app");
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
       setBusy(false);
     }
   }
@@ -135,7 +139,7 @@ export default function OthersPage() {
         />
 
         {business.website ? (
-          <div className="card mt-8 p-5">
+          <div className="mt-8 border-t border-rule-soft pt-6">
             <div className="flex items-center justify-between gap-3">
               <p className="flex items-center gap-1.5 text-[15px] font-semibold text-ink">
                 <span aria-hidden className="text-pin">

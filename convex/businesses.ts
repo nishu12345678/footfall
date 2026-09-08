@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
   action,
   internalMutation,
@@ -40,13 +40,13 @@ export const updateLocation = paidMutation({
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const business = await ctx.db
       .query("businesses")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
-    if (!business) throw new Error("Connect your Google profile first.");
+    if (!business) throw new ConvexError("Connect your Google profile first.");
 
     await ctx.db.patch(business._id, {
       ...args,
@@ -106,7 +106,7 @@ export const tuneRadius = paidAction({
     { force = false },
   ): Promise<{ scanRadiusKm: number; reason: string } | null> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const business = await ctx.runQuery(internal.google.businessForUser, {
       userId,

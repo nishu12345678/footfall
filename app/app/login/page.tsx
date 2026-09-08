@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { BRAND } from "@/lib/content";
 import { BRAND_ASSETS } from "@/lib/brand";
 import { BackButton } from "@/components/back-button";
+import { friendlyError, GENERIC } from "@/lib/errors";
 
 type Method = "phone" | "email";
 type Step = "identify" | "code";
@@ -23,7 +24,6 @@ export default function LoginPage() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<null | "send" | "verify" | "google">(null);
   const [error, setError] = useState<string | null>(null);
-  const [detail, setDetail] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const codeRef = useRef<HTMLInputElement>(null);
 
@@ -59,19 +59,19 @@ export default function LoginPage() {
     setStep("identify");
     setCode("");
     setError(null);
-    setDetail(null);
   }
 
   function report(e: unknown, fallback: string) {
     console.error("[signIn]", e);
-    setError(fallback);
-    setDetail(e instanceof Error ? e.message : String(e));
+    // The server's own sentence when it has one ("That number isn't
+    // valid"), otherwise the fallback. Never the stack.
+    const friendly = friendlyError(e, fallback);
+    setError(friendly === GENERIC ? fallback : friendly);
   }
 
   async function sendCode() {
     setBusy("send");
     setError(null);
-    setDetail(null);
     try {
       if (method === "phone") {
         await signIn("twilio", { phone: e164 });
@@ -95,7 +95,6 @@ export default function LoginPage() {
   async function verifyCode() {
     setBusy("verify");
     setError(null);
-    setDetail(null);
     const value = code.replace(/\D/g, "");
     try {
       if (method === "phone") {
@@ -113,7 +112,6 @@ export default function LoginPage() {
   async function continueWithGoogle() {
     setBusy("google");
     setError(null);
-    setDetail(null);
     try {
       await signIn("google", { redirectTo: "/app/login" });
     } catch (e) {
@@ -309,11 +307,6 @@ export default function LoginPage() {
             className="mt-5 rounded-[12px] bg-pin-soft px-4 py-3 text-[14px] leading-snug text-ink"
           >
             {error}
-            {detail ? (
-              <span className="mt-2 block max-h-40 overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-ink-soft">
-                {detail}
-              </span>
-            ) : null}
           </p>
         ) : null}
       </div>

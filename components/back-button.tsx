@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { MouseEvent } from "react";
 
@@ -47,7 +48,7 @@ export function BackButton({
   }
 
   return (
-    <a
+    <Link
       href={fallback}
       onClick={go}
       className={`pressable inline-flex min-h-11 items-center gap-1.5 self-start rounded-full py-2 pr-3 text-[14px] font-medium text-ink-soft hover:text-ink ${className}`}
@@ -66,6 +67,6 @@ export function BackButton({
         <path d="M15 5l-7 7 7 7" />
       </svg>
       {label}
-    </a>
+    </Link>
   );
 }

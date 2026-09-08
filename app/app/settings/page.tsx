@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useAction, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
@@ -7,6 +8,7 @@ import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading } from "@/components/app-shell";
 import { BackButton } from "@/components/back-button";
 import { ONBOARDING_STEPS } from "@/lib/onboarding";
+import { friendlyError } from "@/lib/errors";
 
 const fmtDate = (ms: number) =>
   new Date(ms).toLocaleDateString("en-IN", {
@@ -63,7 +65,7 @@ export default function SettingsPage() {
       await signOut().catch(() => undefined);
       window.location.replace("/app/login");
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
       setBusy(null);
       setConfirming(null);
     }
@@ -81,7 +83,7 @@ export default function SettingsPage() {
           : "Listing disconnected and our copy of the tokens deleted. Google didn't confirm the revocation — you can also remove footfall under your Google account's third-party access.",
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setBusy(null);
       setConfirming(null);
@@ -197,9 +199,9 @@ export default function SettingsPage() {
               <p className="text-[13px] leading-relaxed text-ink-soft">
                 Everything in the app comes from your Google listing.
               </p>
-              <a href="/app/connect" className="btn btn-primary btn-sm mt-4 w-full">
+              <Link href="/app/connect" className="btn btn-primary btn-sm mt-4 w-full">
                 connect google business profile
-              </a>
+              </Link>
             </>
           )}
         </div>
@@ -309,9 +311,9 @@ function Row({
   return (
     <li className="inset-row">
       {href ? (
-        <a href={href} className="flex items-center gap-3 px-5 py-3.5">
+        <Link href={href} className="flex items-center gap-3 px-5 py-3.5">
           {inner}
-        </a>
+        </Link>
       ) : (
         <div className="flex items-center gap-3 px-5 py-3.5">{inner}</div>
       )}

@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
   action,
   internalMutation,
@@ -202,13 +202,13 @@ export const suggestKeywords = paidAction({
   args: {},
   handler: async (ctx): Promise<string[]> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const c = await ctx.runQuery(internal.gbp.keywordContext, { userId });
-    if (!c) throw new Error("Connect your Google profile first.");
+    if (!c) throw new ConvexError("Connect your Google profile first.");
 
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("OPENAI_API_KEY is not set.");
+    if (!apiKey) throw new ConvexError("The writing assistant isn't set up on this server yet.");
 
     const prompt = [
       `Business: ${c.name}`,
@@ -253,7 +253,7 @@ export const suggestKeywords = paidAction({
     if (!res.ok) {
       const body = await res.text();
       console.error(`[openai] ${res.status} ${body.slice(0, 300)}`);
-      throw new Error(`Keyword suggestions failed (${res.status}).`);
+      throw new ConvexError("Couldn't get keyword ideas just now. Try again in a moment.");
     }
 
     const data = await res.json();
@@ -390,7 +390,7 @@ type Researched = {
 
 async function autocomplete(seed: string): Promise<string[]> {
   const key = process.env.SERPAPI_KEY;
-  if (!key) throw new Error("SERPAPI_KEY is not set.");
+  if (!key) throw new ConvexError("Rank checks aren't set up on this server yet.");
 
   const url = new URL("https://serpapi.com/search");
   url.searchParams.set("engine", "google_autocomplete");
@@ -416,7 +416,7 @@ async function competition(
   lng: number,
 ): Promise<{ topReviews: number; rivals: number }> {
   const key = process.env.SERPAPI_KEY;
-  if (!key) throw new Error("SERPAPI_KEY is not set.");
+  if (!key) throw new ConvexError("Rank checks aren't set up on this server yet.");
 
   const url = new URL("https://serpapi.com/search");
   url.searchParams.set("engine", "google_maps");
@@ -443,16 +443,16 @@ export const researchKeywords = paidAction({
   args: { deep: v.optional(v.boolean()) },
   handler: async (ctx, { deep = false }): Promise<Researched[]> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const c = await ctx.runQuery(internal.gbp.keywordContext, { userId });
-    if (!c) throw new Error("Connect your Google profile first.");
+    if (!c) throw new ConvexError("Connect your Google profile first.");
 
     const business = await ctx.runQuery(internal.google.businessForUser, {
       userId,
     });
     if (!business?.lat || !business?.lng) {
-      throw new Error("We don't have coordinates for your shop yet.");
+      throw new ConvexError("We don't have coordinates for your shop yet.");
     }
 
     // Seeds come from what the shop actually sells, plus its category.
@@ -461,7 +461,7 @@ export const researchKeywords = paidAction({
       ...c.offerings.slice(0, 4).map((o: string) => o.toLowerCase()),
     ].slice(0, 5);
 
-    if (seeds.length === 0) throw new Error("Add some offerings first.");
+    if (seeds.length === 0) throw new ConvexError("Add some offerings first.");
 
     const pool = new Map<string, number>();
     for (const seed of seeds) {
@@ -616,7 +616,7 @@ export const nearbyAreas = paidAction({
     { name: string; km: number; kind: string; lat: number; lng: number }[]
   > => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     let business = await ctx.runQuery(internal.google.businessForUser, {
       userId,
@@ -631,7 +631,7 @@ export const nearbyAreas = paidAction({
       });
     }
     if (!business?.lat || !business?.lng) {
-      throw new Error(
+      throw new ConvexError(
         "We couldn't work out where your shop is. Check the address in step 2.",
       );
     }
@@ -677,7 +677,7 @@ export const nearbyAreas = paidAction({
 
     if (!data) {
       console.error(`[overpass] all mirrors failed. ${lastError}`);
-      throw new Error(
+      throw new ConvexError(
         "Couldn't reach the map service just now. Add your areas by hand, or try again in a minute.",
       );
     }

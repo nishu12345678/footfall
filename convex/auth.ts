@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 import { convexAuth } from "@convex-dev/auth/server";
 import { Phone } from "@convex-dev/auth/providers/Phone";
 import { Email } from "@convex-dev/auth/providers/Email";
@@ -47,7 +48,7 @@ export const TwilioPhone = Phone({
 
   async sendVerificationRequest({ identifier: phone, token }, ctx) {
     const to = toE164(phone);
-    if (!to) throw new Error("That mobile number isn't valid.");
+    if (!to) throw new ConvexError("That mobile number isn't valid.");
 
     // DEV ONLY. Prints the code into the Convex logs so sign-in is testable
     // without SMS credits. Never set OTP_DEV_ECHO on production.
@@ -68,7 +69,7 @@ export const TwilioPhone = Phone({
     // A queued retry is not good enough for a sign-in code — the owner is
     // sitting there waiting. Tell them so they can use email instead.
     if (!result.ok || result.status === "queued") {
-      throw new Error(result.error ?? "Couldn't send the SMS just now.");
+      throw new ConvexError(result.error ?? "Couldn't send the SMS just now.");
     }
   },
 });
@@ -104,7 +105,7 @@ export const EmailOTP = Email({
     });
 
     if (!result.ok || result.status === "queued") {
-      throw new Error(result.error ?? "Couldn't send the email just now.");
+      throw new ConvexError(result.error ?? "Couldn't send the email just now.");
     }
   }) as unknown as EmailConfig["sendVerificationRequest"],
 });

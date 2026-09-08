@@ -5,8 +5,10 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
 import { Working } from "@/components/working";
+import { AutoTextarea } from "@/components/textarea";
 import { square } from "@/lib/images";
 import type { Id } from "@/convex/_generated/dataModel";
+import { friendlyError } from "@/lib/errors";
 
 function ago(timestamp: number): string {
   const days = Math.floor((Date.now() - timestamp) / 86_400_000);
@@ -59,7 +61,7 @@ export default function ReviewsPage() {
         setError(r.error ?? "Google wouldn't take it.");
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setBusy(null);
     }
@@ -74,7 +76,7 @@ export default function ReviewsPage() {
       if (text && editing === id) setEditText(text);
       if (!text) setError("Couldn't write another one just now.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setBusy(null);
     }
@@ -86,7 +88,7 @@ export default function ReviewsPage() {
     pulled.current = true;
     setSyncing(true);
     void syncFromGoogle({})
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .catch((e) => setError(friendlyError(e)))
       .finally(() => setSyncing(false));
   }, [data, syncFromGoogle]);
 
@@ -229,11 +231,11 @@ export default function ReviewsPage() {
                 ) : null}
 
                 {editing === row._id ? (
-                  <textarea
+                  <AutoTextarea
                     value={editText}
                     onChange={(e) => setEditText(e.target.value)}
-                    rows={6}
-                    className="mt-3 w-full resize-none rounded-[12px] border border-rule bg-white p-3 text-[13px] leading-relaxed outline-none focus:border-pin"
+                    minRows={4}
+                    className="mt-3 w-full rounded-[12px] border border-rule bg-white p-3 text-[13px] leading-relaxed outline-none focus:border-pin"
                   />
                 ) : (
                   <p className="mt-3 whitespace-pre-wrap rounded-[12px] bg-pin-soft px-4 py-3 text-[13px] leading-relaxed text-ink">

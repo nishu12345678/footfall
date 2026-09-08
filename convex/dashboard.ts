@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
@@ -173,16 +173,16 @@ export const addCustomer = paidMutation({
   },
   handler: async (ctx, { phone, name, service }) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const business = await ctx.db
       .query("businesses")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
-    if (!business) throw new Error("Connect your Google profile first.");
+    if (!business) throw new ConvexError("Connect your Google profile first.");
 
     const digits = phone.replace(/\D/g, "");
-    if (digits.length < 10) throw new Error("Enter a 10-digit mobile number.");
+    if (digits.length < 10) throw new ConvexError("Enter a 10-digit mobile number.");
     const normalised = digits.length === 10 ? `91${digits}` : digits;
 
     const existing = await ctx.db

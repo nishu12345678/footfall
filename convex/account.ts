@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { action, internalMutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
@@ -109,7 +109,7 @@ export const signOutEverywhere = action({
   returns: v.object({ ok: v.boolean() }),
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     await ctx.runMutation(internal.auth.store, {
       args: { type: "invalidateSessions", userId },

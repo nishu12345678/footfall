@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
   action,
   internalMutation,
@@ -103,7 +103,7 @@ export const remove = paidMutation({
     const table = kind === "specialties" ? "specialties" : "offerings";
     // The id arrives as a plain string; a malformed one is "not found" too.
     const rowId = ctx.db.normalizeId(table, id);
-    if (!rowId) throw new Error(NOT_FOUND_MESSAGE);
+    if (!rowId) throw new ConvexError(NOT_FOUND_MESSAGE);
     const { row } = await ownedRow(ctx, rowId);
     await ctx.db.delete(row._id);
   },
@@ -243,15 +243,15 @@ export const suggest = paidAction({
   args: { kind: v.string() },
   handler: async (ctx, { kind }): Promise<string[]> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const context = await ctx.runQuery(internal.about.businessContext, {
       userId,
     });
-    if (!context) throw new Error("Connect your Google profile first.");
+    if (!context) throw new ConvexError("Connect your Google profile first.");
 
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("OPENAI_API_KEY is not set.");
+    if (!apiKey) throw new ConvexError("The writing assistant isn't set up on this server yet.");
 
     const wantSpecialties = kind === "specialties";
     const site = await webContext(
@@ -305,7 +305,7 @@ export const suggest = paidAction({
     if (!res.ok) {
       const body = await res.text();
       console.error(`[openai] ${res.status} ${body.slice(0, 300)}`);
-      throw new Error(`Suggestions failed (${res.status}).`);
+      throw new ConvexError("Couldn't get suggestions just now. Try again in a moment.");
     }
 
     const data = await res.json();

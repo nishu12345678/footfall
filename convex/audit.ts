@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 import {
@@ -394,7 +394,7 @@ export const checkWebsite = action({
   args: {},
   handler: async (ctx): Promise<{ ok: boolean; reason?: string }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const business: { id: string; website: string | null } | null =
       await ctx.runQuery(internal.audit.businessForUser, {});
@@ -553,7 +553,7 @@ export const refresh = action({
   args: {},
   handler: async (ctx): Promise<{ ok: boolean }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
     return await ctx.runAction(internal.audit.syncListing, { userId });
   },
 });

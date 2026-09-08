@@ -34,11 +34,12 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return {
       beforeFiles: [
-        {
-          source: "/",
-          has: [{ type: "host", value: SHOP_HOST }],
-          destination: "/s/:slug",
-        },
+        // One rule for every path, the root included. A separate
+        // `source: "/"` rule used to sit above this one and Next 16 answered
+        // it with a 404 — the `has` capture group is only substituted into
+        // the destination when the source itself has a parameter, and "/"
+        // has none. `/:path*` matches "/" with an empty path, so the
+        // destination for the root becomes "/s/<slug>".
         {
           source: "/:path*",
           has: [{ type: "host", value: SHOP_HOST }],

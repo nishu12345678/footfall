@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 import {
@@ -50,13 +51,13 @@ export async function hasActivePlan(
 
 async function requirePaidRead(ctx: QueryCtx | MutationCtx) {
   const userId = await getAuthUserId(ctx);
-  if (!userId) throw new Error("Sign in first.");
-  if (!(await hasActivePlan(ctx, userId))) throw new Error(PAYWALL_MESSAGE);
+  if (!userId) throw new ConvexError("Sign in first.");
+  if (!(await hasActivePlan(ctx, userId))) throw new ConvexError(PAYWALL_MESSAGE);
 }
 
 async function requirePaidAction(ctx: ActionCtx) {
   const ok: boolean = await ctx.runQuery(internal.billing.isActive, {});
-  if (!ok) throw new Error(PAYWALL_MESSAGE);
+  if (!ok) throw new ConvexError(PAYWALL_MESSAGE);
 }
 
 /* The casts keep each wrapper's public type identical to the Convex
@@ -132,7 +133,7 @@ export async function businessOf(
     .query("businesses")
     .withIndex("by_user", (q) => q.eq("userId", userId))
     .first();
-  if (!business) throw new Error("Connect your Google profile first.");
+  if (!business) throw new ConvexError("Connect your Google profile first.");
   return business;
 }
 
@@ -141,7 +142,7 @@ export async function ownedBusiness(
   ctx: QueryCtx | MutationCtx,
 ): Promise<Doc<"businesses">> {
   const userId = await getAuthUserId(ctx);
-  if (!userId) throw new Error("Sign in first.");
+  if (!userId) throw new ConvexError("Sign in first.");
   return await businessOf(ctx, userId);
 }
 
@@ -154,7 +155,7 @@ async function rowOf<T extends OwnedTable>(
   // Every OwnedTable document carries a businessId; TypeScript can't see
   // through the generic to know it, hence the narrow read.
   const owner = (row as { businessId?: Id<"businesses"> } | null)?.businessId;
-  if (!row || owner !== business._id) throw new Error(NOT_FOUND_MESSAGE);
+  if (!row || owner !== business._id) throw new ConvexError(NOT_FOUND_MESSAGE);
   return row;
 }
 

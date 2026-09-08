@@ -41,11 +41,13 @@ export function apiKey(): string | null {
 }
 
 export function fromAddress(): string {
-  return (
+  // `convex env set --from-file` keeps surrounding quotes, and Resend
+  // rejects a from field that starts with one. Strip them here.
+  const raw =
     process.env.EMAIL_FROM ??
     process.env.AUTH_EMAIL_FROM ??
-    "footfall <onboarding@resend.dev>"
-  );
+    "footfall <onboarding@resend.dev>";
+  return raw.trim().replace(/^["']+|["']+$/g, "").trim();
 }
 
 export function normaliseEmail(raw: string): string | null {
@@ -134,6 +136,26 @@ export const suppress = internalMutation({
       createdAt: Date.now(),
     });
     console.error(`[resend] suppressing ${email}: ${reason} ${detail ?? ""}`);
+  },
+});
+
+/**
+ * Takes an address off the suppression list, for when a bounce was our
+ * fault (a bad `from`, a domain not yet verified) rather than theirs:
+ *
+ *   npx convex run email:unsuppress '{"email":"owner@example.com"}'
+ */
+export const unsuppress = internalMutation({
+  args: { email: v.string() },
+  returns: v.object({ removed: v.number() }),
+  handler: async (ctx, { email }) => {
+    const address = normaliseEmail(email) ?? email.trim().toLowerCase();
+    const rows = await ctx.db
+      .query("emailSuppressions")
+      .withIndex("by_email", (q) => q.eq("email", address))
+      .collect();
+    for (const r of rows) await ctx.db.delete(r._id);
+    return { removed: rows.length };
   },
 });
 
@@ -234,7 +256,7 @@ async function callResend(
   html: string | undefined,
 ): Promise<
   | { kind: "sent"; id: string }
-  | { kind: "retry" | "permanent" | "config"; message: string }
+  | { kind: "retry" | "permanent" | "config"; message: string; status?: number }
 > {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${key}`,
@@ -280,7 +302,7 @@ async function callResend(
 
   if (res.status === 429 || res.status >= 500) return { kind: "retry", message };
   if (res.status === 401 || res.status === 403) return { kind: "config", message };
-  return { kind: "permanent", message };
+  return { kind: "permanent", message, status: res.status };
 }
 
 /**
@@ -388,21 +410,31 @@ async function attempt(
     error: result.message,
     attempted: true,
   });
-  if (result.kind === "permanent" && /invalid|not a valid|recipient/i.test(result.message)) {
+  // Only a complaint about the *recipient* marks the address bad. A bad
+  // `from`, a missing domain or a malformed body is our problem, not
+  // theirs, and must not lock them out of email.
+  if (
+    result.kind === "permanent" &&
+    result.status === 422 &&
+    /`to`|\bto\b.*(invalid|not valid)|(invalid|not valid).*\bto\b|recipient/i.test(result.message) &&
+    !/`from`|`reply_to`|`subject`|domain/i.test(result.message)
+  ) {
     await ctx.runMutation(internal.email.suppress, {
       email: row.to,
       reason: "invalid",
       detail: result.message,
     });
   }
+  const ours =
+    result.kind === "config" ||
+    /`from`|`reply_to`|domain|api key|unauthori[sz]ed/i.test(result.message);
   return {
     ok: false,
     status: "failed",
     id,
-    error:
-      result.kind === "config"
-        ? "Email isn't set up correctly on the server."
-        : "Could not send the email. Check the address and try again.",
+    error: ours
+      ? "Email isn't set up correctly on our side yet. Try signing in with your mobile number instead."
+      : "Couldn't send to that address. Check it and try again.",
   };
 }
 

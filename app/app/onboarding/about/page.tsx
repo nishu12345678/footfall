@@ -1,10 +1,13 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { OnboardingTop, nextHref, useEditMode } from "@/components/onboarding-frame";
 import { Working } from "@/components/working";
+import { friendlyError } from "@/lib/errors";
 
 type Tab = "offerings" | "specialties";
 
@@ -29,6 +32,7 @@ export default function AboutPage() {
   const remove = useMutation(api.about.remove);
   const complete = useMutation(api.about.complete);
   const edit = useEditMode();
+  const router = useRouter();
   const suggest = useAction(api.about.suggest);
 
   const [tab, setTab] = useState<Tab>("offerings");
@@ -48,7 +52,7 @@ export default function AboutPage() {
     setThinking(true);
     void suggest({ kind: tab })
       .then((items) => setSuggestions((s) => ({ ...s, [tab]: items })))
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .catch((e) => setError(friendlyError(e)))
       .finally(() => setThinking(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, data]);
@@ -65,9 +69,9 @@ export default function AboutPage() {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
         <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
-        <a href="/app/connect" className="btn btn-primary mt-8 w-full">
+        <Link href="/app/connect" className="btn btn-primary mt-8 w-full">
           connect google
-        </a>
+        </Link>
       </main>
     );
   }
@@ -85,7 +89,7 @@ export default function AboutPage() {
         [tab]: s[tab].filter((i) => i.toLowerCase() !== label.toLowerCase()),
       }));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     }
   }
 
@@ -96,7 +100,7 @@ export default function AboutPage() {
       const items = await suggest({ kind: tab });
       setSuggestions((s) => ({ ...s, [tab]: items }));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setThinking(false);
     }
@@ -109,7 +113,7 @@ export default function AboutPage() {
       return;
     }
     await complete({});
-    window.location.href = nextHref(3, edit);
+    router.push(nextHref(3, edit));
   }
 
   return (
@@ -187,7 +191,7 @@ export default function AboutPage() {
           </>
         ) : null}
 
-        <div className="card mt-10 p-5">
+        <div className="mt-10 border-t border-rule-soft pt-6">
           <div className="flex items-center justify-between gap-3">
             <p className="flex items-center gap-1.5 text-[15px] font-semibold text-ink">
               <span aria-hidden className="text-pin">

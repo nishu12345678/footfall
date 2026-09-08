@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
@@ -7,6 +9,7 @@ import { OnboardingTop, nextHref, useEditMode } from "@/components/onboarding-fr
 import { Working } from "@/components/working";
 import { ONBOARDING_STEPS } from "@/lib/onboarding";
 import dynamic from "next/dynamic";
+import { friendlyError } from "@/lib/errors";
 
 const AreaMap = dynamic(
   () => import("@/components/area-map").then((m) => m.AreaMap),
@@ -56,6 +59,7 @@ export default function GbpPage() {
   const toggleAttribute = useMutation(api.gbp.toggleAttribute);
   const complete = useMutation(api.gbp.complete);
   const edit = useEditMode();
+  const router = useRouter();
   const researchKeywords = useAction(api.keywords.research);
   const seedAreas = useMutation(api.gbp.seedServiceAreas);
   const nearbyAreas = useAction(api.gbp.nearbyAreas);
@@ -142,9 +146,9 @@ export default function GbpPage() {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
         <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
-        <a href="/app/connect" className="btn btn-primary mt-8 w-full">
+        <Link href="/app/connect" className="btn btn-primary mt-8 w-full">
           connect google
-        </a>
+        </Link>
       </main>
     );
   }
@@ -169,7 +173,7 @@ export default function GbpPage() {
     try {
       setAreaIdeas(await nearbyAreas({ radiusKm: km }));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setFindingAreas(false);
     }
@@ -181,7 +185,7 @@ export default function GbpPage() {
     try {
       setResearched(await researchKeywords({ deep }));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setThinking(false);
     }
@@ -203,9 +207,9 @@ export default function GbpPage() {
     setBusy(true);
     try {
       await complete({});
-      window.location.href = nextHref(4, edit);
+      router.push(nextHref(4, edit));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
       setBusy(false);
     }
   }
@@ -295,7 +299,7 @@ export default function GbpPage() {
               </button>
             </form>
 
-            <div className="card mt-8 p-5">
+            <div className="mt-8 border-t border-rule-soft pt-6">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[15px] font-semibold text-ink">
                   Areas near you
@@ -457,7 +461,7 @@ export default function GbpPage() {
               ))}
             </ul>
 
-            <div className="card mt-8 p-5">
+            <div className="mt-8 border-t border-rule-soft pt-6">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[15px] font-semibold text-ink">
                   Researched from Google
@@ -677,12 +681,12 @@ export default function GbpPage() {
             : "save & next"}
       </button>
 
-      <a
+      <Link
         href={edit ? "/app/settings" : ONBOARDING_STEPS[4].href}
         className="mt-4 block text-center text-[13px] font-medium text-pin hover:opacity-80"
       >
         {edit ? "back to settings without saving the rest" : "skip the rest of this step"}
-      </a>
+      </Link>
     </main>
   );
 }

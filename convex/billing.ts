@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 import {
@@ -13,6 +13,7 @@ import {
 import type { Doc, Id } from "./_generated/dataModel";
 import { hasActivePlan } from "./access";
 import { sendNow as sendMessage, type SendResult } from "./messaging";
+import { describePaymentFailure } from "./paymentText";
 
 /* ---------------------------------------------------------------------------
    Razorpay, one-time orders.
@@ -103,6 +104,11 @@ function publicRow(r: Doc<"subscriptions">) {
     expiresAt: r.expiresAt ?? null,
     failureReason: r.failureReason ?? null,
     failureCode: r.failureCode ?? null,
+    /** What to show the owner; the two above are for support. */
+    failureText:
+      r.failureCode || r.failureReason
+        ? describePaymentFailure(r.failureCode, r.failureReason)
+        : null,
     refundedPaise: r.refundedPaise ?? 0,
     createdAt: r._creationTime,
     updatedAt: r.updatedAt ?? r._creationTime,
@@ -426,7 +432,7 @@ export const markAttemptFailed = internalMutation({
         dedupeKey: `payment_failed:${row.razorpayOrderId}`,
         params: {
           plan: (PLANS[row.plan as PlanId] ?? PLANS.monthly).name,
-          reason: args.reason,
+          reason: describePaymentFailure(args.code, args.reason),
         },
       });
     }
@@ -573,7 +579,7 @@ function credentials() {
   const keyId = process.env.RAZORPAY_KEY_ID;
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
   if (!keyId || !keySecret) {
-    throw new Error(
+    throw new ConvexError(
       "Payments are not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET on the Convex deployment.",
     );
   }
@@ -637,7 +643,7 @@ async function razorpay<T>(
     });
   } catch (error) {
     console.error(`[billing] razorpay ${path} unreachable`, error);
-    throw new Error("Could not reach Razorpay. Check your connection and try again.");
+    throw new ConvexError("Could not reach Razorpay. Check your connection and try again.");
   }
   const text = await res.text();
   let data: T | null = null;
@@ -668,7 +674,7 @@ export const createOrder = action({
     reused: boolean;
   }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const { keyId } = credentials();
     const chosen = PLANS[plan];
@@ -701,11 +707,11 @@ export const createOrder = action({
     );
 
     if (!res.ok || !res.data?.id) {
-      throw new Error("Could not start the payment. Please try again in a moment.");
+      throw new ConvexError("Could not start the payment. Please try again in a moment.");
     }
     if (res.data.amount !== chosen.amountPaise || res.data.currency !== CURRENCY) {
       console.error("[billing] Razorpay echoed a different order", res.data);
-      throw new Error("Razorpay returned an unexpected order. Please try again.");
+      throw new ConvexError("Razorpay returned an unexpected order. Please try again.");
     }
 
     await ctx.runMutation(internal.billing.recordPending, {
@@ -840,14 +846,14 @@ export const verifyPayment = action({
     reason?: string;
   }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const row = await ctx.runQuery(internal.billing.byOrder, {
       orderId: args.razorpayOrderId,
     });
     if (!row || row.userId !== userId) {
       console.error(`[billing] verify for foreign/unknown order ${args.razorpayOrderId} by ${userId}`);
-      throw new Error("That order isn't yours.");
+      throw new ConvexError("That order isn't yours.");
     }
     if (GRANTING.has(row.status)) return { ok: true, state: "paid", already: true };
 
@@ -858,7 +864,7 @@ export const verifyPayment = action({
     );
     if (!safeEqual(expected, args.razorpaySignature)) {
       console.error("[billing] signature mismatch", args.razorpayOrderId);
-      throw new Error("That payment could not be verified. If money left your account it will be returned; please contact support with your payment id.");
+      throw new ConvexError("That payment could not be verified. If money left your account it will be returned; please contact support with your payment id.");
     }
 
     // Local testing switch. With this set the browser verifies the payment
@@ -935,9 +941,9 @@ export const checkOrder = action({
   args: { orderId: v.string() },
   handler: async (ctx, { orderId }): Promise<{ state: string; reason?: string }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
     const row = await ctx.runQuery(internal.billing.byOrder, { orderId });
-    if (!row || row.userId !== userId) throw new Error("That order isn't yours.");
+    if (!row || row.userId !== userId) throw new ConvexError("That order isn't yours.");
     return await reconcileOne(ctx, orderId, "owner");
   },
 });
@@ -1185,7 +1191,7 @@ export const grantComp = internalMutation({
       .query("users")
       .withIndex("email", (q) => q.eq("email", email))
       .first();
-    if (!user) throw new Error(`No user with the email ${email}.`);
+    if (!user) throw new ConvexError(`No user with the email ${email}.`);
 
     const now = Date.now();
     const existing = await ctx.db
@@ -1246,7 +1252,7 @@ export const issueRefund = internalAction({
       },
     );
     if (!res.ok || !res.data?.id) {
-      throw new Error(`Razorpay refused the refund: ${res.text.slice(0, 200)}`);
+      throw new ConvexError(`Razorpay refused the refund: ${res.text.slice(0, 200)}`);
     }
     await ctx.runMutation(internal.billing.applyRefund, {
       razorpayRefundId: res.data.id,

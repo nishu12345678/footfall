@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
 
 /**
@@ -159,7 +159,7 @@ export const removeBusiness = internalMutation({
   },
   handler: async (ctx, { businessId, includeUser = false, dryRun = true }) => {
     const business = await ctx.db.get(businessId);
-    if (!business) throw new Error("No such business.");
+    if (!business) throw new ConvexError("No such business.");
 
     const counted: Record<string, number> = {};
     const bump = (table: string, n: number) => {

@@ -7,6 +7,7 @@ import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
 import { Working } from "@/components/working";
 import type { Id } from "@/convex/_generated/dataModel";
 import { square } from "@/lib/images";
+import { friendlyError } from "@/lib/errors";
 
 /* The agent puts one item on the listing on Mon, Wed, Fri and Sat at 17:00
    IST. That makes the queue a schedule: the first waiting photo goes up on
@@ -122,7 +123,7 @@ export default function PhotosPage() {
     synced.current = true;
     setSyncing(true);
     void syncFromGoogle({})
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .catch((e) => setError(friendlyError(e)))
       .finally(() => setSyncing(false));
   }, [data, syncFromGoogle]);
 
@@ -193,7 +194,7 @@ export default function PhotosPage() {
         `${done} added. Four go up a week, so the profile never goes quiet.`,
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setUploading(0);
     }
@@ -208,7 +209,7 @@ export default function PhotosPage() {
       if (r.ok) setNote("Published to your Google listing.");
       else setError(r.error ?? "Google refused it.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setPublishing(null);
     }

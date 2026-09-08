@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
   action,
   internalAction,
@@ -192,7 +192,7 @@ export const disconnect = action({
     ctx,
   ): Promise<{ ok: boolean; revoked: boolean; hadAccount: boolean }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const account: Doc<"googleAccounts"> | null = await ctx.runQuery(
       internal.google.accountForUser,
@@ -237,12 +237,12 @@ export const exchangeCode = action({
   },
   handler: async (ctx, { code, codeVerifier, redirectUri }) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     if (!clientId || !clientSecret) {
-      throw new Error("Google credentials are not configured.");
+      throw new ConvexError("Google connection isn't set up on this server yet.");
     }
 
     const res = await fetch(tokenUrl(), {
@@ -261,7 +261,7 @@ export const exchangeCode = action({
     const payload = await res.json();
     if (!res.ok) {
       console.error("[google] token exchange failed", payload);
-      throw new Error(
+      throw new ConvexError(
         `Google rejected the sign-in: ${payload.error_description ?? payload.error ?? res.status}`,
       );
     }
@@ -287,13 +287,13 @@ async function freshAccessToken(
   const account = await ctx.runQuery(internal.google.accountForUser, {
     userId,
   });
-  if (!account) throw new Error("Google account is not connected.");
+  if (!account) throw new ConvexError("Your Google profile isn't connected. Connect it first.");
 
   // 60s of headroom so a call can't expire mid-flight.
   if (account.expiresAt > Date.now() + 60_000) return account.accessToken;
 
   if (!account.refreshToken) {
-    throw new Error("Google access expired. Reconnect your profile.");
+    throw new ConvexError("Google access expired. Reconnect your profile.");
   }
 
   const res = await fetch(tokenUrl(), {
@@ -310,7 +310,7 @@ async function freshAccessToken(
   const payload = await res.json();
   if (!res.ok) {
     console.error("[google] refresh failed", payload);
-    throw new Error("Could not refresh Google access. Reconnect your profile.");
+    throw new ConvexError("Could not refresh Google access. Reconnect your profile.");
   }
 
   await ctx.runMutation(internal.google.patchAccessToken, {
@@ -329,7 +329,11 @@ async function googleGet(url: string, token: string) {
   const text = await res.text();
   if (!res.ok) {
     console.error(`[google] GET ${url} -> ${res.status} ${text.slice(0, 400)}`);
-    throw new Error(`Google API ${res.status}: ${text.slice(0, 200)}`);
+    throw new ConvexError(
+    res.status === 401 || res.status === 403
+      ? "Google has withdrawn our access. Reconnect your profile from Settings."
+      : "Google didn't answer just now. Try again in a moment.",
+  );
   }
   return JSON.parse(text || "{}");
 }
@@ -340,7 +344,7 @@ export const listLocations = action({
   args: {},
   handler: async (ctx): Promise<GoogleLocation[]> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const token = await freshAccessToken(ctx, userId);
 
@@ -494,7 +498,7 @@ export const linkLocation = action({
   },
   handler: async (ctx, { location }): Promise<{ businessId: string }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const businessId: Id<"businesses"> = await ctx.runMutation(
       internal.google.createBusinessFromLocation,
@@ -519,7 +523,7 @@ export const startLink = mutation({
   args: { returnTo: v.string(), codeVerifier: v.string() },
   handler: async (ctx, { returnTo, codeVerifier }) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const token = crypto.randomUUID().replace(/-/g, "");
     await ctx.db.insert("googleLinkTokens", {
@@ -587,22 +591,49 @@ export const completeLink = internalAction({
       };
     }
 
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+      return {
+        ok: false,
+        returnTo: link.returnTo,
+        error: "Google credentials are not configured.",
+      };
+    }
+
     const res = await fetch(tokenUrl(), {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         code,
-        client_id: process.env.GOOGLE_CLIENT_ID!,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        client_id: clientId,
+        client_secret: clientSecret,
         redirect_uri: redirectUri,
         grant_type: "authorization_code",
         code_verifier: link.codeVerifier,
       }),
     });
 
-    const payload = await res.json();
+    const raw = await res.text();
+    let payload: any = {};
+    if (raw.trim()) {
+      try {
+        payload = JSON.parse(raw);
+      } catch {
+        console.error(
+          "[google] token exchange returned non-JSON",
+          res.status,
+          raw.slice(0, 400),
+        );
+        return {
+          ok: false,
+          returnTo: link.returnTo,
+          error: `Google returned an unreadable token response (${res.status}). Try reconnecting.`,
+        };
+      }
+    }
     if (!res.ok) {
-      console.error("[google] token exchange failed", payload);
+      console.error("[google] token exchange failed", payload || raw);
       return {
         ok: false,
         returnTo: link.returnTo,
@@ -610,13 +641,25 @@ export const completeLink = internalAction({
           payload.error_description ?? payload.error ?? "Token exchange failed",
       };
     }
+    if (typeof payload.access_token !== "string") {
+      console.error("[google] token exchange missing access_token", payload);
+      return {
+        ok: false,
+        returnTo: link.returnTo,
+        error: "Google did not return an access token. Try reconnecting.",
+      };
+    }
 
     await ctx.runMutation(internal.google.saveAccount, {
       userId: link.userId,
       accessToken: payload.access_token,
-      refreshToken: payload.refresh_token,
-      expiresAt: Date.now() + (payload.expires_in ?? 3600) * 1000,
-      scope: payload.scope ?? "",
+      refreshToken:
+        typeof payload.refresh_token === "string" ? payload.refresh_token : undefined,
+      expiresAt:
+        Date.now() +
+        (typeof payload.expires_in === "number" ? payload.expires_in : 3600) *
+          1000,
+      scope: typeof payload.scope === "string" ? payload.scope : "",
     });
 
     return { ok: true, returnTo: link.returnTo, error: null };
@@ -631,13 +674,13 @@ export const refreshLocation = action({
   args: {},
   handler: async (ctx): Promise<{ ok: boolean; title?: string }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const business = await ctx.runQuery(internal.google.businessForUser, {
       userId,
     });
     if (!business?.gbpLocationName) {
-      throw new Error("No Google listing is linked.");
+      throw new ConvexError("No Google listing is linked.");
     }
 
     const token = await freshAccessToken(ctx, userId);
@@ -1067,14 +1110,14 @@ export const pushServices = paidAction({
   args: {},
   handler: async (ctx): Promise<{ pushed: number; error?: string }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const c = await ctx.runQuery(internal.google.serviceContext, { userId });
-    if (!c) throw new Error("Connect your Google profile first.");
+    if (!c) throw new ConvexError("Connect your Google profile first.");
     if (!c.business.gbpLocationName)
-      throw new Error("No Google listing linked.");
+      throw new ConvexError("No Google listing linked.");
     if (c.offerings.length === 0) {
-      throw new Error("Add what you sell in setup first.");
+      throw new ConvexError("Add what you sell in setup first.");
     }
 
     const token: string = await ctx.runAction(internal.google.accessTokenFor, {
@@ -1083,7 +1126,7 @@ export const pushServices = paidAction({
 
     const category = await categoryFor(ctx, c.business, token);
     if (!category) {
-      throw new Error(
+      throw new ConvexError(
         "Your listing has no category on Google, so services can't be attached. Set one in Google Business Profile first.",
       );
     }

@@ -1,9 +1,13 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
+import { AutoTextarea } from "@/components/textarea";
 import { OnboardingTop, nextHref, saveLabel, useEditMode } from "@/components/onboarding-frame";
+import { friendlyError } from "@/lib/errors";
 
 type Fields = {
   orgName: string;
@@ -36,6 +40,7 @@ export default function LocationPage() {
   const business = useQuery(api.businesses.mine);
   const save = useMutation(api.businesses.updateLocation);
   const edit = useEditMode();
+  const router = useRouter();
 
   const [fields, setFields] = useState<Fields>(EMPTY);
   const [loaded, setLoaded] = useState(false);
@@ -73,9 +78,9 @@ export default function LocationPage() {
           We fill this step in from your Google listing, so it has to be
           connected before there&rsquo;s anything to confirm.
         </p>
-        <a href="/app/connect" className="btn btn-primary mt-8 w-full">
+        <Link href="/app/connect" className="btn btn-primary mt-8 w-full">
           connect google
-        </a>
+        </Link>
       </main>
     );
   }
@@ -97,9 +102,9 @@ export default function LocationPage() {
         email: fields.email.trim() || undefined,
         website: fields.website.trim() || undefined,
       });
-      window.location.href = nextHref(2, edit);
+      router.push(nextHref(2, edit));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
       setBusy(false);
     }
   }
@@ -221,12 +226,12 @@ function Field({
         {required ? <span className="text-pin"> *</span> : null}
       </label>
       {multiline ? (
-        <textarea
+        <AutoTextarea
           id={id}
-          rows={3}
+          minRows={2}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={`${shared} resize-none`}
+          className={shared}
         />
       ) : (
         <input

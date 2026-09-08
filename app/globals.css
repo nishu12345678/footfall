@@ -103,6 +103,68 @@ h2 {
   color: inherit;
 }
 
+/* Only what does something gets the hand. Disabled controls say so. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+a[href],
+label[for],
+select,
+summary,
+input[type="file"],
+input[type="checkbox"],
+input[type="radio"] {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* Text inputs keep the I-beam. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+textarea {
+  cursor: text;
+}
+
+/* A textarea grows with its text instead of growing a scrollbar. */
+textarea {
+  field-sizing: content;
+  overflow: hidden;
+  resize: none;
+}
+
+/* Quiet hover where a whole row or card is the link. */
+.inset-row > a,
+.inset-row > button {
+  transition: background-color 0.15s ease;
+}
+.inset-row > a:hover,
+.inset-row > button:hover {
+  background: rgb(19 19 17 / 0.03);
+}
+
+a.card,
+button.card {
+  transition:
+    box-shadow 0.25s cubic-bezier(0.25, 1, 0.4, 1),
+    transform 0.32s cubic-bezier(0.25, 1, 0.4, 1);
+}
+a.card:hover,
+button.card:hover {
+  box-shadow: var(--shadow-lift);
+}
+
+/* Plain text links. */
+a.link {
+  color: var(--color-pin);
+  font-weight: 500;
+  transition: opacity 0.15s ease;
+}
+a.link:hover {
+  opacity: 0.75;
+}
+
 :focus-visible {
   outline: 3px solid rgb(43 78 255 / 0.5);
   outline-offset: 2px;
@@ -283,24 +345,16 @@ h2 {
 
 /* -------------------------------- labels -------------------------------- */
 
-/* Editorial eyebrow: tiny, tracked-out, muted — with a cobalt tick. */
+/* Small label above a field or a section: quiet, tracked-out, muted.
+   Block-level so it sits flush with whatever it labels. */
 .eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12.5px;
+  display: block;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
+  line-height: 1.3;
   color: var(--color-muted);
-}
-
-.eyebrow::before {
-  content: "";
-  width: 20px;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--color-pin);
 }
 
 .chip {
@@ -391,6 +445,10 @@ h2 {
   .marquee {
     animation: none !important;
   }
+  .thinking > span {
+    animation: none;
+    opacity: 0.6;
+  }
   .reveal {
     transform: none;
     transition: opacity 0.25s ease;
@@ -408,6 +466,35 @@ h2 {
   *::after {
     animation-duration: 0.01ms !important;
   }
+}
+
+/* Three quiet dots, the way an assistant "thinks". */
+@keyframes thinking {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+.thinking > span {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: thinking 1.2s ease-in-out infinite;
+}
+.thinking > span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.thinking > span:nth-child(3) {
+  animation-delay: 0.3s;
 }
 
 @keyframes sweep {

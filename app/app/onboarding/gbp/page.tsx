@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useAction, useMutation } from "convex/react";
+import { useQuery } from "convex-helpers/react/cache";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { OnboardingTop, nextHref, useEditMode } from "@/components/onboarding-frame";
@@ -218,7 +219,7 @@ export default function GbpPage() {
     <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-8 sm:py-12">
       <OnboardingTop step={4} edit={edit} />
 
-      <div className="mt-9 flex gap-5 overflow-x-auto border-b border-rule">
+      <div className="no-scrollbar mt-9 flex gap-5 overflow-x-auto border-b border-rule">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -517,9 +518,9 @@ export default function GbpPage() {
                           className={`flex-none rounded-full bg-paper-3 px-2 py-0.5 text-[11px] font-medium ${
                             r.demand > 0 ? "text-ink-soft" : "text-muted"
                           }`}
-                          title="demand x winnability"
+                          title="How worth chasing this search is for you: how many people type it, weighed against how hard the competition is to beat. Higher is better."
                         >
-                          {r.score}
+                          {r.score} pts
                         </span>
                       </div>
                       <p className="mt-1 text-[11px] leading-snug text-muted">

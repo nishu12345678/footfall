@@ -1,6 +1,7 @@
 "use client";
 
-import { useAction, useQuery } from "convex/react";
+import { useAction } from "convex/react";
+import { useQuery } from "convex-helpers/react/cache";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { Impact } from "@/components/impact";
@@ -346,6 +347,13 @@ export default function PerformancePage() {
             {ago(business.ranksCheckedAt)}
           </span>
         </div>
+        <p className="mt-1.5 text-[12px] leading-relaxed text-muted">
+          The badge is your position in Google&rsquo;s results when someone
+          nearby searches that phrase — 1 is the top spot. Green means
+          you&rsquo;re in the top 3 (the &ldquo;map pack&rdquo; customers
+          actually see), amber the first page, blue further down. The bar
+          under it shows how much of your area finds you.
+        </p>
 
         {keywords.length === 0 ? (
           <p className="card mt-4 px-5 py-10 text-center text-[13px] leading-relaxed text-muted">
@@ -399,7 +407,11 @@ export default function PerformancePage() {
                                   : "bg-pin-soft text-pin"
                           }`}
                         >
-                          {checked ? (kw.rank ?? "nowhere") : "—"}
+                          {checked
+                            ? kw.rank !== undefined
+                              ? `#${kw.rank}`
+                              : "not found"
+                            : "not checked yet"}
                         </span>
                       </div>
 
@@ -418,10 +430,13 @@ export default function PerformancePage() {
                                 }}
                               />
                             </div>
-                            <span className="flex-none text-[11px] text-muted">
-                              seen at {kw.coverageFound ?? 0}/{kw.coverageTotal}{" "}
-                              spots
-                              {kw.avgRank ? ` · avg ${kw.avgRank}` : ""}
+                            <span
+                              className="flex-none text-[11px] text-muted"
+                              title="We search from several points spread across your service area. This is how many of those points show your listing in the results."
+                            >
+                              found in {kw.coverageFound ?? 0} of{" "}
+                              {kw.coverageTotal} spots checked
+                              {kw.avgRank ? ` · avg position #${kw.avgRank}` : ""}
                             </span>
                           </div>
                         </div>

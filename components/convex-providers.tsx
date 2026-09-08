@@ -1,6 +1,7 @@
 "use client";
 
 import { ConvexAuthNextjsProvider } from "@convex-dev/auth/nextjs";
+import { ConvexQueryCacheProvider } from "convex-helpers/react/cache";
 import { ConvexReactClient } from "convex/react";
 import type { ReactNode } from "react";
 import { Paywall } from "./paywall";
@@ -32,7 +33,12 @@ export function ConvexProviders({ children }: { children: ReactNode }) {
 
   return (
     <ConvexAuthNextjsProvider client={client}>
-      <Paywall>{children}</Paywall>
+      {/* Keeps query subscriptions warm for 5 minutes after a screen
+          unmounts, so switching tabs shows the last data instantly and
+          updates in place instead of flashing "loading". */}
+      <ConvexQueryCacheProvider>
+        <Paywall>{children}</Paywall>
+      </ConvexQueryCacheProvider>
     </ConvexAuthNextjsProvider>
   );
 }

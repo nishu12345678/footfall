@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useAction, useMutation } from "convex/react";
+import { useQuery } from "convex-helpers/react/cache";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { OnboardingTop, nextHref, useEditMode } from "@/components/onboarding-frame";

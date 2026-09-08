@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useAction, useMutation } from "convex/react";
+import { useQuery } from "convex-helpers/react/cache";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
@@ -81,13 +82,11 @@ export default function HomePage() {
               ? `${reviews.thisWeek} new this week`
               : "No reviews yet this week"}
           </p>
-          <p className="flex-none text-[17px] font-semibold">
-            <span
-              className={reviews.thisWeek > 0 ? "text-open-deep" : "text-pin"}
-            >
-              {reviews.thisWeek}
-            </span>
-            <span className="text-muted">/{reviews.target}</span>
+          <p
+            className="flex-none rounded-full bg-white/70 px-2.5 py-1 text-[12px] font-medium text-ink-soft"
+            title={`A steady ${reviews.target} new reviews a week is what moves local ranking.`}
+          >
+            goal · {reviews.target} a week
           </p>
         </div>
 
@@ -103,7 +102,13 @@ export default function HomePage() {
         <p className="mt-4 text-[13px] leading-relaxed text-ink-soft">
           {reviews.daysSinceLastReview === null
             ? "We haven't seen a review come in yet. Reviews are the strongest thing you can move for Google ranking."
-            : `Your last review was ${reviews.daysSinceLastReview} days ago. Reviews are vital for good Google ranking.`}
+            : `Your last review was ${
+                reviews.daysSinceLastReview === 0
+                  ? "today"
+                  : reviews.daysSinceLastReview === 1
+                    ? "yesterday"
+                    : `${reviews.daysSinceLastReview} days ago`
+              }. Reviews are vital for good Google ranking.`}
         </p>
 
         <div className="mt-5 flex items-center justify-between gap-1 border-t border-rule-soft pt-4 text-center">

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useAction, useQuery } from "convex/react";
+import { useAction } from "convex/react";
+import { useQuery } from "convex-helpers/react/cache";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading } from "@/components/app-shell";

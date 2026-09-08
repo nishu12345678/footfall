@@ -134,6 +134,15 @@ textarea {
   resize: none;
 }
 
+/* A strip that scrolls sideways on a phone shouldn't wear a scrollbar. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Quiet hover where a whole row or card is the link. */
 .inset-row > a,
 .inset-row > button {

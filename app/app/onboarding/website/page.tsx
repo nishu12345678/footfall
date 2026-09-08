@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useAction, useQuery } from "convex/react";
+import { useAction } from "convex/react";
+import { useQuery } from "convex-helpers/react/cache";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { OnboardingTop, nextHref, useEditMode } from "@/components/onboarding-frame";

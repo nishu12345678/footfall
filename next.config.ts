@@ -33,23 +33,24 @@ const SHOP_HOST = `(?<slug>(?!(?:${RESERVED.join("|")})\\.)[a-z0-9][a-z0-9-]{0,6
 const nextConfig: NextConfig = {
   async rewrites() {
     return {
-      beforeFiles: [
-        // One rule for every path, the root included. A separate
-        // `source: "/"` rule used to sit above this one and Next 16 answered
-        // it with a 404 — the `has` capture group is only substituted into
-        // the destination when the source itself has a parameter, and "/"
-        // has none. `/:path*` matches "/" with an empty path, so the
-        // destination for the root becomes "/s/<slug>".
+      // Serve static files, including Next's hashed CSS and JavaScript under
+      // `/_next/`, before applying the shop-host rewrite. A `beforeFiles`
+      // rewrite also captured those asset requests and sent them to
+      // `/s/<slug>/_next/...`, leaving custom-domain shop sites unstyled.
+      afterFiles: [
+        // One rule for every page path, the root included. `/:path*` matches
+        // "/" with an empty path, so the destination becomes "/s/<slug>".
         {
           source: "/:path*",
           has: [{ type: "host", value: SHOP_HOST }],
           destination: "/s/:slug/:path*",
         },
+        // Browsers and link previewers still ask for /favicon.ico by
+        // convention. Serve the one in public/brand rather than keeping a
+        // second copy at the root.
+        { source: "/favicon.ico", destination: "/brand/favicon.ico" },
       ],
-      // Browsers and link previewers still ask for /favicon.ico by
-      // convention. Serve the one in public/brand rather than keeping a
-      // second copy at the root.
-      afterFiles: [{ source: "/favicon.ico", destination: "/brand/favicon.ico" }],
+      beforeFiles: [],
       fallback: [],
     };
   },

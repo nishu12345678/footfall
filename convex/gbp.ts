@@ -607,14 +607,217 @@ export const setServiceRadius = paidMutation({
   },
 });
 
+type NearbyArea = {
+  name: string;
+  km: number;
+  kind: string;
+  lat: number;
+  lng: number;
+};
+
+function haversineKm(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
+): number {
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(a));
+}
+
+/**
+ * Free first: OpenStreetMap Overpass. Individual mirrors drop connections
+ * or time out often enough that one endpoint isn't reliable, so a couple
+ * are tried in turn before giving up on Overpass entirely.
+ *
+ * Worldwide mirrors only. overpass.osm.ch used to sit in this list and it
+ * is the *Swiss* instance: it answers 200 with a perfectly valid, perfectly
+ * empty result for any Indian coordinate, which the screen then reported
+ * as "no areas near you".
+ */
+async function overpassNearby(
+  lat: number,
+  lng: number,
+  radiusKm: number,
+): Promise<NearbyArea[] | null> {
+  const radius = Math.round(radiusKm * 1000);
+  const query =
+    `[out:json][timeout:25];` +
+    `(node["place"~"^(suburb|neighbourhood|quarter|town|village)$"]` +
+    `(around:${radius},${lat},${lng}););out body 80;`;
+
+  const MIRRORS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+  ];
+
+  let data: any = null;
+  let empty: any = null;
+  let lastError = "";
+
+  for (const mirror of MIRRORS) {
+    try {
+      const res = await fetch(mirror, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": "footfall/1.0 (local business listing tool)",
+          Accept: "application/json",
+        },
+        body: new URLSearchParams({ data: query }),
+      });
+      if (!res.ok) {
+        lastError = `${mirror} -> ${res.status}`;
+        continue;
+      }
+      const body = await res.json();
+      // A busy Overpass answers 200 with a "remark" (usually a timeout)
+      // and no elements. That is a failure, not an empty map.
+      if (body?.remark && !(body.elements ?? []).length) {
+        lastError = `${mirror} -> remark: ${String(body.remark).slice(0, 120)}`;
+        continue;
+      }
+      if ((body.elements ?? []).length > 0) {
+        data = body;
+        break;
+      }
+      // Valid but empty: believable only if no other mirror disagrees,
+      // so keep it and ask the next one.
+      empty = body;
+    } catch (error) {
+      lastError = `${mirror} -> ${error instanceof Error ? error.message : String(error)}`;
+    }
+  }
+
+  if (!data && empty) data = empty;
+  if (!data) {
+    console.error(`[overpass] all mirrors failed. ${lastError}`);
+    return null;
+  }
+  console.log(
+    `[overpass] ${(data.elements ?? []).length} places within ${radiusKm}km of ${lat},${lng}`,
+  );
+
+  const seen = new Set<string>();
+  return (data.elements ?? [])
+    .filter((e: any) => e?.tags?.name && e.lat && e.lon)
+    .map((e: any) => ({
+      name: String(e.tags.name),
+      kind: String(e.tags.place),
+      km: Math.round(haversineKm(lat, lng, e.lat, e.lon) * 10) / 10,
+      lat: e.lat as number,
+      lng: e.lon as number,
+    }))
+    .filter((e: { name: string }) => {
+      const key = e.name.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a: { km: number }, b: { km: number }) => a.km - b.km)
+    .slice(0, 30);
+}
+
+/**
+ * Paid fallback: Google Places API (New) Nearby Search. Only reached when
+ * Overpass's public mirrors are unavailable — this costs money per call,
+ * Overpass is free, so Overpass stays the default.
+ *
+ * Nearby Search returns real places (not just localities), so results are
+ * filtered to the types that actually name an area — sublocality, suburb,
+ * town, village equivalents — rather than shops or landmarks.
+ */
+async function googlePlacesNearby(
+  lat: number,
+  lng: number,
+  radiusKm: number,
+): Promise<NearbyArea[] | null> {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) return null;
+
+  const AREA_TYPES = new Set([
+    "sublocality",
+    "sublocality_level_1",
+    "sublocality_level_2",
+    "neighborhood",
+    "locality",
+    "administrative_area_level_3",
+    "administrative_area_level_4",
+  ]);
+
+  try {
+    const res = await fetch(
+      "https://places.googleapis.com/v1/places:searchNearby",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": apiKey,
+          "X-Goog-FieldMask":
+            "places.displayName,places.location,places.types",
+        },
+        body: JSON.stringify({
+          includedTypes: ["locality", "sublocality", "neighborhood"],
+          maxResultCount: 20,
+          locationRestriction: {
+            circle: {
+              center: { latitude: lat, longitude: lng },
+              radius: Math.min(Math.max(radiusKm, 2), 50) * 1000,
+            },
+          },
+        }),
+      },
+    );
+    if (!res.ok) {
+      console.error(
+        `[google-places] ${res.status} ${(await res.text()).slice(0, 300)}`,
+      );
+      return null;
+    }
+    const data = await res.json();
+    const places = Array.isArray(data?.places) ? data.places : [];
+
+    const seen = new Set<string>();
+    const out: NearbyArea[] = [];
+    for (const p of places) {
+      const name: string | undefined = p?.displayName?.text;
+      const plat = p?.location?.latitude;
+      const plng = p?.location?.longitude;
+      if (!name || typeof plat !== "number" || typeof plng !== "number")
+        continue;
+      const types: string[] = Array.isArray(p?.types) ? p.types : [];
+      const kind = types.find((t) => AREA_TYPES.has(t)) ?? types[0] ?? "area";
+      const key = name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({
+        name,
+        kind,
+        km: Math.round(haversineKm(lat, lng, plat, plng) * 10) / 10,
+        lat: plat,
+        lng: plng,
+      });
+    }
+    console.log(
+      `[google-places] ${out.length} places within ${radiusKm}km of ${lat},${lng}`,
+    );
+    return out.sort((a, b) => a.km - b.km).slice(0, 30);
+  } catch (error) {
+    console.error(
+      `[google-places] request failed. ${error instanceof Error ? error.message : String(error)}`,
+    );
+    return null;
+  }
+}
+
 export const nearbyAreas = paidAction({
   args: { radiusKm: v.optional(v.number()) },
-  handler: async (
-    ctx,
-    { radiusKm = 20 },
-  ): Promise<
-    { name: string; km: number; kind: string; lat: number; lng: number }[]
-  > => {
+  handler: async (ctx, { radiusKm = 20 }): Promise<NearbyArea[]> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Sign in first.");
 
@@ -636,101 +839,24 @@ export const nearbyAreas = paidAction({
       );
     }
 
-    const radius = Math.round(Math.min(Math.max(radiusKm, 2), 50) * 1000);
-    const query =
-      `[out:json][timeout:25];` +
-      `(node["place"~"^(suburb|neighbourhood|quarter|town|village)$"]` +
-      `(around:${radius},${business.lat},${business.lng}););out body 80;`;
+    const clampedRadius = Math.min(Math.max(radiusKm, 2), 50);
+    const lat = business.lat;
+    const lng = business.lng;
 
-    // Overpass asks callers to identify themselves, and individual mirrors
-    // drop connections often enough that one endpoint isn't reliable.
-    //
-    // Worldwide mirrors only. overpass.osm.ch used to sit in this list and
-    // it is the *Swiss* instance: it answers 200 with a perfectly valid,
-    // perfectly empty result for any Indian coordinate, which the screen
-    // then reported as "no areas near you".
-    const MIRRORS = [
-      "https://overpass-api.de/api/interpreter",
-      "https://overpass.kumi.systems/api/interpreter",
-    ];
+    const fromOverpass = await overpassNearby(lat, lng, clampedRadius);
+    if (fromOverpass && fromOverpass.length > 0) return fromOverpass;
 
-    let data: any = null;
-    let empty: any = null;
-    let lastError = "";
+    const fromGoogle = await googlePlacesNearby(lat, lng, clampedRadius);
+    if (fromGoogle && fromGoogle.length > 0) return fromGoogle;
 
-    for (const mirror of MIRRORS) {
-      try {
-        const res = await fetch(mirror, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": "footfall/1.0 (local business listing tool)",
-            Accept: "application/json",
-          },
-          body: new URLSearchParams({ data: query }),
-        });
-        if (!res.ok) {
-          lastError = `${mirror} -> ${res.status}`;
-          continue;
-        }
-        const body = await res.json();
-        // A busy Overpass answers 200 with a "remark" (usually a timeout)
-        // and no elements. That is a failure, not an empty map.
-        if (body?.remark && !(body.elements ?? []).length) {
-          lastError = `${mirror} -> remark: ${String(body.remark).slice(0, 120)}`;
-          continue;
-        }
-        if ((body.elements ?? []).length > 0) {
-          data = body;
-          break;
-        }
-        // Valid but empty: believable only if no other mirror disagrees,
-        // so keep it and ask the next one.
-        empty = body;
-      } catch (error) {
-        lastError = `${mirror} -> ${error instanceof Error ? error.message : String(error)}`;
-      }
-    }
+    // Overpass answering with a believable empty result (no other mirror
+    // disagreed) is not an error — some rural coordinates genuinely have
+    // nothing named around them at this radius.
+    if (fromOverpass) return fromOverpass;
 
-    if (!data && empty) data = empty;
-    if (!data) {
-      console.error(`[overpass] all mirrors failed. ${lastError}`);
-      throw new ConvexError(
-        "Couldn't reach the map service just now. Add your areas by hand, or try again in a minute.",
-      );
-    }
-    console.log(
-      `[overpass] ${(data.elements ?? []).length} places within ${radiusKm}km of ${business.lat},${business.lng}`,
+    console.error("[nearbyAreas] overpass and google places both failed");
+    throw new ConvexError(
+      "Couldn't reach the map service just now. Add your areas by hand, or try again in a minute.",
     );
-    const toRad = (x: number) => (x * Math.PI) / 180;
-    const distance = (lat: number, lng: number) => {
-      const dLat = toRad(lat - business.lat!);
-      const dLng = toRad(lng - business.lng!);
-      const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(business.lat!)) *
-          Math.cos(toRad(lat)) *
-          Math.sin(dLng / 2) ** 2;
-      return 2 * 6371 * Math.asin(Math.sqrt(a));
-    };
-
-    const seen = new Set<string>();
-    return (data.elements ?? [])
-      .filter((e: any) => e?.tags?.name && e.lat && e.lon)
-      .map((e: any) => ({
-        name: String(e.tags.name),
-        kind: String(e.tags.place),
-        km: Math.round(distance(e.lat, e.lon) * 10) / 10,
-        lat: e.lat as number,
-        lng: e.lon as number,
-      }))
-      .filter((e: { name: string }) => {
-        const key = e.name.toLowerCase();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .sort((a: { km: number }, b: { km: number }) => a.km - b.km)
-      .slice(0, 30);
   },
 });

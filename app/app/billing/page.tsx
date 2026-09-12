@@ -76,6 +76,11 @@ export default function BillingPage() {
   const [watchingLocal, setWatching] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
   const [extendOk, setExtendOk] = useState(false);
+  // Convex queries do not automatically rerun when only a deployment env var
+  // changes. If createOrder sees a newer price, update the screen and require
+  // a second click so the amount the owner accepts always matches Checkout.
+  const [oneRupeeOverride, setOneRupeeOverride] = useState<boolean | null>(null);
+  const oneRupeeTest = oneRupeeOverride ?? status?.oneRupeeTest ?? false;
   const inFlight = useRef(false);
 
   // A reopened or refreshed page: pick up the order that was in flight.
@@ -167,6 +172,20 @@ export default function BillingPage() {
         fail(
           "Couldn't start the payment",
           friendlyError(e, "Check your connection and try again."),
+        );
+        return;
+      }
+
+      // Eligibility can change after this page rendered. Never open a Checkout
+      // whose authoritative server price differs from the price on the button
+      // the owner just accepted. Update the UI, then require one fresh click.
+      if (order.oneRupeeTest !== oneRupeeTest) {
+        setOneRupeeOverride(order.oneRupeeTest);
+        fail(
+          "The payment price changed",
+          order.oneRupeeTest
+            ? "Your ₹1 production test price is now active. Review the updated price and tap Pay again."
+            : "The ₹1 production test price is no longer active. Review the normal price before continuing.",
         );
         return;
       }
@@ -280,7 +299,14 @@ export default function BillingPage() {
       setPhase("checkout");
       checkout.open();
     },
-    [createOrder, verifyPayment, noteDismissed, noteCheckoutFailure, fail],
+    [
+      createOrder,
+      verifyPayment,
+      noteDismissed,
+      noteCheckoutFailure,
+      fail,
+      oneRupeeTest,
+    ],
   );
 
   const check = useCallback(async () => {
@@ -385,7 +411,7 @@ export default function BillingPage() {
         </>
       )}
 
-      {status.oneRupeeTest ? (
+      {oneRupeeTest ? (
         <p className="mt-5 rounded-[14px] bg-paper-2 px-4 py-3 text-[14px] leading-relaxed text-ink-soft">
           Production test account: either plan costs ₹1 and includes the full
           normal access period with no feature limits.
@@ -490,15 +516,15 @@ export default function BillingPage() {
 
                 <p className="mt-3 flex flex-wrap items-baseline gap-x-2">
                   <span className="text-[2.4rem] font-extrabold leading-none tracking-tight">
-                    {inr(status.oneRupeeTest ? 1 : p.price)}
+                    {inr(oneRupeeTest ? 1 : p.price)}
                   </span>
                   <span className="text-[16px] text-muted">/ {p.period}</span>
                   <span className="text-[16px] text-muted line-through">
-                    {inr(status.oneRupeeTest ? p.price : p.listPrice)}
+                    {inr(oneRupeeTest ? p.price : p.listPrice)}
                   </span>
                 </p>
 
-                {p.period === "year" && !status.oneRupeeTest ? (
+                {p.period === "year" && !oneRupeeTest ? (
                   <p className="mt-2 text-[15px] text-ink-soft">
                     {inr(p.perMonth)} a month, paid once.
                   </p>
@@ -517,7 +543,7 @@ export default function BillingPage() {
                         ? "Payment window open…"
                         : "Confirming…"
                     : ready
-                      ? status.oneRupeeTest
+                      ? oneRupeeTest
                         ? "Pay ₹1 — full access"
                         : p.cta
                       : scriptState === "failed"

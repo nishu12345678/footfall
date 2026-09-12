@@ -187,7 +187,7 @@ describe("createOrder pricing authority", () => {
 });
 
 describe("markPaid", () => {
-  test("a ₹1 test payment grants the full selected plan", async () => {
+  test("a ₹1 webhook grants the full plan and a ₹1 refund ends it", async () => {
     await t.mutation(internal.billing.recordPending, {
       userId,
       plan: "yearly",
@@ -195,20 +195,52 @@ describe("markPaid", () => {
       oneRupeeTest: true,
       razorpayOrderId: "order_test_1",
     });
-    const result = await t.mutation(internal.billing.markPaid, {
-      razorpayOrderId: "order_test_1",
-      razorpayPaymentId: "pay_test_1",
-      amountPaise: 100,
-      currency: "INR",
-      confirmedBy: "webhook",
+    const captured = await t.action(internal.billing.handleWebhook, {
+      eventId: "evt_test_capture",
+      body: {
+        event: "payment.captured",
+        payload: {
+          payment: {
+            entity: {
+              id: "pay_test_1",
+              order_id: "order_test_1",
+              amount: 100,
+              currency: "INR",
+              status: "captured",
+            },
+          },
+        },
+      },
     });
 
-    expect(result).toEqual({ ok: true, already: false });
-    const paid = await row("order_test_1");
+    expect(captured).toBe("processed");
+    let paid = await row("order_test_1");
     expect(paid?.status).toBe("paid");
     expect(paid?.amountPaise).toBe(100);
     expect(paid?.oneRupeeTest).toBe(true);
     expect(paid?.expiresAt).toBeGreaterThan(Date.now() + 364 * DAY);
+
+    const refunded = await t.action(internal.billing.handleWebhook, {
+      eventId: "evt_test_refund",
+      body: {
+        event: "refund.processed",
+        payload: {
+          refund: {
+            entity: {
+              id: "rfnd_test_1",
+              payment_id: "pay_test_1",
+              amount: 100,
+              status: "processed",
+            },
+          },
+        },
+      },
+    });
+    expect(refunded).toBe("processed");
+    paid = await row("order_test_1");
+    expect(paid?.status).toBe("refunded");
+    expect(paid?.refundedPaise).toBe(100);
+    expect(paid?.expiresAt).toBeLessThanOrEqual(Date.now());
   });
 
   test("grants once, and a second confirmation is a no-op", async () => {

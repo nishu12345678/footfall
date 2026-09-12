@@ -986,9 +986,12 @@ async function reconcileOne(
 ): Promise<{ state: string; reason?: string }> {
   const row = await ctx.runQuery(internal.billing.byOrder, { orderId });
   if (!row) return { state: "unknown" };
-  if (GRANTING.has(row.status) || ["refunded", "expired", "mismatch"].includes(row.status)) {
+  if (GRANTING.has(row.status) || ["refunded", "mismatch"].includes(row.status)) {
     return { state: row.status };
   }
+  // "expired" means our UI stopped waiting, not that Razorpay could never
+  // capture it. If money moved late, reconcile it and grant what was paid for
+  // rather than leaving a charged customer without access.
 
   const res = await razorpay<{ items?: RazorpayPayment[] }>(`/orders/${orderId}/payments`);
   if (!res.ok || !res.data) return { state: row.status, reason: "Razorpay unreachable" };

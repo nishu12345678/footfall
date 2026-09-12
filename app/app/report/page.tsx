@@ -168,7 +168,34 @@ export default function ReportPage() {
 
   return (
     <main className="mx-auto max-w-xl px-6 py-8 sm:py-12">
-      <BackButton fallback={report.paid ? "/app" : "/"} className="-ml-2 mb-4" />
+      {/* Settings must stay reachable from here: for an unpaid business the
+          paywall routes every app screen back to this report, and Settings
+          is where disconnecting, switching business and connecting another
+          one live. Without this link an owner can be stuck on the wrong
+          shop with no way out. */}
+      <div className="mb-4 flex items-center justify-between">
+        <BackButton fallback={report.paid ? "/app" : "/"} className="-ml-2" />
+        <Link
+          href="/app/settings"
+          className="pressable inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 py-2 text-[14px] font-medium text-ink-soft hover:text-ink"
+        >
+          <svg
+            aria-hidden
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+          settings
+        </Link>
+      </div>
       <p className="text-[13px] font-medium uppercase tracking-[0.05em] text-pin">
         Free listing report
       </p>
@@ -179,6 +206,12 @@ export default function ReportPage() {
         {[report.business.category, report.business.city]
           .filter(Boolean)
           .join(" · ")}
+      </p>
+      <p className="mt-2 text-[13px] text-muted">
+        Not the business you meant?{" "}
+        <Link href="/app/settings" className="font-medium text-pin hover:opacity-80">
+          switch or connect another in settings
+        </Link>
       </p>
 
       {/* The headline number. Blunt on purpose — this is the reason to pay. */}

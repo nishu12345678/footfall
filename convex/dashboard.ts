@@ -3,6 +3,7 @@ import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paidMutation, paidQuery } from "./access";
+import { twilioEnabled } from "./messaging";
 
 /**
  * Everything the home screen shows, in one query.
@@ -162,8 +163,8 @@ export const home = paidQuery({
 });
 
 /**
- * Adds a customer and marks that we handed them the review link.
- * Their number is the start of the customer list the shop never had.
+ * Adds a customer and, when Twilio is enabled, queues a review invitation.
+ * Delivery state is recorded only after the provider accepts the message.
  */
 export const addCustomer = paidMutation({
   args: {
@@ -171,7 +172,12 @@ export const addCustomer = paidMutation({
     name: v.optional(v.string()),
     service: v.optional(v.string()),
   },
-  handler: async (ctx, { phone, name, service }) => {
+  returns: v.object({
+    id: v.id("customers"),
+    repeat: v.boolean(),
+    inviteQueued: v.boolean(),
+  }),
+  handler: async (ctx, { phone, name, service: _service }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Sign in first.");
 
@@ -191,29 +197,33 @@ export const addCustomer = paidMutation({
         q.eq("businessId", business._id).eq("phone", normalised),
       )
       .first();
+    const inviteEnabled = twilioEnabled();
 
     if (existing) {
-      await ctx.db.patch(existing._id, { reviewLinkSentAt: Date.now() });
-      await ctx.scheduler.runAfter(0, internal.messaging.sendReviewInvite, {
-        customerId: existing._id,
-      });
-      return { id: existing._id, repeat: true };
+      if (inviteEnabled) {
+        await ctx.scheduler.runAfter(0, internal.messaging.sendReviewInvite, {
+          customerId: existing._id,
+        });
+      }
+      return { id: existing._id, repeat: true, inviteQueued: inviteEnabled };
     }
 
     const id = await ctx.db.insert("customers", {
       businessId: business._id,
       phone: normalised,
       name,
-      reviewLinkSentAt: Date.now(),
       source: "manual",
     });
 
-    // The message itself goes through Twilio (WhatsApp, then SMS). The
-    // feed entry is written by the send, so it says what actually happened.
-    await ctx.scheduler.runAfter(0, internal.messaging.sendReviewInvite, {
-      customerId: id,
-    });
+    // The message itself goes through Twilio (WhatsApp, then SMS). When the
+    // feature is off we still save the customer, but never claim an invite
+    // was sent and never schedule a provider call.
+    if (inviteEnabled) {
+      await ctx.scheduler.runAfter(0, internal.messaging.sendReviewInvite, {
+        customerId: id,
+      });
+    }
 
-    return { id, repeat: false };
+    return { id, repeat: false, inviteQueued: inviteEnabled };
   },
 });

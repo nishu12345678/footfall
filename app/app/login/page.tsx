@@ -7,6 +7,7 @@ import { BRAND } from "@/lib/content";
 import { BRAND_ASSETS } from "@/lib/brand";
 import { BackButton } from "@/components/back-button";
 import { friendlyError, GENERIC } from "@/lib/errors";
+import { TWILIO_UI_ENABLED } from "@/lib/features";
 
 type Method = "phone" | "email";
 type Step = "identify" | "code";
@@ -17,7 +18,9 @@ export default function LoginPage() {
   const { signIn } = useAuthActions();
   const { isAuthenticated } = useConvexAuth();
 
-  const [method, setMethod] = useState<Method>("phone");
+  const [method, setMethod] = useState<Method>(
+    TWILIO_UI_ENABLED ? "phone" : "email",
+  );
   const [step, setStep] = useState<Step>("identify");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -74,6 +77,7 @@ export default function LoginPage() {
     setError(null);
     try {
       if (method === "phone") {
+        if (!TWILIO_UI_ENABLED) throw new Error("Mobile sign-in is unavailable.");
         await signIn("twilio", { phone: e164 });
       } else {
         await signIn("email-otp", { email: cleanEmail });
@@ -98,6 +102,7 @@ export default function LoginPage() {
     const value = code.replace(/\D/g, "");
     try {
       if (method === "phone") {
+        if (!TWILIO_UI_ENABLED) throw new Error("Mobile sign-in is unavailable.");
         await signIn("twilio", { phone: e164, code: value });
       } else {
         await signIn("email-otp", { email: cleanEmail, code: value });
@@ -115,7 +120,12 @@ export default function LoginPage() {
     try {
       await signIn("google", { redirectTo: "/app/login" });
     } catch (e) {
-      report(e, "Google sign-in didn't work. Try your number or email.");
+      report(
+        e,
+        TWILIO_UI_ENABLED
+          ? "Google sign-in didn't work. Try your number or email."
+          : "Google sign-in didn't work. Try email instead.",
+      );
       setBusy(null);
     }
   }
@@ -171,25 +181,29 @@ export default function LoginPage() {
               <span className="h-px flex-1 bg-rule-soft" aria-hidden />
             </div>
 
-            <div
-              role="group"
-              aria-label="sign-in method"
-              className="mb-5 grid grid-cols-2 gap-1 rounded-full bg-paper-3 p-1"
-            >
-              {(["phone", "email"] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => reset(m)}
-                  aria-pressed={method === m}
-                  className={`rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors ${
-                    method === m ? "bg-white text-ink shadow-card" : "text-muted"
-                  }`}
-                >
-                  {m === "phone" ? "mobile number" : "email"}
-                </button>
-              ))}
-            </div>
+            {TWILIO_UI_ENABLED ? (
+              <div
+                role="group"
+                aria-label="sign-in method"
+                className="mb-5 grid grid-cols-2 gap-1 rounded-full bg-paper-3 p-1"
+              >
+                {(["phone", "email"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => reset(m)}
+                    aria-pressed={method === m}
+                    className={`rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors ${
+                      method === m
+                        ? "bg-white text-ink shadow-card"
+                        : "text-muted"
+                    }`}
+                  >
+                    {m === "phone" ? "mobile number" : "email"}
+                  </button>
+                ))}
+              </div>
+            ) : null}
 
             <form
               onSubmit={(e) => {

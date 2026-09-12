@@ -31,6 +31,8 @@ NEXT_PUBLIC_CONVEX_SITE_URL=http://127.0.0.1:3211
 # The app's own address, and the domain shop sites live on in production.
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXT_PUBLIC_SITE_DOMAIN=footfall.zone
+# Show mobile OTP in the login UI only when Twilio is enabled on Convex too.
+NEXT_PUBLIC_TWILIO_ENABLED=0
 
 # Serve the fake Google at /api/mock/google.
 GOOGLE_MOCK_ENABLED=1
@@ -71,9 +73,9 @@ GOOGLE_API_MOCK_URL=http://127.0.0.1:3000/api/mock/google
 # AUTH_GOOGLE_ID=
 # AUTH_GOOGLE_SECRET=
 
-# SMS/WhatsApp through Twilio, email through Resend. Unneeded with
-# OTP_DEV_ECHO: sends are logged (see the messages / emails tables) and
-# skipped.
+# SMS/WhatsApp through Twilio, email through Resend. Credentials stay inert
+# unless the backend master switch is exactly 1.
+TWILIO_ENABLED=0
 # TWILIO_ACCOUNT_SID=
 # TWILIO_AUTH_TOKEN=
 # TWILIO_MESSAGING_SERVICE_SID=   # or TWILIO_FROM_NUMBER=+91...
@@ -106,7 +108,7 @@ with `npx convex env list`, adding `--deployment <name>` for a cloud one.
 
 | Key | Where | Needed for | Without it |
 |---|---|---|---|
-| `OTP_DEV_ECHO=1` | Convex | Signing in with phone or email while Twilio and Resend are unset. The code is printed in the `npx convex dev` log, and every send is still logged to the `messages` / `emails` tables as "skipped". | You cannot sign in. |
+| `OTP_DEV_ECHO=1` | Convex | Development-only OTP logging. Email OTP can be inspected in logs without Resend. Phone OTP additionally requires `TWILIO_ENABLED=1`; never enable echo in production. | Codes are not printed to logs. |
 | `GOOGLE_MOCK_ENABLED=1` | `.env.local` | The fake Google at `/api/mock/google` | Route answers 404 |
 | `GOOGLE_API_MOCK_URL=http://127.0.0.1:3000/api/mock/google` | Convex | Backend talks to the fake Google | Backend calls the real Google APIs, which fail without a listing |
 | `SITE_URL=http://localhost:3000` | Convex | Where the OAuth callback sends the browser back | Lands on the wrong host |
@@ -118,7 +120,9 @@ with `npx convex env list`, adding `--deployment <name>` for a cloud one.
 | `SERPAPI_KEY` | Convex | Rank checks and the geo-grid. Every pin per keyword is one paid search, so leave this blank unless you are testing ranking. | Rank check errors; the rest of Performance works from the mock's metrics |
 | `DATAFORSEO_AUTH` | Convex | Keyword search volumes | Keywords show without volumes |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Convex | Only for the real Google consent screen. Not needed with the mock. | Nothing, with the mock on |
-| `TWILIO_*` | Convex | Real SMS (sign-in codes, plan reminders) and WhatsApp (review invites) | Nothing, with `OTP_DEV_ECHO` on; sends are logged as "skipped" |
+| `TWILIO_ENABLED=1` | Convex | Master backend gate for every Twilio call: phone OTP, SMS reminders and WhatsApp/SMS review invites | All Twilio sends are intentionally skipped; phone OTP is rejected with a friendly message |
+| `NEXT_PUBLIC_TWILIO_ENABLED=1` | `.env.local` / Vercel | Shows mobile OTP in the login UI | Login offers Google and email only |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, sender vars | Convex | Credentials/senders used only after `TWILIO_ENABLED=1` | Twilio remains unavailable even if the feature flags are on |
 | `RESEND_API_KEY`, `EMAIL_FROM` | Convex | Every email: sign-in codes, welcome, receipts, payment failures, refunds, plan reminders, posts/reviews awaiting approval, Google disconnected | Nothing, with `OTP_DEV_ECHO` on; sends are logged as "skipped" |
 | `RESEND_WEBHOOK_SECRET` | Convex | Delivered / bounced / complained landing on the `emails` table via `<CONVEX_SITE_URL>/resend/webhook` | Rows stop at "sent" |
 

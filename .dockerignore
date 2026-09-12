@@ -1,0 +1,10 @@
+# Never copy deployment credentials into image layers or remote build caches.
+.env*
+**/.env*
+!.env.example
+
+.git
+.next
+node_modules
+coverage
+*.log

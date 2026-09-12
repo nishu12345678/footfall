@@ -19,6 +19,8 @@ import type { Id } from "./_generated/dataModel";
  * reports a message as delivered on its own say-so.
  *
  * Configuration (Convex deployment env):
+ *   TWILIO_ENABLED=1               master switch; anything else disables all
+ *                                  Twilio calls, regardless of other keys
  *   TWILIO_ACCOUNT_SID             required
  *   TWILIO_AUTH_TOKEN              required
  *   TWILIO_FROM_NUMBER             an SMS-capable number, E.164 — OR —
@@ -69,7 +71,13 @@ type TwilioConfig = {
   whatsappFrom?: string;
 };
 
+/** The server-side enforcement gate. Credentials alone never enable sends. */
+export function twilioEnabled(): boolean {
+  return process.env.TWILIO_ENABLED === "1";
+}
+
 export function twilioConfig(): TwilioConfig | null {
+  if (!twilioEnabled()) return null;
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN;
   const from = process.env.TWILIO_FROM_NUMBER;
@@ -372,6 +380,13 @@ export async function sendNow(
     businessId?: Id<"businesses">;
   },
 ): Promise<SendResult> {
+  // Do not create a message row or contact Twilio while the feature is off.
+  // Callers such as reminders can safely treat this as an intentional skip.
+  if (!twilioEnabled()) {
+    console.log(`[twilio] disabled — skipping ${args.channel} for ${args.purpose}`);
+    return { ok: true, status: "skipped", id: null };
+  }
+
   const to = toE164(args.to);
   if (!to) {
     console.error(`[twilio] refusing invalid number for ${args.purpose}`);
@@ -506,13 +521,23 @@ export const markInvited = internalMutation({
   handler: async (ctx, { customerId, status }) => {
     const customer = await ctx.db.get(customerId);
     if (!customer) return;
+
+    const accepted = status === "sent" || status === "delivered";
+    if (accepted) {
+      await ctx.db.patch(customerId, { reviewLinkSentAt: Date.now() });
+    }
+
+    const title = accepted
+      ? "Review link sent"
+      : status === "queued"
+        ? "Review link queued"
+        : status === "skipped"
+          ? "Review link not sent"
+          : "Review link could not be sent";
     await ctx.db.insert("agentActions", {
       businessId: customer.businessId,
       type: "review_reply",
-      title:
-        status === "failed"
-          ? "Review link could not be sent"
-          : "Review link sent",
+      title,
       detail: `To ${customer.phone.slice(-10)}${customer.name ? ` (${customer.name})` : ""}`,
       createdAt: Date.now(),
     });

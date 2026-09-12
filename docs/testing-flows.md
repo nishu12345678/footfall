@@ -15,10 +15,11 @@ needs a Google listing; see `docs/local-testing.md` for the fake Google.
 | Refunds | `npx convex data refunds` |
 | Post-generation runs (progress, stop requests, outcome) | `npx convex data postGenerations` |
 
-With `OTP_DEV_ECHO=1` and no Twilio / Resend keys, every send is logged
-as `skipped` with the reason, and sign-in codes are printed in the
-`npx convex dev` log. Add the keys to `convex/.env.local` and push
-(`npm run env:push -- convex/.env.local`) to send for real.
+With `OTP_DEV_ECHO=1`, sign-in codes are printed in the `npx convex dev`
+log. Email can be tested without Resend. Phone OTP still requires
+`TWILIO_ENABLED=1`; keep it `0` to guarantee that no Twilio request occurs.
+Add credentials to `convex/.env.local`, turn on the matching feature flag,
+and push (`npm run env:push -- convex/.env.local`) to send for real.
 
 ## Payments
 
@@ -89,6 +90,13 @@ npx convex run email:unsuppress '{"email":"owner@example.com"}' [--deployment <n
 ```
 
 ## SMS / WhatsApp (Twilio)
+
+Twilio has two coordinated gates:
+
+- Convex: `TWILIO_ENABLED=1` permits provider calls. Any other value skips
+  reminders/invites, rejects phone OTP, and disables the status callback.
+- Next/Vercel: `NEXT_PUBLIC_TWILIO_ENABLED=1` shows mobile OTP in the UI.
+  This is presentation-only; the Convex flag is the security/cost boundary.
 
 | Flow | Channel | Dedupe |
 |---|---|---|

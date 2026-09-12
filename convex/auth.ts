@@ -6,7 +6,7 @@ import Google from "@auth/core/providers/google";
 import type { EmailConfig } from "@auth/core/providers/email";
 import { internal } from "./_generated/api";
 import type { ActionCtx } from "./_generated/server";
-import { sendNow as sendMessage, toE164 } from "./messaging";
+import { sendNow as sendMessage, toE164, twilioEnabled } from "./messaging";
 import { sendNow as sendEmail } from "./email";
 
 /**
@@ -35,7 +35,7 @@ function numericCode(length: number): string {
 
 /* ------------------------------ phone OTP ------------------------------- */
 
-export const TwilioPhone = Phone({
+const TwilioPhoneBase = Phone({
   id: "twilio",
   maxAge: 60 * 5,
   // Digits only with the country code, "919319102143" — the identifier
@@ -47,6 +47,12 @@ export const TwilioPhone = Phone({
   },
 
   async sendVerificationRequest({ identifier: phone, token }, ctx) {
+    // The client hides phone login too, but this server-side gate prevents a
+    // stale or modified client from invoking Twilio while the feature is off.
+    if (!twilioEnabled()) {
+      throw new ConvexError("Mobile sign-in is unavailable. Use email or Google instead.");
+    }
+
     const to = toE164(phone);
     if (!to) throw new ConvexError("That mobile number isn't valid.");
 
@@ -73,6 +79,22 @@ export const TwilioPhone = Phone({
     }
   },
 });
+
+// `sendVerificationRequest` gates newly issued codes. `authorize` also gates
+// verification, so disabling the feature immediately invalidates an OTP that
+// was issued just before the switch changed.
+export const TwilioPhone = {
+  ...TwilioPhoneBase,
+  async authorize(
+    params: Parameters<NonNullable<typeof TwilioPhoneBase.authorize>>[0],
+    account: Parameters<NonNullable<typeof TwilioPhoneBase.authorize>>[1],
+  ) {
+    if (!twilioEnabled()) {
+      throw new ConvexError("Mobile sign-in is unavailable. Use email or Google instead.");
+    }
+    await TwilioPhoneBase.authorize?.(params, account);
+  },
+};
 
 /* ------------------------------ email OTP ------------------------------- */
 

@@ -168,6 +168,8 @@ http.route({
   path: "/twilio/status",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
+    // Keep accepting signed receipts for messages already in flight when the
+    // outbound feature is switched off; this route cannot initiate a send.
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     if (!authToken) return new Response("not configured", { status: 500 });
 

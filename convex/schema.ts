@@ -355,6 +355,9 @@ export default defineSchema({
     /** What Razorpay was actually asked for, in paise. Never trusted from
         the browser — the server picks it from its own plan table. */
     amountPaise: v.number(),
+    /** True only for an authenticated, verified email in the production-test
+        allowlist. The selected plan still receives its full normal duration. */
+    oneRupeeTest: v.optional(v.boolean()),
     currency: v.string(),
     razorpayOrderId: v.string(),
     razorpayPaymentId: v.optional(v.string()),

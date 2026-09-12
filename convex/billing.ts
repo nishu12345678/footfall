@@ -23,8 +23,9 @@ import { describePaymentFailure } from "./paymentText";
    tapping a button.
 
    Prices live on the server and nowhere else. The browser sends a plan name,
-   never an amount — otherwise anyone could open devtools and buy a year for
-   one rupee.
+   never an amount. A verified email in RAZORPAY_ONE_RUPEE_TEST_EMAILS gets the
+   deliberate ₹1 production-test price; every other user gets the normal
+   server price. Devtools cannot opt an account into that allowlist.
 
    Nothing the browser says is believed on its own. Checkout's hand-back is
    signature-checked AND the payment is fetched from Razorpay's API before
@@ -71,6 +72,23 @@ export const PLANS = {
 
 type PlanId = keyof typeof PLANS;
 
+const ONE_RUPEE_PAISE = 100;
+
+/** Exact, case-insensitive email matching. No domains, wildcards or client input. */
+export function isOneRupeeTester(
+  email: string | null | undefined,
+  rawAllowlist = process.env.RAZORPAY_ONE_RUPEE_TEST_EMAILS ?? "",
+): boolean {
+  if (!email) return false;
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return false;
+  return rawAllowlist
+    .split(/[\s,;]+/)
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean)
+    .includes(normalized);
+}
+
 const CURRENCY = "INR";
 
 const planValidator = v.union(v.literal("monthly"), v.literal("yearly"));
@@ -95,6 +113,7 @@ function publicRow(r: Doc<"subscriptions">) {
     id: r._id,
     plan: r.plan,
     amountPaise: r.amountPaise,
+    oneRupeeTest: r.oneRupeeTest === true,
     currency: r.currency,
     status: r.status,
     orderId: r.razorpayOrderId,
@@ -134,10 +153,18 @@ export const status = query({
         active: false,
         plan: null,
         expiresAt: null,
+        oneRupeeTest: false,
         receipts: [],
         pending: null,
       };
     }
+
+    // Only the verified auth-account email is eligible. A business email from
+    // a Google listing is owner-editable and is deliberately not considered.
+    const user = await ctx.db.get(userId);
+    const oneRupeeTest =
+      typeof user?.emailVerificationTime === "number" &&
+      isOneRupeeTester(user.email);
 
     const rows = await ctx.db
       .query("subscriptions")
@@ -162,6 +189,7 @@ export const status = query({
       active: Boolean(live),
       plan: live?.plan ?? null,
       expiresAt: live?.expiresAt ?? null,
+      oneRupeeTest,
       /** Every paid receipt, newest first — the owner's own record. */
       receipts: rows
         .filter((r) => r.paidAt)
@@ -196,6 +224,17 @@ export const byOrder = internalQuery({
       .first(),
 });
 
+/** Server-owned identity used for special pricing; never accepts an email arg. */
+export const verifiedEmailForUser = internalQuery({
+  args: { userId: v.id("users") },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, { userId }) => {
+    const user = await ctx.db.get(userId);
+    if (!user?.email || typeof user.emailVerificationTime !== "number") return null;
+    return user.email.trim().toLowerCase();
+  },
+});
+
 /* -------------------------------- writes -------------------------------- */
 
 /**
@@ -204,8 +243,12 @@ export const byOrder = internalQuery({
  * so a refresh or a second tap does not create a second order.
  */
 export const openOrder = internalQuery({
-  args: { userId: v.id("users"), plan: planValidator },
-  handler: async (ctx, { userId, plan }) => {
+  args: {
+    userId: v.id("users"),
+    plan: planValidator,
+    amountPaise: v.number(),
+  },
+  handler: async (ctx, { userId, plan, amountPaise }) => {
     const rows = await ctx.db
       .query("subscriptions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -216,6 +259,7 @@ export const openOrder = internalQuery({
         .filter(
           (r) =>
             r.plan === plan &&
+            r.amountPaise === amountPaise &&
             (r.status === "created" || r.status === "attempted") &&
             r._creationTime > cutoff,
         )
@@ -229,6 +273,7 @@ export const recordPending = internalMutation({
     userId: v.id("users"),
     plan: planValidator,
     amountPaise: v.number(),
+    oneRupeeTest: v.boolean(),
     razorpayOrderId: v.string(),
   },
   handler: async (ctx, args) => {
@@ -236,6 +281,7 @@ export const recordPending = internalMutation({
       userId: args.userId,
       plan: args.plan,
       amountPaise: args.amountPaise,
+      oneRupeeTest: args.oneRupeeTest,
       currency: CURRENCY,
       razorpayOrderId: args.razorpayOrderId,
       status: "created",
@@ -663,6 +709,14 @@ async function razorpay<T>(
  */
 export const createOrder = action({
   args: { plan: planValidator },
+  returns: v.object({
+    orderId: v.string(),
+    amountPaise: v.number(),
+    currency: v.string(),
+    keyId: v.string(),
+    oneRupeeTest: v.boolean(),
+    reused: v.boolean(),
+  }),
   handler: async (
     ctx,
     { plan },
@@ -671,6 +725,7 @@ export const createOrder = action({
     amountPaise: number;
     currency: string;
     keyId: string;
+    oneRupeeTest: boolean;
     reused: boolean;
   }> => {
     const userId = await getAuthUserId(ctx);
@@ -678,9 +733,20 @@ export const createOrder = action({
 
     const { keyId } = credentials();
     const chosen = PLANS[plan];
+    const verifiedEmail: string | null = await ctx.runQuery(
+      internal.billing.verifiedEmailForUser,
+      { userId },
+    );
+    const oneRupeeTest = isOneRupeeTester(verifiedEmail);
+    const amountPaise = oneRupeeTest ? ONE_RUPEE_PAISE : chosen.amountPaise;
 
-    // Same plan, open order from the last half hour: hand it back.
-    const open = await ctx.runQuery(internal.billing.openOrder, { userId, plan });
+    // Reuse only an order with today's authoritative price. Adding or
+    // removing an email from the allowlist cannot resurrect an older price.
+    const open = await ctx.runQuery(internal.billing.openOrder, {
+      userId,
+      plan,
+      amountPaise,
+    });
     if (open) {
       console.log(`[billing] reusing open order ${open.razorpayOrderId} for ${userId}`);
       return {
@@ -688,6 +754,7 @@ export const createOrder = action({
         amountPaise: open.amountPaise,
         currency: open.currency,
         keyId,
+        oneRupeeTest: open.oneRupeeTest === true,
         reused: true,
       };
     }
@@ -697,11 +764,15 @@ export const createOrder = action({
       {
         method: "POST",
         body: {
-          amount: chosen.amountPaise,
+          amount: amountPaise,
           currency: CURRENCY,
           // Razorpay caps the receipt at 40 characters.
           receipt: `ff_${plan}_${Date.now()}`.slice(0, 40),
-          notes: { userId, plan },
+          notes: {
+            userId,
+            plan,
+            oneRupeeTest: oneRupeeTest ? "true" : "false",
+          },
         },
       },
     );
@@ -709,7 +780,7 @@ export const createOrder = action({
     if (!res.ok || !res.data?.id) {
       throw new ConvexError("Could not start the payment. Please try again in a moment.");
     }
-    if (res.data.amount !== chosen.amountPaise || res.data.currency !== CURRENCY) {
+    if (res.data.amount !== amountPaise || res.data.currency !== CURRENCY) {
       console.error("[billing] Razorpay echoed a different order", res.data);
       throw new ConvexError("Razorpay returned an unexpected order. Please try again.");
     }
@@ -717,16 +788,20 @@ export const createOrder = action({
     await ctx.runMutation(internal.billing.recordPending, {
       userId,
       plan,
-      amountPaise: chosen.amountPaise,
+      amountPaise,
+      oneRupeeTest,
       razorpayOrderId: res.data.id,
     });
-    console.log(`[billing] order ${res.data.id} opened for ${userId} (${plan})`);
+    console.log(
+      `[billing] order ${res.data.id} opened for ${userId} (${plan}${oneRupeeTest ? ", one-rupee production test" : ""})`,
+    );
 
     return {
       orderId: res.data.id,
-      amountPaise: chosen.amountPaise,
+      amountPaise,
       currency: CURRENCY,
       keyId,
+      oneRupeeTest,
       reused: false,
     };
   },

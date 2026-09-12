@@ -182,8 +182,11 @@ export default function BillingPage() {
           amount: order.amountPaise,
           currency: order.currency,
           name: "footfall",
-          description:
-            planId === "yearly" ? "One year of footfall" : "One month of footfall",
+          description: order.oneRupeeTest
+            ? `Production test · full ${planId} plan`
+            : planId === "yearly"
+              ? "One year of footfall"
+              : "One month of footfall",
           theme: { color: "#2b4eff" },
           // Razorpay calls this once the payment succeeds. The webhook
           // confirms the same payment independently, so closing the tab
@@ -382,6 +385,13 @@ export default function BillingPage() {
         </>
       )}
 
+      {status.oneRupeeTest ? (
+        <p className="mt-5 rounded-[14px] bg-paper-2 px-4 py-3 text-[14px] leading-relaxed text-ink-soft">
+          Production test account: either plan costs ₹1 and includes the full
+          normal access period with no feature limits.
+        </p>
+      ) : null}
+
       {/* ------------------------------ states ----------------------------- */}
 
       {liveError ? (
@@ -480,15 +490,15 @@ export default function BillingPage() {
 
                 <p className="mt-3 flex flex-wrap items-baseline gap-x-2">
                   <span className="text-[2.4rem] font-extrabold leading-none tracking-tight">
-                    {inr(p.price)}
+                    {inr(status.oneRupeeTest ? 1 : p.price)}
                   </span>
                   <span className="text-[16px] text-muted">/ {p.period}</span>
                   <span className="text-[16px] text-muted line-through">
-                    {inr(p.listPrice)}
+                    {inr(status.oneRupeeTest ? p.price : p.listPrice)}
                   </span>
                 </p>
 
-                {p.period === "year" ? (
+                {p.period === "year" && !status.oneRupeeTest ? (
                   <p className="mt-2 text-[15px] text-ink-soft">
                     {inr(p.perMonth)} a month, paid once.
                   </p>
@@ -507,7 +517,9 @@ export default function BillingPage() {
                         ? "Payment window open…"
                         : "Confirming…"
                     : ready
-                      ? p.cta
+                      ? status.oneRupeeTest
+                        ? "Pay ₹1 — full access"
+                        : p.cta
                       : scriptState === "failed"
                         ? "Payment unavailable"
                         : "Loading payment…"}

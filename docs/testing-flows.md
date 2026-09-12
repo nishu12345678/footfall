@@ -23,12 +23,16 @@ and push (`npm run env:push -- convex/.env.local`) to send for real.
 
 ## Payments
 
-Open `/app/billing`, pick a plan, and use Razorpay's test cards / UPI
-(`success@razorpay` succeeds, `failure@razorpay` fails).
+Open `/app/billing` and pick a plan. With test keys, use Razorpay's test
+cards / UPI (`success@razorpay` succeeds, `failure@razorpay` fails).
+For a real production run, add the tester's verified login email to
+`RAZORPAY_ONE_RUPEE_TEST_EMAILS`; Checkout charges ₹1 but grants the complete
+monthly or yearly plan selected. Never use test payment details in live mode.
 
 | Scenario | How | Expect |
 |---|---|---|
-| Success | pay with `success@razorpay` | row → `paid`, receipt email row, plan shows active, `/app` unlocked |
+| Success | pay with `success@razorpay` in test mode | row → `paid`, receipt email row, plan shows active, `/app` unlocked |
+| ₹1 production tester | sign in using an exact verified email in `RAZORPAY_ONE_RUPEE_TEST_EMAILS`, then pay with a real method | Checkout and receipt show ₹1; row has `oneRupeeTest: true`; the full selected plan duration is granted |
 | Declined | pay with `failure@razorpay` or a test card that declines | Checkout stays open for a retry; row → `attempted` with `failureReason`; one "didn't go through" email per order |
 | Cancelled | close Checkout | row stays `created`; plan picker back; reopening reuses the same order for 30 min |
 | Abandoned | close the tab mid-Checkout, come back | same order reused; after 24 h the sweep marks it `expired` |

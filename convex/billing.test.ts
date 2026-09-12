@@ -1,9 +1,10 @@
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
-import { beforeEach, describe, expect, test } from "vitest";
-import { internal } from "./_generated/api";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
+import { isOneRupeeTester } from "./billing";
 
 /**
  * The money paths that must never double or drift, exercised without
@@ -24,6 +25,7 @@ async function openOrder(orderId: string, plan: "monthly" | "yearly" = "monthly"
     userId,
     plan,
     amountPaise: plan === "monthly" ? 199_900 : 999_900,
+    oneRupeeTest: false,
     razorpayOrderId: orderId,
   });
 }
@@ -42,7 +44,173 @@ beforeEach(async () => {
   userId = await t.run(async (ctx) => ctx.db.insert("users", { name: "owner" }));
 });
 
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+});
+
+describe("one-rupee production testers", () => {
+  test("matches only exact normalized emails", () => {
+    const allowlist = " Alice@Example.com, bob@example.com\ncarol@example.com ";
+    expect(isOneRupeeTester("alice@example.com", allowlist)).toBe(true);
+    expect(isOneRupeeTester(" BOB@EXAMPLE.COM ", allowlist)).toBe(true);
+    expect(isOneRupeeTester("mallory@example.com", allowlist)).toBe(false);
+    expect(isOneRupeeTester("alice@example.com.evil.test", allowlist)).toBe(false);
+    expect(isOneRupeeTester(null, allowlist)).toBe(false);
+  });
+
+  test("uses only a verified auth email", async () => {
+    await t.run(async (ctx) => {
+      await ctx.db.patch(userId, { email: " Tester@Example.com " });
+    });
+    expect(
+      await t.query(internal.billing.verifiedEmailForUser, { userId }),
+    ).toBeNull();
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch(userId, { emailVerificationTime: Date.now() });
+    });
+    expect(
+      await t.query(internal.billing.verifiedEmailForUser, { userId }),
+    ).toBe("tester@example.com");
+  });
+});
+
+describe("createOrder pricing authority", () => {
+  test.each([
+    {
+      label: "verified allowlisted email",
+      email: "TESTER@example.com",
+      verified: true,
+      expectedAmount: 100,
+      expectedTest: true,
+    },
+    {
+      label: "verified non-allowlisted email",
+      email: "other@example.com",
+      verified: true,
+      expectedAmount: 199_900,
+      expectedTest: false,
+    },
+    {
+      label: "unverified allowlisted email",
+      email: "tester@example.com",
+      verified: false,
+      expectedAmount: 199_900,
+      expectedTest: false,
+    },
+  ])("uses the server price for $label", async ({
+    email,
+    verified,
+    expectedAmount,
+    expectedTest,
+  }) => {
+    vi.stubEnv("RAZORPAY_KEY_ID", "rzp_live_public_test");
+    vi.stubEnv("RAZORPAY_KEY_SECRET", "server-secret-never-returned");
+    vi.stubEnv("RAZORPAY_ONE_RUPEE_TEST_EMAILS", "tester@example.com");
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch(userId, {
+        email,
+        ...(verified ? { emailVerificationTime: Date.now() } : {}),
+      });
+    });
+
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const payload = JSON.parse(String(init?.body));
+      expect(payload.amount).toBe(expectedAmount);
+      expect(payload.notes.oneRupeeTest).toBe(expectedTest ? "true" : "false");
+      return new Response(
+        JSON.stringify({
+          id: `order_${expectedTest ? "tester" : "regular"}`,
+          amount: expectedAmount,
+          currency: "INR",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const me = t.withIdentity({ subject: `${userId}|session` });
+    const order = await me.action(api.billing.createOrder, { plan: "monthly" });
+
+    expect(order.amountPaise).toBe(expectedAmount);
+    expect(order.oneRupeeTest).toBe(expectedTest);
+    expect(JSON.stringify(order)).not.toContain("server-secret-never-returned");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    const stored = await row(order.orderId);
+    expect(stored?.amountPaise).toBe(expectedAmount);
+    expect(stored?.oneRupeeTest).toBe(expectedTest);
+  });
+
+  test("does not reuse a ₹1 order after the email leaves the allowlist", async () => {
+    vi.stubEnv("RAZORPAY_KEY_ID", "rzp_live_public_test");
+    vi.stubEnv("RAZORPAY_KEY_SECRET", "server-secret");
+    vi.stubEnv("RAZORPAY_ONE_RUPEE_TEST_EMAILS", "tester@example.com");
+    await t.run(async (ctx) => {
+      await ctx.db.patch(userId, {
+        email: "tester@example.com",
+        emailVerificationTime: Date.now(),
+      });
+    });
+
+    const amounts: number[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const payload = JSON.parse(String(init?.body));
+        amounts.push(payload.amount);
+        return new Response(
+          JSON.stringify({
+            id: `order_price_${payload.amount}`,
+            amount: payload.amount,
+            currency: "INR",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }),
+    );
+
+    const me = t.withIdentity({ subject: `${userId}|session` });
+    const discounted = await me.action(api.billing.createOrder, {
+      plan: "monthly",
+    });
+    expect(discounted.amountPaise).toBe(100);
+
+    vi.stubEnv("RAZORPAY_ONE_RUPEE_TEST_EMAILS", "");
+    const regular = await me.action(api.billing.createOrder, { plan: "monthly" });
+    expect(regular.amountPaise).toBe(199_900);
+    expect(regular.reused).toBe(false);
+    expect(amounts).toEqual([100, 199_900]);
+  });
+});
+
 describe("markPaid", () => {
+  test("a ₹1 test payment grants the full selected plan", async () => {
+    await t.mutation(internal.billing.recordPending, {
+      userId,
+      plan: "yearly",
+      amountPaise: 100,
+      oneRupeeTest: true,
+      razorpayOrderId: "order_test_1",
+    });
+    const result = await t.mutation(internal.billing.markPaid, {
+      razorpayOrderId: "order_test_1",
+      razorpayPaymentId: "pay_test_1",
+      amountPaise: 100,
+      currency: "INR",
+      confirmedBy: "webhook",
+    });
+
+    expect(result).toEqual({ ok: true, already: false });
+    const paid = await row("order_test_1");
+    expect(paid?.status).toBe("paid");
+    expect(paid?.amountPaise).toBe(100);
+    expect(paid?.oneRupeeTest).toBe(true);
+    expect(paid?.expiresAt).toBeGreaterThan(Date.now() + 364 * DAY);
+  });
+
   test("grants once, and a second confirmation is a no-op", async () => {
     await openOrder("order_1");
     const first = await t.mutation(internal.billing.markPaid, {

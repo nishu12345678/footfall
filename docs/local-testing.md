@@ -61,6 +61,8 @@ DATAFORSEO_AUTH=
 RAZORPAY_KEY_ID=rzp_test_
 RAZORPAY_KEY_SECRET=
 RAZORPAY_WEBHOOK_SECRET=
+# Exact verified login emails; use only when testing the live production flow.
+RAZORPAY_ONE_RUPEE_TEST_EMAILS=
 # Dev only: leave the grant to the webhook.
 # RAZORPAY_WEBHOOK_ONLY=1
 
@@ -115,6 +117,7 @@ with `npx convex env list`, adding `--deployment <name>` for a cloud one.
 | `NEXT_PUBLIC_SITE_URL=http://localhost:3000` | `.env.local` | Shop links, the copy button and canonical tags point at your own host. `NEXT_PUBLIC_SITE_DOMAIN` can stay set; subdomain links are only used when the app is served from that domain. | Links point at production |
 | `RAZORPAY_KEY_ID` (`rzp_test_…`), `RAZORPAY_KEY_SECRET` | Convex | Paying for a plan in test mode | Billing page cannot create an order |
 | `RAZORPAY_WEBHOOK_SECRET` | Convex | The webhook path, real or faked | Webhook returns 500 |
+| `RAZORPAY_ONE_RUPEE_TEST_EMAILS` | Convex production | Exact comma-separated verified login emails that pay ₹1 through live Razorpay while receiving the full selected plan | Everyone pays the normal server price |
 | `OPENAI_API_KEY` | Convex | Writing posts, review replies, keyword ideas, the shop site, post images | Those buttons error; everything else works |
 | `FIRECRAWL_API_KEY` | Convex | Reading the shop's website for the report and for suggestions | Website check reports nothing |
 | `SERPAPI_KEY` | Convex | Rank checks and the geo-grid. Every pin per keyword is one paid search, so leave this blank unless you are testing ranking. | Rank check errors; the rest of Performance works from the mock's metrics |

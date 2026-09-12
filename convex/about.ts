@@ -10,7 +10,7 @@ import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import {
+import { activeBusinessFor,
   NOT_FOUND_MESSAGE,
   ownedBusiness,
   ownedRow,
@@ -43,10 +43,7 @@ export const list = paidQuery({
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
 
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const [offerings, specialties] = await Promise.all([
@@ -126,10 +123,7 @@ export const complete = paidMutation({
 export const businessContext = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const [offerings, specialties] = await Promise.all([

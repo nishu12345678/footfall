@@ -5,6 +5,7 @@ import { ConvexQueryCacheProvider } from "convex-helpers/react/cache";
 import { ConvexReactClient } from "convex/react";
 import type { ReactNode } from "react";
 import { Paywall } from "./paywall";
+import { NavTracker } from "./nav-tracker";
 
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 const client = convexUrl ? new ConvexReactClient(convexUrl) : null;
@@ -37,6 +38,7 @@ export function ConvexProviders({ children }: { children: ReactNode }) {
           unmounts, so switching tabs shows the last data instantly and
           updates in place instead of flashing "loading". */}
       <ConvexQueryCacheProvider>
+        <NavTracker />
         <Paywall>{children}</Paywall>
       </ConvexQueryCacheProvider>
     </ConvexAuthNextjsProvider>

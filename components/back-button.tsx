@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { MouseEvent } from "react";
+import { hasInAppHistory } from "@/lib/nav-depth";
 
 /**
  * The way back from any screen that isn't a tab.
@@ -37,13 +38,10 @@ export function BackButton({
       onClick();
       return;
     }
-    // Only go back when we came from this site; otherwise the user would
-    // be sent out of the app to whatever was open before.
-    const cameFromHere =
-      typeof document !== "undefined" &&
-      document.referrer !== "" &&
-      document.referrer.startsWith(window.location.origin);
-    if (window.history.length > 1 && cameFromHere) router.back();
+    // Only go back when the user actually navigated here inside the app;
+    // otherwise they'd be sent out of the app to whatever was open before.
+    // (document.referrer can't tell: it never changes on SPA navigation.)
+    if (window.history.length > 1 && hasInAppHistory()) router.back();
     else router.push(fallback);
   }
 

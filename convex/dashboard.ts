@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { paidMutation, paidQuery } from "./access";
+import { activeBusinessFor, paidMutation, paidQuery } from "./access";
 import { twilioEnabled } from "./messaging";
 
 /**
@@ -17,10 +17,7 @@ export const home = paidQuery({
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
 
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const id = business._id;
@@ -181,10 +178,7 @@ export const addCustomer = paidMutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Sign in first.");
 
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) throw new ConvexError("Connect your Google profile first.");
 
     const digits = phone.replace(/\D/g, "");

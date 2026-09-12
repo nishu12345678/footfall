@@ -9,7 +9,7 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
-import { paidAction, paidMutation, paidQuery } from "./access";
+import { activeBusinessFor, paidAction, paidMutation, paidQuery } from "./access";
 
 /**
  * A free one-page website for shops that don't have one.
@@ -139,10 +139,7 @@ export const mine = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
 
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const site = await ctx.db
@@ -159,10 +156,7 @@ export const mine = query({
 export const siteContext = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const [offerings, specialties, areas, keywords, hours] = await Promise.all([
@@ -407,10 +401,7 @@ export const setPublished = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Sign in first.");
 
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) throw new ConvexError("Connect your Google profile first.");
 
     const site = await ctx.db

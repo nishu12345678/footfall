@@ -1,6 +1,8 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { useQuery } from "convex-helpers/react/cache";
+import { api } from "@/convex/_generated/api";
 import { BackButton } from "./back-button";
 import { Steps } from "./steps";
 import { ONBOARDING_STEPS } from "@/lib/onboarding";
@@ -48,9 +50,21 @@ export function saveLabel(edit: boolean, busy: boolean, normal = "save & next") 
  * The top of a setup screen: the progress bar during onboarding, or an
  * "editing" header when the owner came from Settings. Both carry a way
  * back.
+ *
+ * The Back button walks browser history when the owner navigated here from
+ * inside the app (the dashboard's "setup isn't finished" card, Settings, a
+ * step badge), and only falls back to the previous step on a fresh load.
+ * Steps already unlocked are links, so any passed step can be reopened and
+ * saved directly.
  */
 export function OnboardingTop({ step, edit }: { step: number; edit: boolean }) {
+  const business = useQuery(api.businesses.mine);
   const label = ONBOARDING_STEPS.find((s) => s.step === step)?.label ?? "";
+  const reached = business
+    ? business.onboardingComplete
+      ? ONBOARDING_STEPS.length
+      : business.onboardingStep
+    : step;
   return (
     <div>
       <BackButton
@@ -61,7 +75,7 @@ export function OnboardingTop({ step, edit }: { step: number; edit: boolean }) {
       {edit ? (
         <p className="eyebrow">editing · {label.toLowerCase()}</p>
       ) : (
-        <Steps current={step} />
+        <Steps current={step} reached={reached} />
       )}
     </div>
   );

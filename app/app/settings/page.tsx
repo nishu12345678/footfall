@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useAction } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { useQuery } from "convex-helpers/react/cache";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
@@ -25,10 +25,13 @@ const fmtDate = (ms: number) =>
  */
 export default function SettingsPage() {
   const me = useQuery(api.account.me);
+  const businesses = useQuery(api.businesses.list);
+  const switchTo = useMutation(api.businesses.switchTo);
   const { signOut } = useAuthActions();
   const disconnect = useAction(api.google.disconnect);
   const signOutEverywhere = useAction(api.account.signOutEverywhere);
 
+  const [switching, setSwitching] = useState<string | null>(null);
   const [busy, setBusy] = useState<null | "signout" | "everywhere" | "disconnect">(null);
   const [confirming, setConfirming] = useState<null | "everywhere" | "disconnect">(null);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +97,20 @@ export default function SettingsPage() {
   const b = me.business;
   const who = me.user.name ?? me.user.email ?? me.user.phone ?? "You";
 
+  async function doSwitch(businessId: string) {
+    setSwitching(businessId);
+    setError(null);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await switchTo({ businessId: businessId as any });
+      setNote("Switched. Everything in the app now shows this business.");
+    } catch (e) {
+      setError(friendlyError(e));
+    } finally {
+      setSwitching(null);
+    }
+  }
+
   return (
     <AppScreen
       name={b?.orgName ?? "footfall"}
@@ -145,6 +162,67 @@ export default function SettingsPage() {
           />
         </ul>
       </section>
+
+      {/* ---------------------------- businesses ----------------------------- */}
+      {businesses && businesses.length > 0 ? (
+        <section className="inset-group mt-6">
+          <div className="hairline-b px-5 py-3.5">
+            <p className="text-[15px] font-semibold">Your businesses</p>
+            <p className="mt-0.5 text-[12px] text-muted">
+              Each business has its own setup and its own plan. Everything in
+              the app — and the agent&rsquo;s background work — runs on the
+              selected one.
+            </p>
+          </div>
+          <ul>
+            {businesses.map((biz) => (
+              <li key={biz._id} className="inset-row">
+                <div className="flex items-center gap-3 px-5 py-3.5">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[14px] font-medium">
+                      {biz.orgName}
+                      {biz.selected ? (
+                        <span className="ml-2 rounded-full bg-open-soft px-2 py-0.5 text-[11px] font-medium text-open-deep">
+                          selected
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="mt-0.5 block text-[12px] text-muted">
+                      {[
+                        biz.city,
+                        biz.connected ? "connected" : "google disconnected",
+                        biz.planActive
+                          ? `plan until ${biz.planExpiresAt ? fmtDate(biz.planExpiresAt) : "—"}`
+                          : "no plan",
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  </span>
+                  {!biz.selected ? (
+                    <button
+                      type="button"
+                      onClick={() => void doSwitch(biz._id)}
+                      disabled={switching !== null}
+                      className="btn btn-ghost btn-sm flex-none disabled:opacity-50"
+                    >
+                      {switching === biz._id ? "switching…" : "switch"}
+                    </button>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="hairline-t px-5 py-3.5">
+            <Link
+              href="/app/connect"
+              className="text-[13px] font-medium text-pin hover:opacity-80"
+            >
+              + connect another business
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       {/* ---------------------------- google profile ------------------------- */}
       <section className="inset-group mt-6">

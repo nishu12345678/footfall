@@ -361,12 +361,12 @@ export const eraseUser = internalMutation({
       }
     };
 
-    // ---- the business and everything hanging off it
-    const business = await ctx.db
+    // ---- every business and everything hanging off each of them
+    const businesses = await ctx.db
       .query("businesses")
       .withIndex("by_user", (q) => q.eq("userId", uid))
-      .first();
-    if (business) {
+      .collect();
+    for (const business of businesses) {
       for (const table of BUSINESS_TABLES) {
         await zap(
           table,
@@ -390,6 +390,13 @@ export const eraseUser = internalMutation({
       bump("businesses", 1);
       if (!dryRun) await ctx.db.delete(business._id);
     }
+    await zap(
+      "businessSelections",
+      await ctx.db
+        .query("businessSelections")
+        .withIndex("by_user", (q) => q.eq("userId", uid))
+        .collect(),
+    );
 
     // ---- Google connection
     await zap(
@@ -516,7 +523,7 @@ export const eraseUser = internalMutation({
     return {
       dryRun,
       user: user.email ?? user.phone ?? String(uid),
-      business: business?.orgName ?? null,
+      businesses: businesses.map((b) => b.orgName),
       removed: counted,
     };
   },

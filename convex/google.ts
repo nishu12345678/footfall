@@ -10,7 +10,7 @@ import type { ActionCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Doc, Id } from "./_generated/dataModel";
-import { paidAction, paidMutation } from "./access";
+import { activeBusinessFor, paidAction, paidMutation } from "./access";
 import {
   MOCK_AUTH_CODE,
   accountsUrl,
@@ -135,13 +135,18 @@ export const forgetAccount = internalMutation({
       .first();
     if (account) await ctx.db.delete(account._id);
 
-    // Any link still in flight for this user is dead too.
-    const business = await ctx.db
+    // One Google grant serves every business on the account, so revoking it
+    // unlinks and pauses them all — not just the one on screen. Each keeps
+    // its data and remembers its listing, so reconnecting the same listing
+    // later resumes this row instead of starting a duplicate business.
+    const businesses = await ctx.db
       .query("businesses")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
-    if (business) {
+      .collect();
+    for (const business of businesses) {
+      if (!business.gbpLocationName) continue;
       await ctx.db.patch(business._id, {
+        lastGbpLocationName: business.gbpLocationName,
         gbpAccountName: undefined,
         gbpLocationName: undefined,
         agentActive: false,
@@ -155,7 +160,10 @@ export const forgetAccount = internalMutation({
         createdAt: Date.now(),
       });
     }
-    return { hadAccount: Boolean(account), businessId: business?._id ?? null };
+    return {
+      hadAccount: Boolean(account),
+      businessId: businesses[0]?._id ?? null,
+    };
   },
 });
 
@@ -424,13 +432,21 @@ export const createBusinessFromLocation = internalMutation({
     }),
   },
   handler: async (ctx, { userId, location }) => {
-    const existing = await ctx.db
+    // Every GBP listing is its own business row with its own offerings,
+    // keywords, site, posts and plan. Connecting a different listing must
+    // never overwrite an existing business — that used to leave the new
+    // shop wearing the old shop's data everywhere.
+    const all = await ctx.db
       .query("businesses")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+      .collect();
+    const existing = all.find(
+      (b) =>
+        b.gbpLocationName === location.name ||
+        b.lastGbpLocationName === location.name,
+    );
 
-    const fields = {
-      userId,
+    const listingFields = {
       orgName: location.title,
       locationName: location.city
         ? `${location.title}, ${location.city}`
@@ -445,29 +461,51 @@ export const createBusinessFromLocation = internalMutation({
       lng: location.lng,
       gbpAccountName: location.accountName,
       gbpLocationName: location.name,
+      lastGbpLocationName: undefined,
       primaryCategory: location.category,
       primaryCategoryId: location.categoryId,
       additionalCategories: location.extraCategories,
       reviewUri: location.reviewUri,
       mapsUri: location.mapsUri,
-      onboardingStep: 2,
-      onboardingComplete: false,
-      agentActive: false,
     };
 
+    let businessId: Id<"businesses">;
     if (existing) {
-      await ctx.db.patch(existing._id, fields);
-      return existing._id;
+      // The same listing coming back: refresh what Google says about it,
+      // keep the owner's onboarding progress and content exactly as it was.
+      await ctx.db.patch(existing._id, listingFields);
+      businessId = existing._id;
+      await ctx.db.insert("agentActions", {
+        businessId,
+        type: "seo",
+        title: "Google Business Profile reconnected",
+        detail: location.title,
+        createdAt: Date.now(),
+      });
+    } else {
+      businessId = await ctx.db.insert("businesses", {
+        userId,
+        ...listingFields,
+        onboardingStep: 2,
+        onboardingComplete: false,
+        agentActive: false,
+      });
+      await ctx.db.insert("agentActions", {
+        businessId,
+        type: "seo",
+        title: "Google Business Profile connected",
+        detail: location.title,
+        createdAt: Date.now(),
+      });
     }
-    const businessId = await ctx.db.insert("businesses", fields);
 
-    await ctx.db.insert("agentActions", {
-      businessId,
-      type: "seo",
-      title: "Google Business Profile connected",
-      detail: location.title,
-      createdAt: Date.now(),
-    });
+    // The listing just connected is the one the app should be showing.
+    const selection = await ctx.db
+      .query("businessSelections")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (selection) await ctx.db.patch(selection._id, { businessId });
+    else await ctx.db.insert("businessSelections", { userId, businessId });
 
     return businessId;
   },
@@ -728,11 +766,7 @@ export const refreshLocation = action({
 
 export const businessForUser = internalQuery({
   args: { userId: v.id("users") },
-  handler: async (ctx, { userId }) =>
-    await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first(),
+  handler: async (ctx, { userId }) => await activeBusinessFor(ctx, userId),
 });
 
 /** A valid access token for this user, refreshing it first if needed. */
@@ -1037,10 +1071,7 @@ export const markServicesPushed = internalMutation({
 export const serviceContext = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const offerings = await ctx.db

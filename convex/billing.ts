@@ -11,7 +11,12 @@ import {
   type ActionCtx,
 } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
-import { hasActivePlan } from "./access";
+import {
+  activeBusinessFor,
+  hasActivePlan,
+  legacyPlanBusinessId,
+  subscriptionBusinessId,
+} from "./access";
 import { sendNow as sendMessage, type SendResult } from "./messaging";
 import { describePaymentFailure } from "./paymentText";
 
@@ -166,10 +171,20 @@ export const status = query({
       typeof user?.emailVerificationTime === "number" &&
       isOneRupeeTester(user.email);
 
-    const rows = await ctx.db
+    // Plans are per business. The screen shows the ACTIVE business's plan,
+    // orders and receipts; another business on the account pays separately.
+    // Rows from before per-business plans belong to the oldest business.
+    const business = await activeBusinessFor(ctx, userId);
+    const legacyId = await legacyPlanBusinessId(ctx, userId);
+    const all = await ctx.db
       .query("subscriptions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
+    const rows = business
+      ? all.filter(
+          (r) => subscriptionBusinessId(r, legacyId) === business._id,
+        )
+      : all;
 
     const now = Date.now();
     const live = rows
@@ -190,6 +205,16 @@ export const status = query({
       plan: live?.plan ?? null,
       expiresAt: live?.expiresAt ?? null,
       oneRupeeTest,
+      /** The business this plan pays for, and where its setup stands, so
+          the screen can send a paid owner to the step they left. */
+      business: business
+        ? {
+            orgName: business.orgName,
+            connected: Boolean(business.gbpLocationName),
+            onboardingStep: business.onboardingStep,
+            onboardingComplete: business.onboardingComplete,
+          }
+        : null,
       /** Every paid receipt, newest first — the owner's own record. */
       receipts: rows
         .filter((r) => r.paidAt)
@@ -247,8 +272,9 @@ export const openOrder = internalQuery({
     userId: v.id("users"),
     plan: planValidator,
     amountPaise: v.number(),
+    businessId: v.id("businesses"),
   },
-  handler: async (ctx, { userId, plan, amountPaise }) => {
+  handler: async (ctx, { userId, plan, amountPaise, businessId }) => {
     const rows = await ctx.db
       .query("subscriptions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -260,6 +286,7 @@ export const openOrder = internalQuery({
           (r) =>
             r.plan === plan &&
             r.amountPaise === amountPaise &&
+            r.businessId === businessId &&
             (r.status === "created" || r.status === "attempted") &&
             r._creationTime > cutoff,
         )
@@ -275,10 +302,12 @@ export const recordPending = internalMutation({
     amountPaise: v.number(),
     oneRupeeTest: v.boolean(),
     razorpayOrderId: v.string(),
+    businessId: v.optional(v.id("businesses")),
   },
   handler: async (ctx, args) => {
     await ctx.db.insert("subscriptions", {
       userId: args.userId,
+      businessId: args.businessId,
       plan: args.plan,
       amountPaise: args.amountPaise,
       oneRupeeTest: args.oneRupeeTest,
@@ -360,12 +389,21 @@ export const markPaid = internalMutation({
 
     // If they still have time left, the new period starts when the old one
     // ends. Paying early should never cost somebody the days they bought.
+    // Periods stack per BUSINESS: paying for a second listing must not be
+    // queued behind the first listing's running plan, and a renewal must
+    // still stack on a legacy row that predates per-business plans.
+    const legacyId = await legacyPlanBusinessId(ctx, row.userId);
+    const rowBusiness = subscriptionBusinessId(row, legacyId);
     const existing = await ctx.db
       .query("subscriptions")
       .withIndex("by_user", (q) => q.eq("userId", row.userId))
       .collect();
     const furthest = existing
-      .filter((r) => GRANTING.has(r.status))
+      .filter(
+        (r) =>
+          GRANTING.has(r.status) &&
+          subscriptionBusinessId(r, legacyId) === rowBusiness,
+      )
       .reduce((max, r) => Math.max(max, r.expiresAt ?? 0), 0);
 
     const startsAt = Math.max(now, furthest);
@@ -733,6 +771,15 @@ export const createOrder = action({
 
     const { keyId } = credentials();
     const chosen = PLANS[plan];
+
+    // Every plan pays for exactly one business — the one on screen. An
+    // order opened before any business exists could later be claimed by
+    // whichever business came first, so it is refused instead.
+    const business = await ctx.runQuery(internal.google.businessForUser, {
+      userId,
+    });
+    if (!business) throw new ConvexError("Connect your Google profile first.");
+
     const verifiedEmail: string | null = await ctx.runQuery(
       internal.billing.verifiedEmailForUser,
       { userId },
@@ -740,12 +787,14 @@ export const createOrder = action({
     const oneRupeeTest = isOneRupeeTester(verifiedEmail);
     const amountPaise = oneRupeeTest ? ONE_RUPEE_PAISE : chosen.amountPaise;
 
-    // Reuse only an order with today's authoritative price. Adding or
-    // removing an email from the allowlist cannot resurrect an older price.
+    // Reuse only an order with today's authoritative price, for this exact
+    // business. Adding or removing an email from the allowlist cannot
+    // resurrect an older price; switching business cannot reuse an order.
     const open = await ctx.runQuery(internal.billing.openOrder, {
       userId,
       plan,
       amountPaise,
+      businessId: business._id,
     });
     if (open) {
       console.log(`[billing] reusing open order ${open.razorpayOrderId} for ${userId}`);
@@ -771,6 +820,7 @@ export const createOrder = action({
           notes: {
             userId,
             plan,
+            businessId: business._id,
             oneRupeeTest: oneRupeeTest ? "true" : "false",
           },
         },
@@ -791,6 +841,7 @@ export const createOrder = action({
       amountPaise,
       oneRupeeTest,
       razorpayOrderId: res.data.id,
+      businessId: business._id,
     });
     console.log(
       `[billing] order ${res.data.id} opened for ${userId} (${plan}${oneRupeeTest ? ", one-rupee production test" : ""})`,
@@ -1272,17 +1323,25 @@ export const grantComp = internalMutation({
     if (!user) throw new ConvexError(`No user with the email ${email}.`);
 
     const now = Date.now();
+    // A comp covers the business the account is currently running.
+    const business = await activeBusinessFor(ctx, user._id);
+    const legacyId = await legacyPlanBusinessId(ctx, user._id);
     const existing = await ctx.db
       .query("subscriptions")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect();
     const furthest = existing
-      .filter((r) => GRANTING.has(r.status))
+      .filter(
+        (r) =>
+          GRANTING.has(r.status) &&
+          subscriptionBusinessId(r, legacyId) === (business?._id ?? null),
+      )
       .reduce((max, r) => Math.max(max, r.expiresAt ?? 0), 0);
     const startsAt = Math.max(now, furthest);
 
     await ctx.db.insert("subscriptions", {
       userId: user._id,
+      businessId: business?._id,
       plan: "comp",
       amountPaise: 0,
       currency: CURRENCY,
@@ -1343,6 +1402,40 @@ export const issueRefund = internalAction({
   },
 });
 
+/* ------------------------------ backfill --------------------------------
+   One-off, for the move to per-business plans: rows written before
+   subscriptions carried a businessId are pinned to the business their
+   owner is running. Run once after deploy:
+
+     npx convex run billing:backfillSubscriptionBusinesses               */
+
+export const backfillSubscriptionBusinesses = internalMutation({
+  args: {},
+  returns: v.object({ pinned: v.number(), orphaned: v.number(), scanned: v.number() }),
+  handler: async (ctx) => {
+    // Bounded batch; run again if `scanned` hits the cap. Pins to the
+    // OLDEST business — the only one that existed when a pre-multi-business
+    // row could have been paid — exactly matching the runtime legacy rule,
+    // so running this migration changes no one's access.
+    const rows = await ctx.db.query("subscriptions").take(500);
+    let pinned = 0;
+    let orphaned = 0;
+    for (const row of rows) {
+      if (row.businessId !== undefined) continue;
+      const legacyId = await legacyPlanBusinessId(ctx, row.userId);
+      if (!legacyId) {
+        // No business at all — nothing to pin to yet.
+        orphaned += 1;
+        continue;
+      }
+      await ctx.db.patch(row._id, { businessId: legacyId });
+      pinned += 1;
+    }
+    console.log(`[billing] backfill pinned ${pinned}, left ${orphaned} orphaned`);
+    return { pinned, orphaned, scanned: rows.length };
+  },
+});
+
 /* ------------------------------ reminders -------------------------------- */
 
 /**
@@ -1373,21 +1466,27 @@ export const remindExpiring = internalMutation({
       const expiresAt = row.expiresAt ?? 0;
       const plan = PLANS[row.plan as PlanId]?.name ?? row.plan;
 
-      // Only the row that carries the furthest date speaks for the user;
-      // otherwise a renewed owner would be warned about the old period.
+      // Only the row that carries the furthest date speaks for its
+      // BUSINESS; otherwise a renewed owner would be warned about the old
+      // period, and one listing's renewal would silence another's expiry.
+      const legacyId = await legacyPlanBusinessId(ctx, row.userId);
+      const rowBusiness = subscriptionBusinessId(row, legacyId);
       const others = await ctx.db
         .query("subscriptions")
         .withIndex("by_user", (q) => q.eq("userId", row.userId))
         .collect();
       const furthest = others
-        .filter((r) => GRANTING.has(r.status))
+        .filter(
+          (r) =>
+            GRANTING.has(r.status) &&
+            subscriptionBusinessId(r, legacyId) === rowBusiness,
+        )
         .reduce((max, r) => Math.max(max, r.expiresAt ?? 0), 0);
       if (expiresAt < furthest) continue;
 
-      const business = await ctx.db
-        .query("businesses")
-        .withIndex("by_user", (q) => q.eq("userId", row.userId))
-        .first();
+      const business = rowBusiness
+        ? await ctx.db.get(rowBusiness)
+        : await activeBusinessFor(ctx, row.userId);
 
       // Expired since the last run, and not yet told.
       if (expiresAt <= now && expiresAt > now - 2 * DAY && !row.expiredEmailedAt) {
@@ -1458,10 +1557,7 @@ export const ownerPhone = internalQuery({
   ),
   handler: async (ctx, { userId }) => {
     const user = await ctx.db.get(userId);
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     const phone = user?.phone ?? business?.phone ?? null;
     if (!phone) return null;
     return { phone, businessId: business?._id };

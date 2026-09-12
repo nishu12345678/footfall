@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { action, internalMutation, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { ownedBusiness, paidAction, paidMutation, paidQuery } from "./access";
+import { activeBusinessFor, ownedBusiness, paidAction, paidMutation, paidQuery } from "./access";
 
 /**
  * Step 5 — the logo we stamp on every post image, and the switch that turns
@@ -15,10 +15,7 @@ export const get = paidQuery({
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
 
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     return {
@@ -285,10 +282,7 @@ export const attachLogo = internalMutation({
     background: v.string(),
   },
   handler: async (ctx, { userId, storageId, background }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) throw new ConvexError("Connect your Google profile first.");
 
     const url = await ctx.storage.getUrl(storageId);

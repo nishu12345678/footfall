@@ -1,24 +1,39 @@
 "use client";
 
 import Link from "next/link";
-import { useAction, useMutation } from "convex/react";
+import { useRouter } from "next/navigation";
+import { useAction } from "convex/react";
 import { useQuery } from "convex-helpers/react/cache";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
 import { resumeHref, resumeLabel } from "@/lib/onboarding";
+import { noteRedirect } from "@/lib/nav-depth";
 import { friendlyError } from "@/lib/errors";
 
 export default function HomePage() {
   const data = useQuery(api.dashboard.home);
   const refresh = useAction(api.google.refreshLocation);
+  const router = useRouter();
 
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // A paid owner mid-setup belongs on the step they left, not on a
+  // dashboard full of empty numbers. The dashboard takes over only once
+  // setup is done.
+  const unfinished = data ? !data.business.onboardingComplete : false;
+  useEffect(() => {
+    if (data && unfinished) {
+      noteRedirect();
+      router.replace(resumeHref(data.business));
+    }
+  }, [data, unfinished, router]);
+
   if (data === undefined) return <Loading />;
   if (data === null) return <NeedsConnect />;
+  if (unfinished) return <Loading />;
 
   const { business, reviews, posts, photos, actions, metrics } = data;
 

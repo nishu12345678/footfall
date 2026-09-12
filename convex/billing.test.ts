@@ -5,6 +5,7 @@ import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { isOneRupeeTester } from "./billing";
+import { activeBusinessFor, hasActivePlan } from "./access";
 
 /**
  * The money paths that must never double or drift, exercised without
@@ -27,6 +28,30 @@ async function openOrder(orderId: string, plan: "monthly" | "yearly" = "monthly"
     amountPaise: plan === "monthly" ? 199_900 : 999_900,
     oneRupeeTest: false,
     razorpayOrderId: orderId,
+  });
+}
+
+async function seedBusiness(name = "Test Shop"): Promise<Id<"businesses">> {
+  return await t.run(async (ctx) =>
+    ctx.db.insert("businesses", {
+      userId,
+      orgName: name,
+      gbpLocationName: `locations/${name}`,
+      onboardingStep: 2,
+      onboardingComplete: false,
+      agentActive: false,
+    }),
+  );
+}
+
+async function selectBusiness(businessId: Id<"businesses">) {
+  await t.run(async (ctx) => {
+    const sel = await ctx.db
+      .query("businessSelections")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (sel) await ctx.db.patch(sel._id, { businessId });
+    else await ctx.db.insert("businessSelections", { userId, businessId });
   });
 }
 
@@ -109,6 +134,7 @@ describe("createOrder pricing authority", () => {
     vi.stubEnv("RAZORPAY_KEY_SECRET", "server-secret-never-returned");
     vi.stubEnv("RAZORPAY_ONE_RUPEE_TEST_EMAILS", "tester@example.com");
 
+    await seedBusiness();
     await t.run(async (ctx) => {
       await ctx.db.patch(userId, {
         email,
@@ -148,6 +174,7 @@ describe("createOrder pricing authority", () => {
     vi.stubEnv("RAZORPAY_KEY_ID", "rzp_live_public_test");
     vi.stubEnv("RAZORPAY_KEY_SECRET", "server-secret");
     vi.stubEnv("RAZORPAY_ONE_RUPEE_TEST_EMAILS", "tester@example.com");
+    await seedBusiness();
     await t.run(async (ctx) => {
       await ctx.db.patch(userId, {
         email: "tester@example.com",
@@ -501,5 +528,211 @@ describe("stale orders", () => {
     const r = await t.mutation(internal.billing.expireStaleOrders, {});
     expect(r.expired).toBe(0);
     expect((await row("order_9"))?.status).toBe("created");
+  });
+});
+
+/* --------------------------- per-business plans -------------------------- */
+
+describe("per-business plans", () => {
+  async function payFor(
+    businessId: Id<"businesses">,
+    orderId: string,
+    paymentId: string,
+  ) {
+    await t.mutation(internal.billing.recordPending, {
+      userId,
+      plan: "monthly",
+      amountPaise: 199_900,
+      oneRupeeTest: false,
+      razorpayOrderId: orderId,
+      businessId,
+    });
+    await t.mutation(internal.billing.markPaid, {
+      razorpayOrderId: orderId,
+      razorpayPaymentId: paymentId,
+      amountPaise: 199_900,
+      currency: "INR",
+      confirmedBy: "webhook",
+    });
+  }
+
+  test("a plan on one business does not unlock another", async () => {
+    const shopA = await seedBusiness("Mocha Club");
+    const shopB = await seedBusiness("Dr Gulshan");
+
+    await selectBusiness(shopA);
+    await payFor(shopA, "order_shopA", "pay_shopA");
+    expect(await t.run(async (ctx) => hasActivePlan(ctx, userId))).toBe(true);
+
+    await selectBusiness(shopB);
+    expect(await t.run(async (ctx) => hasActivePlan(ctx, userId))).toBe(false);
+
+    await selectBusiness(shopA);
+    expect(await t.run(async (ctx) => hasActivePlan(ctx, userId))).toBe(true);
+  });
+
+  test("periods stack per business, not per account", async () => {
+    const shopA = await seedBusiness("Mocha Club");
+    const shopB = await seedBusiness("Dr Gulshan");
+
+    await payFor(shopA, "order_stack_a", "pay_stack_a");
+    const first = await row("order_stack_a");
+
+    // Paying for B must start NOW, not queue behind A's running month.
+    await payFor(shopB, "order_stack_b", "pay_stack_b");
+    const second = await row("order_stack_b");
+    expect(second?.startsAt).toBeLessThan(first!.expiresAt!);
+    expect(second?.startsAt).toBeGreaterThanOrEqual(first!.startsAt!);
+  });
+
+  test("a legacy plan belongs to the oldest business and cannot be walked to a new one", async () => {
+    const oldest = await seedBusiness("Mocha Club");
+    await t.run(async (ctx) => {
+      await ctx.db.insert("subscriptions", {
+        userId,
+        plan: "monthly",
+        amountPaise: 199_900,
+        currency: "INR",
+        razorpayOrderId: "order_legacy",
+        status: "paid",
+        paidAt: Date.now(),
+        startsAt: Date.now(),
+        expiresAt: Date.now() + 30 * DAY,
+      });
+    });
+    const newer = await seedBusiness("Dr Gulshan");
+
+    // Selecting the new business must NOT carry the old plan along.
+    await selectBusiness(newer);
+    expect(await t.run(async (ctx) => hasActivePlan(ctx, userId))).toBe(false);
+    await selectBusiness(oldest);
+    expect(await t.run(async (ctx) => hasActivePlan(ctx, userId))).toBe(true);
+
+    // The backfill pins it to that same oldest business — no access change.
+    const r = await t.mutation(internal.billing.backfillSubscriptionBusinesses, {});
+    expect(r.pinned).toBe(1);
+    expect((await row("order_legacy"))?.businessId).toBe(oldest);
+    await selectBusiness(newer);
+    expect(await t.run(async (ctx) => hasActivePlan(ctx, userId))).toBe(false);
+    await selectBusiness(oldest);
+    expect(await t.run(async (ctx) => hasActivePlan(ctx, userId))).toBe(true);
+  });
+
+  test("a renewal stacks on a legacy row for the same (oldest) business", async () => {
+    const shop = await seedBusiness("Mocha Club");
+    const legacyEnd = Date.now() + 10 * DAY;
+    await t.run(async (ctx) => {
+      await ctx.db.insert("subscriptions", {
+        userId,
+        plan: "monthly",
+        amountPaise: 199_900,
+        currency: "INR",
+        razorpayOrderId: "order_legacy_stack",
+        status: "paid",
+        paidAt: Date.now(),
+        startsAt: Date.now(),
+        expiresAt: legacyEnd,
+      });
+    });
+
+    await payFor(shop, "order_renewal", "pay_renewal");
+    const renewal = await row("order_renewal");
+    // Starts when the legacy period ends, not immediately.
+    expect(renewal?.startsAt).toBe(legacyEnd);
+  });
+});
+
+/* ------------------------- multi-business connect ------------------------ */
+
+describe("connecting listings", () => {
+  const location = (name: string, title: string) => ({
+    name,
+    title,
+    accountName: "accounts/900",
+  });
+
+  test("a different listing becomes a separate business and takes the screen", async () => {
+    const first: Id<"businesses"> = await t.mutation(
+      internal.google.createBusinessFromLocation,
+      { userId, location: location("locations/1", "The Mocha Club") },
+    );
+    // The first shop fills in some of its own content.
+    await t.run(async (ctx) => {
+      await ctx.db.insert("offerings", {
+        businessId: first,
+        label: "Cold Coffee",
+        source: "user",
+        selected: true,
+      });
+    });
+
+    const second: Id<"businesses"> = await t.mutation(
+      internal.google.createBusinessFromLocation,
+      { userId, location: location("locations/2", "Dr Gulshan's Dental Clinic") },
+    );
+
+    expect(second).not.toBe(first);
+    const active = await t.run(async (ctx) => activeBusinessFor(ctx, userId));
+    expect(active?._id).toBe(second);
+    expect(active?.orgName).toBe("Dr Gulshan's Dental Clinic");
+    expect(active?.onboardingStep).toBe(2);
+
+    // The cafe's content stays on the cafe; the clinic starts clean.
+    const clinicOfferings = await t.run(async (ctx) =>
+      ctx.db
+        .query("offerings")
+        .withIndex("by_business", (q) => q.eq("businessId", second))
+        .collect(),
+    );
+    expect(clinicOfferings).toHaveLength(0);
+    const mochaClub = await t.run(async (ctx) => ctx.db.get(first));
+    expect(mochaClub?.orgName).toBe("The Mocha Club");
+  });
+
+  test("reconnecting the same listing after a disconnect resumes its row", async () => {
+    const first: Id<"businesses"> = await t.mutation(
+      internal.google.createBusinessFromLocation,
+      { userId, location: location("locations/1", "The Mocha Club") },
+    );
+    await t.run(async (ctx) => {
+      await ctx.db.patch(first, { onboardingStep: 6, onboardingComplete: true });
+    });
+
+    await t.mutation(internal.google.forgetAccount, { userId });
+    const afterDisconnect = await t.run(async (ctx) => ctx.db.get(first));
+    expect(afterDisconnect?.gbpLocationName).toBeUndefined();
+    expect(afterDisconnect?.lastGbpLocationName).toBe("locations/1");
+
+    const again: Id<"businesses"> = await t.mutation(
+      internal.google.createBusinessFromLocation,
+      { userId, location: location("locations/1", "The Mocha Club") },
+    );
+    expect(again).toBe(first);
+
+    const resumed = await t.run(async (ctx) => ctx.db.get(first));
+    expect(resumed?.gbpLocationName).toBe("locations/1");
+    expect(resumed?.lastGbpLocationName).toBeUndefined();
+    expect(resumed?.onboardingComplete).toBe(true);
+    expect(resumed?.onboardingStep).toBe(6);
+  });
+
+  test("disconnecting Google pauses every business on the account", async () => {
+    const a: Id<"businesses"> = await t.mutation(
+      internal.google.createBusinessFromLocation,
+      { userId, location: location("locations/1", "The Mocha Club") },
+    );
+    const b: Id<"businesses"> = await t.mutation(
+      internal.google.createBusinessFromLocation,
+      { userId, location: location("locations/2", "Dr Gulshan's Dental Clinic") },
+    );
+
+    await t.mutation(internal.google.forgetAccount, { userId });
+
+    for (const id of [a, b]) {
+      const biz = await t.run(async (ctx) => ctx.db.get(id));
+      expect(biz?.gbpLocationName).toBeUndefined();
+      expect(biz?.agentActive).toBe(false);
+      expect(biz?.lastGbpLocationName).toBeDefined();
+    }
   });
 });

@@ -9,7 +9,7 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
-import {
+import { activeBusinessFor,
   ownedRow,
   ownedRowFor,
   paidAction,
@@ -165,10 +165,7 @@ export const savePhoto = paidMutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Sign in first.");
 
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) throw new ConvexError("Connect your Google profile first.");
 
     // A storage id can't be ownership-checked after the fact. That's fine:
@@ -295,10 +292,7 @@ export const publishPhoto = paidAction({
 export const nextQueued = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business || !business.agentActive) return null;
 
     const queued = await ctx.db

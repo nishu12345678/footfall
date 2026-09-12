@@ -36,6 +36,9 @@ export default defineSchema({
     // Google Business Profile linkage
     gbpAccountName: v.optional(v.string()), // "accounts/123"
     gbpLocationName: v.optional(v.string()), // "locations/456"
+    /** Set when Google is disconnected, so reconnecting the same listing
+        finds this row again instead of starting a duplicate business. */
+    lastGbpLocationName: v.optional(v.string()),
     primaryCategory: v.optional(v.string()),
     /** Google's own id for the category, e.g. "gcid:dental_clinic". The
         services we push have to hang off one of these. */
@@ -79,6 +82,16 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_gbp_location", ["gbpLocationName"]),
+
+  /**
+   * Which of a user's businesses the app is currently showing. One account
+   * can run several listings; every screen and every plan check resolves
+   * through this selection so two businesses can never mix data.
+   */
+  businessSelections: defineTable({
+    userId: v.id("users"),
+    businessId: v.id("businesses"),
+  }).index("by_user", ["userId"]),
 
   /**
    * One-time tokens that carry "who started this link" through Google's
@@ -351,6 +364,11 @@ export default defineSchema({
 
   subscriptions: defineTable({
     userId: v.id("users"),
+    /** The business this plan runs. One plan covers exactly one business;
+        a second business on the same account needs its own plan. Optional
+        only for rows created before businesses became plural — the
+        backfill pins those to the business they were paying for. */
+    businessId: v.optional(v.id("businesses")),
     plan: v.string(), // "monthly" | "yearly" | "comp"
     /** What Razorpay was actually asked for, in paise. Never trusted from
         the browser — the server picks it from its own plan table. */
@@ -404,6 +422,7 @@ export default defineSchema({
     expiredEmailedAt: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
+    .index("by_business", ["businessId"])
     .index("by_order", ["razorpayOrderId"])
     .index("by_payment", ["razorpayPaymentId"])
     .index("by_status", ["status"]),

@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { action, internalMutation, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { paidAction } from "./access";
+import { activeBusinessFor, paidAction } from "./access";
 
 /**
  * Keyword research for a local business.
@@ -398,10 +398,7 @@ async function refine(
 export const context = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const [offerings, keywords, areas] = await Promise.all([
@@ -662,10 +659,7 @@ export const research = paidAction({
 export const saveTargeted = internalMutation({
   args: { userId: v.id("users"), terms: v.array(v.string()) },
   handler: async (ctx, { userId, terms }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return 0;
 
     const existing = await ctx.db

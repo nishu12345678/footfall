@@ -8,7 +8,7 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
-import { paidAction } from "./access";
+import { activeBusinessFor, paidAction } from "./access";
 import { perfBase } from "./googleHosts";
 
 /**
@@ -594,10 +594,7 @@ export const runGeoGrid = paidAction({
 export const rankContext = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const keywords = await ctx.db
@@ -657,10 +654,21 @@ export const checkRanks = paidAction({
 export const connectedBusinesses = internalQuery({
   args: {},
   handler: async (ctx) => {
+    // The per-user sync actions resolve the user's ACTIVE business, so each
+    // user appears once, as that business. A second business on the same
+    // account is served whenever it is the selected one.
     const rows = await ctx.db.query("businesses").collect();
-    return rows
-      .filter((b) => b.gbpLocationName && b.agentActive)
-      .map((b) => ({ userId: b.userId, name: b.orgName }));
+    const out: { userId: Id<"users">; name: string }[] = [];
+    const seen = new Set<string>();
+    for (const b of rows) {
+      if (!b.gbpLocationName || !b.agentActive) continue;
+      if (seen.has(b.userId)) continue;
+      const active = await activeBusinessFor(ctx, b.userId);
+      if (!active || active._id !== b._id) continue;
+      seen.add(b.userId);
+      out.push({ userId: b.userId, name: b.orgName });
+    }
+    return out;
   },
 });
 

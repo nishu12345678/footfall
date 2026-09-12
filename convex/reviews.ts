@@ -9,7 +9,7 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
-import {
+import { activeBusinessFor,
   ownedRow,
   ownedRowFor,
   paidAction,
@@ -264,10 +264,7 @@ export const syncAllReviews = internalAction({
 export const replyContext = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const [reviews, offerings] = await Promise.all([

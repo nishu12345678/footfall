@@ -7,19 +7,105 @@ import {
 } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { paidAction, paidMutation, paidQuery } from "./access";
+import {
+  activeBusinessFor,
+  legacyPlanBusinessId,
+  paidAction,
+  paidMutation,
+  subscriptionBusinessId,
+} from "./access";
 
-/** The signed-in owner's business, or null if they haven't connected yet. */
+/** The signed-in owner's ACTIVE business, or null if none is connected. */
 export const mine = query({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
 
-    return await ctx.db
-      .query("businesses")
+    return await activeBusinessFor(ctx, userId);
+  },
+});
+
+/**
+ * Every business on this account, with each one's own plan state. One
+ * account can run several listings; each pays for itself.
+ *
+ * Not paywalled: the switcher must work for a business whose plan has
+ * lapsed, or its owner could never reach the billing screen to renew it.
+ */
+export const list = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
+    const [businesses, subscriptions, active, legacyId] = await Promise.all([
+      ctx.db
+        .query("businesses")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect(),
+      ctx.db
+        .query("subscriptions")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect(),
+      activeBusinessFor(ctx, userId),
+      legacyPlanBusinessId(ctx, userId),
+    ]);
+
+    const now = Date.now();
+    return businesses
+      .sort((a, b) => a._creationTime - b._creationTime)
+      .map((b) => {
+        const granting = subscriptions.filter(
+          (s) =>
+            (s.status === "paid" || s.status === "partially_refunded") &&
+            (s.expiresAt ?? 0) > now &&
+            subscriptionBusinessId(s, legacyId) === b._id,
+        );
+        return {
+          _id: b._id,
+          orgName: b.orgName,
+          city: b.city ?? null,
+          locationName: b.locationName ?? null,
+          logoUrl: b.logoUrl ?? null,
+          connected: Boolean(b.gbpLocationName),
+          onboardingStep: b.onboardingStep,
+          onboardingComplete: b.onboardingComplete,
+          selected: active?._id === b._id,
+          planActive: granting.length > 0,
+          planExpiresAt: granting.reduce(
+            (max: number | null, s) => Math.max(max ?? 0, s.expiresAt ?? 0) || null,
+            null,
+          ),
+        };
+      });
+  },
+});
+
+/**
+ * Puts a different business on screen. Auth-only by design: a lapsed
+ * business must stay selectable so its owner can renew it.
+ */
+export const switchTo = mutation({
+  args: { businessId: v.id("businesses") },
+  returns: v.object({ ok: v.boolean() }),
+  handler: async (ctx, { businessId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Sign in first.");
+
+    const business = await ctx.db.get(businessId);
+    if (!business || business.userId !== userId) {
+      throw new ConvexError("Not found.");
+    }
+
+    const selection = await ctx.db
+      .query("businessSelections")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
+    if (selection) await ctx.db.patch(selection._id, { businessId });
+    else await ctx.db.insert("businessSelections", { userId, businessId });
+
+    return { ok: true };
   },
 });
 
@@ -42,10 +128,7 @@ export const updateLocation = paidMutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Sign in first.");
 
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) throw new ConvexError("Connect your Google profile first.");
 
     await ctx.db.patch(business._id, {

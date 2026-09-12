@@ -8,7 +8,7 @@ import {
   internalQuery,
   query,
 } from "./_generated/server";
-import { hasActivePlan } from "./access";
+import { activeBusinessFor, hasActivePlan } from "./access";
 
 /* ---------------------------------------------------------------------------
    The free report.
@@ -45,10 +45,7 @@ export const report = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
 
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
 
     // Not connected yet — the UI sends them to /app/connect.
     if (!business) return { connected: false as const };
@@ -358,10 +355,7 @@ export const businessForUser = internalQuery({
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     return business ? { id: business._id, website: business.website ?? null } : null;
   },
 });
@@ -486,10 +480,7 @@ export const napForUser = internalQuery({
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return { city: null, phone: null };
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     return {
       city: business?.city ?? null,
       phone: business?.phone ?? null,
@@ -507,10 +498,7 @@ export const napForUser = internalQuery({
 export const stampSynced = internalMutation({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (business) {
       await ctx.db.patch(business._id, { listingSyncedAt: Date.now() });
     }

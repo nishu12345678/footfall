@@ -6,6 +6,7 @@ import { useQuery } from "convex-helpers/react/cache";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { PRICING } from "@/lib/content";
+import { resumeHref } from "@/lib/onboarding";
 import { BackButton } from "@/components/back-button";
 import { describePaymentFailure } from "@/convex/paymentText";
 import { friendlyError } from "@/lib/errors";
@@ -377,14 +378,39 @@ export default function BillingPage() {
             Your plan is running
           </h1>
           <p className="mt-3 text-[17px] leading-relaxed text-ink-soft">
-            You are on the <strong>{status.plan}</strong> plan. It runs until{" "}
+            {status.business ? (
+              <>
+                <strong>{status.business.orgName}</strong> is on the{" "}
+                <strong>{status.plan}</strong> plan.
+              </>
+            ) : (
+              <>
+                You are on the <strong>{status.plan}</strong> plan.
+              </>
+            )}{" "}
+            It runs until{" "}
             <strong>{status.expiresAt ? fmtDate(status.expiresAt) : "—"}</strong>
             . There is no auto-debit; we&rsquo;ll email you a week before it
             ends.
           </p>
-          <Link href="/app" className="btn btn-primary mt-8 w-full">
-            Go to my listing
-          </Link>
+          {/* Paid but mid-setup: the next step matters more than a dashboard
+              of empty numbers. */}
+          {status.business && !status.business.onboardingComplete ? (
+            <Link
+              href={resumeHref({
+                onboardingStep: status.business.onboardingStep,
+                onboardingComplete: status.business.onboardingComplete,
+                gbpLocationName: status.business.connected ? "connected" : undefined,
+              })}
+              className="btn btn-primary mt-8 w-full"
+            >
+              continue setup — step {status.business.onboardingStep} of 6
+            </Link>
+          ) : (
+            <Link href="/app" className="btn btn-primary mt-8 w-full">
+              Go to my listing
+            </Link>
+          )}
           {!extendOk ? (
             <button
               type="button"
@@ -404,6 +430,12 @@ export default function BillingPage() {
         <>
           <h1 className="text-[clamp(1.9rem,5vw,2.2rem)]">Choose your plan</h1>
           <p className="mt-3 text-[17px] leading-relaxed text-ink-soft">
+            {status.business ? (
+              <>
+                This plan runs <strong>{status.business.orgName}</strong> —
+                each business you connect has its own plan.{" "}
+              </>
+            ) : null}
             footfall starts running your Google listing the moment this is
             paid. Same product on both — the only difference is how often you
             pay.

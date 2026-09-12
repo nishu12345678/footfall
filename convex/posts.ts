@@ -7,7 +7,7 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
-import {
+import { activeBusinessFor,
   ownedRow,
   ownedRowFor,
   paidAction,
@@ -40,10 +40,7 @@ import type { ActionCtx } from "./_generated/server";
 export const postContext = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const [offerings, specialties, keywords, areas, recent, photos] =
@@ -832,10 +829,7 @@ export const generationStatus = paidQuery({
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const latest = await ctx.db
@@ -880,10 +874,7 @@ export const startGeneration = paidMutation({
   handler: async (ctx, { mode, count, brief }): Promise<Id<"postGenerations">> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Sign in first.");
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) throw new ConvexError("Connect your Google profile first.");
     if (!business.gbpLocationName) throw new ConvexError("Connect your Google profile first.");
 

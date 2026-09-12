@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { action, internalMutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { hasActivePlan } from "./access";
+import { activeBusinessFor, hasActivePlan } from "./access";
 
 /**
  * The Settings screen: who you are, how you sign in, what's connected,
@@ -27,10 +27,7 @@ export const me = query({
       .withIndex("userIdAndProvider", (q) => q.eq("userId", userId))
       .collect();
 
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
 
     const google = await ctx.db
       .query("googleAccounts")
@@ -84,10 +81,7 @@ export const me = query({
 export const noteSignedOutEverywhere = internalMutation({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return;
     await ctx.db.insert("agentActions", {
       businessId: business._id,

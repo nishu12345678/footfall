@@ -9,7 +9,7 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
-import {
+import { activeBusinessFor,
   ownedBusiness,
   ownedRow,
   paidAction,
@@ -52,10 +52,7 @@ export const list = paidQuery({
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
 
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     // Queried one by one on purpose: a shared helper with a variable table
@@ -156,10 +153,7 @@ export const removeKeyword = paidMutation({
 export const keywordContext = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const [offerings, specialties, areas, keywords] = await Promise.all([

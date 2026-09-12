@@ -8,6 +8,7 @@ import {
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { render } from "./emailTemplates";
+import { activeBusinessFor } from "./access";
 
 /**
  * Email, through Resend and nothing else.
@@ -479,10 +480,7 @@ export const addressFor = internalQuery({
   ),
   handler: async (ctx, { userId }) => {
     const user = await ctx.db.get(userId);
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     const email =
       (user?.email && normaliseEmail(user.email)) ||
       (business?.email && normaliseEmail(business.email)) ||

@@ -656,47 +656,48 @@ async function overpassNearby(
     "https://overpass.kumi.systems/api/interpreter",
   ];
 
-  let data: any = null;
-  let empty: any = null;
-  let lastError = "";
+  // Ask mirrors concurrently and cap the whole free-provider attempt. This
+  // avoids making the owner wait through two consecutive 25-second timeouts.
+  const attempts = await Promise.all(
+    MIRRORS.map(async (mirror) => {
+      try {
+        const res = await fetch(mirror, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": "footfall/1.0 (local business listing tool)",
+            Accept: "application/json",
+          },
+          body: new URLSearchParams({ data: query }),
+          signal: AbortSignal.timeout(12_000),
+        });
+        if (!res.ok) return { error: `${mirror} -> ${res.status}` };
+        const body = await res.json();
+        // A busy Overpass answers 200 with a "remark" (usually a timeout)
+        // and no elements. That is a failure, not an empty map.
+        if (body?.remark && !(body.elements ?? []).length) {
+          return {
+            error: `${mirror} -> remark: ${String(body.remark).slice(0, 120)}`,
+          };
+        }
+        return { body };
+      } catch (error) {
+        return {
+          error: `${mirror} -> ${error instanceof Error ? error.message : String(error)}`,
+        };
+      }
+    }),
+  );
 
-  for (const mirror of MIRRORS) {
-    try {
-      const res = await fetch(mirror, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": "footfall/1.0 (local business listing tool)",
-          Accept: "application/json",
-        },
-        body: new URLSearchParams({ data: query }),
-      });
-      if (!res.ok) {
-        lastError = `${mirror} -> ${res.status}`;
-        continue;
-      }
-      const body = await res.json();
-      // A busy Overpass answers 200 with a "remark" (usually a timeout)
-      // and no elements. That is a failure, not an empty map.
-      if (body?.remark && !(body.elements ?? []).length) {
-        lastError = `${mirror} -> remark: ${String(body.remark).slice(0, 120)}`;
-        continue;
-      }
-      if ((body.elements ?? []).length > 0) {
-        data = body;
-        break;
-      }
-      // Valid but empty: believable only if no other mirror disagrees,
-      // so keep it and ask the next one.
-      empty = body;
-    } catch (error) {
-      lastError = `${mirror} -> ${error instanceof Error ? error.message : String(error)}`;
-    }
-  }
-
-  if (!data && empty) data = empty;
+  // Prefer any non-empty response. A valid empty response is believable only
+  // when no mirror returned data, but remains distinct from total failure.
+  const usable = attempts.find((a) => (a.body?.elements ?? []).length > 0);
+  const empty = attempts.find((a) => a.body);
+  const data = usable?.body ?? empty?.body ?? null;
   if (!data) {
-    console.error(`[overpass] all mirrors failed. ${lastError}`);
+    console.error(
+      `[overpass] all mirrors failed. ${attempts.map((a) => a.error).filter(Boolean).join("; ")}`,
+    );
     return null;
   }
   console.log(
@@ -724,15 +725,17 @@ async function overpassNearby(
 }
 
 /**
- * Paid fallback: Google Places API (New) Nearby Search. Only reached when
- * Overpass's public mirrors are unavailable — this costs money per call,
- * Overpass is free, so Overpass stays the default.
+ * Paid fallback: Google Geocoding. Places Nearby Search deliberately rejects
+ * locality concepts such as `neighborhood` and `sublocality` as filters — it
+ * is for establishments, not for enumerating administrative areas. Reverse
+ * geocoding points around the chosen radius returns exactly those structured
+ * address components instead.
  *
- * Nearby Search returns real places (not just localities), so results are
- * filtered to the types that actually name an area — sublocality, suburb,
- * town, village equivalents — rather than shops or landmarks.
+ * This is reached only when every free Overpass mirror fails. Thirteen small
+ * requests (the centre plus two six-point rings) run concurrently, so the
+ * fallback remains quick and its paid usage stays bounded.
  */
-async function googlePlacesNearby(
+async function googleGeocodingNearby(
   lat: number,
   lng: number,
   radiusKm: number,
@@ -741,78 +744,108 @@ async function googlePlacesNearby(
   if (!apiKey) return null;
 
   const AREA_TYPES = new Set([
+    "neighborhood",
     "sublocality",
     "sublocality_level_1",
     "sublocality_level_2",
-    "neighborhood",
+    "sublocality_level_3",
     "locality",
     "administrative_area_level_3",
     "administrative_area_level_4",
   ]);
 
-  try {
-    const res = await fetch(
-      "https://places.googleapis.com/v1/places:searchNearby",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Goog-Api-Key": apiKey,
-          "X-Goog-FieldMask":
-            "places.displayName,places.location,places.types",
-        },
-        body: JSON.stringify({
-          includedTypes: ["locality", "sublocality", "neighborhood"],
-          maxResultCount: 20,
-          locationRestriction: {
-            circle: {
-              center: { latitude: lat, longitude: lng },
-              radius: Math.min(Math.max(radiusKm, 2), 50) * 1000,
-            },
-          },
-        }),
-      },
-    );
-    if (!res.ok) {
-      console.error(
-        `[google-places] ${res.status} ${(await res.text()).slice(0, 300)}`,
-      );
-      return null;
-    }
-    const data = await res.json();
-    const places = Array.isArray(data?.places) ? data.places : [];
-
-    const seen = new Set<string>();
-    const out: NearbyArea[] = [];
-    for (const p of places) {
-      const name: string | undefined = p?.displayName?.text;
-      const plat = p?.location?.latitude;
-      const plng = p?.location?.longitude;
-      if (!name || typeof plat !== "number" || typeof plng !== "number")
-        continue;
-      const types: string[] = Array.isArray(p?.types) ? p.types : [];
-      const kind = types.find((t) => AREA_TYPES.has(t)) ?? types[0] ?? "area";
-      const key = name.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push({
-        name,
-        kind,
-        km: Math.round(haversineKm(lat, lng, plat, plng) * 10) / 10,
-        lat: plat,
-        lng: plng,
+  // Sample the shop itself and two rings. At each point Google returns the
+  // containing neighbourhood/locality; deduplication below turns those into
+  // a compact list of real nearby areas.
+  const samples: { lat: number; lng: number }[] = [{ lat, lng }];
+  for (const fraction of [0.45, 0.9]) {
+    const ringKm = radiusKm * fraction;
+    for (let i = 0; i < 6; i += 1) {
+      const angle = (i * Math.PI * 2) / 6;
+      samples.push({
+        lat: lat + (ringKm * Math.cos(angle)) / 111.32,
+        lng:
+          lng +
+          (ringKm * Math.sin(angle)) /
+            (111.32 * Math.max(0.2, Math.cos((lat * Math.PI) / 180))),
       });
     }
-    console.log(
-      `[google-places] ${out.length} places within ${radiusKm}km of ${lat},${lng}`,
-    );
-    return out.sort((a, b) => a.km - b.km).slice(0, 30);
-  } catch (error) {
+  }
+
+  const attempts = await Promise.all(
+    samples.map(async (sample) => {
+      try {
+        const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+        url.searchParams.set("latlng", `${sample.lat},${sample.lng}`);
+        url.searchParams.set("key", apiKey);
+        url.searchParams.set("language", "en");
+        const res = await fetch(url, { signal: AbortSignal.timeout(8_000) });
+        if (!res.ok) return { error: `HTTP ${res.status}`, results: [] };
+        const body = await res.json();
+        if (body?.status !== "OK" && body?.status !== "ZERO_RESULTS") {
+          return {
+            error: `${body?.status ?? "unknown"}: ${body?.error_message ?? "request failed"}`,
+            results: [],
+          };
+        }
+        return {
+          results: Array.isArray(body?.results) ? body.results : [],
+          error: "",
+        };
+      } catch (error) {
+        return {
+          error: error instanceof Error ? error.message : String(error),
+          results: [],
+        };
+      }
+    }),
+  );
+
+  const successful = attempts.filter((a) => !a.error);
+  if (successful.length === 0) {
     console.error(
-      `[google-places] request failed. ${error instanceof Error ? error.message : String(error)}`,
+      `[google-geocoding] all requests failed. ${attempts
+        .map((a) => a.error)
+        .filter(Boolean)
+        .slice(0, 3)
+        .join("; ")}`,
     );
     return null;
   }
+
+  const seen = new Set<string>();
+  const out: NearbyArea[] = [];
+  for (const attempt of successful) {
+    for (const result of attempt.results) {
+      const rlat = result?.geometry?.location?.lat;
+      const rlng = result?.geometry?.location?.lng;
+      if (typeof rlat !== "number" || typeof rlng !== "number") continue;
+
+      for (const component of result?.address_components ?? []) {
+        const types: string[] = Array.isArray(component?.types)
+          ? component.types
+          : [];
+        const kind = types.find((type) => AREA_TYPES.has(type));
+        const name: string | undefined = component?.long_name;
+        if (!kind || !name) continue;
+        const key = name.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({
+          name,
+          kind,
+          km: Math.round(haversineKm(lat, lng, rlat, rlng) * 10) / 10,
+          lat: rlat,
+          lng: rlng,
+        });
+      }
+    }
+  }
+
+  console.log(
+    `[google-geocoding] ${out.length} areas from ${successful.length}/${samples.length} samples within ${radiusKm}km of ${lat},${lng}`,
+  );
+  return out.sort((a, b) => a.km - b.km).slice(0, 30);
 }
 
 export const nearbyAreas = paidAction({
@@ -846,7 +879,7 @@ export const nearbyAreas = paidAction({
     const fromOverpass = await overpassNearby(lat, lng, clampedRadius);
     if (fromOverpass && fromOverpass.length > 0) return fromOverpass;
 
-    const fromGoogle = await googlePlacesNearby(lat, lng, clampedRadius);
+    const fromGoogle = await googleGeocodingNearby(lat, lng, clampedRadius);
     if (fromGoogle && fromGoogle.length > 0) return fromGoogle;
 
     // Overpass answering with a believable empty result (no other mirror

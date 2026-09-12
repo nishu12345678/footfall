@@ -41,6 +41,20 @@ export function shopUrl(slug: string, path = "") {
     : `${SITE_URL}/s/${slug}${path}`;
 }
 
+/**
+ * An internal link within one shop's site, correct on either host.
+ *
+ * On the live domain the shop is served from <slug>.footfall.zone, where a
+ * path-form link like /s/<slug>/services would be rewritten into
+ * /s/<slug>/s/<slug>/services — a 404. The absolute subdomain URL is right
+ * there, and equally right when the same page is viewed at /s/<slug> on the
+ * main host. Off the live domain (localhost, previews) the path form keeps
+ * navigation inside the environment being tested.
+ */
+export function shopPath(slug: string, path = "") {
+  return SUBDOMAIN_LIVE ? shopUrl(slug, path) : `/s/${slug}${path}`;
+}
+
 /** The same thing without the scheme, for printing on a page. */
 export function shopHost(slug: string) {
   return SUBDOMAIN_LIVE

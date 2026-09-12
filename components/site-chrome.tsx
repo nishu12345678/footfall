@@ -4,6 +4,7 @@ import {
   whatsappLink,
   type SiteData,
 } from "@/lib/site-data";
+import { shopPath } from "@/lib/site-host";
 
 function WhatsAppIcon() {
   return (
@@ -53,7 +54,7 @@ export function UtilityBar({ data }: { data: SiteData }) {
 
 export function SiteNav({ data }: { data: SiteData }) {
   const { site, business, whatsapp } = data;
-  const base = `/s/${site.slug}`;
+  const base = shopPath(site.slug);
   const wa = whatsappLink(
     whatsapp,
     `Hi ${business.orgName}, I found you on your website and I'd like to know more.`,
@@ -116,7 +117,7 @@ export function SiteNav({ data }: { data: SiteData }) {
 
 export function SiteFooter({ data }: { data: SiteData }) {
   const { site, business, whatsapp, tel, areas } = data;
-  const base = `/s/${site.slug}`;
+  const base = shopPath(site.slug);
   const directions = directionsLink(business);
 
   return (

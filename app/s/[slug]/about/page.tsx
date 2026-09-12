@@ -8,7 +8,7 @@ import {
 } from "@/components/site-chrome";
 import { loadSite } from "@/lib/site-data";
 import { breadcrumbs } from "@/lib/site-schema";
-import { shopUrl } from "@/lib/site-host";
+import { shopUrl, shopPath } from "@/lib/site-host";
 
 export async function generateMetadata({
   params,
@@ -36,7 +36,7 @@ export default async function AboutPage({
   if (!data) notFound();
 
   const { site, business, areas, photos, rating, reviewCount } = data;
-  const base = `/s/${site.slug}`;
+  const base = shopPath(site.slug);
 
   return (
     <>
@@ -44,7 +44,7 @@ export default async function AboutPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(
-            breadcrumbs(base, [
+            breadcrumbs(shopUrl(site.slug), [
               { name: "Home", href: "" },
               { name: "About", href: "/about" },
             ]),

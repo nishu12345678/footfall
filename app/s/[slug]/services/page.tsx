@@ -9,7 +9,7 @@ import {
 } from "@/components/site-chrome";
 import { enquiryMessage, loadSite, whatsappLink } from "@/lib/site-data";
 import { breadcrumbs } from "@/lib/site-schema";
-import { shopUrl } from "@/lib/site-host";
+import { shopUrl, shopPath } from "@/lib/site-host";
 
 export async function generateMetadata({
   params,
@@ -42,7 +42,7 @@ export default async function ServicesPage({
   if (!data) notFound();
 
   const { site, business, areas } = data;
-  const base = `/s/${site.slug}`;
+  const base = shopPath(site.slug);
 
   return (
     <>
@@ -50,7 +50,7 @@ export default async function ServicesPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(
-            breadcrumbs(base, [
+            breadcrumbs(shopUrl(site.slug), [
               { name: "Home", href: "" },
               { name: "Services", href: "/services" },
             ]),

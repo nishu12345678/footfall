@@ -151,6 +151,95 @@ function ourStorageId(url: string | undefined): string | null {
   return m ? m[1] : null;
 }
 
+/**
+ * Wipes everything a business's content tables hold — site, offerings,
+ * keywords, posts, photos, reviews and the rest — while KEEPING the
+ * business row itself, its Google link, its selection and its plan.
+ *
+ * For the one historical row that was overwritten in place when a second
+ * listing was connected (before businesses became plural): the row is the
+ * new shop, the content is still the old shop's. After the reset the owner
+ * re-runs onboarding and every regenerated piece belongs to the listing
+ * the row actually names.
+ *
+ *   npx convex run admin:resetBusinessContent '{"businessId":"..."}' --prod
+ *   (dryRun defaults to true; pass "dryRun": false to delete)
+ */
+export const resetBusinessContent = internalMutation({
+  args: {
+    businessId: v.id("businesses"),
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, { businessId, dryRun = true }) => {
+    const business = await ctx.db.get(businessId);
+    if (!business) throw new ConvexError("No such business.");
+
+    const counted: Record<string, number> = {};
+    const bump = (table: string, n: number) => {
+      if (n > 0) counted[table] = (counted[table] ?? 0) + n;
+    };
+    const storageIds = new Set<string>();
+
+    for (const table of BUSINESS_TABLES) {
+      const rows = (await ctx.db
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .query(table as any)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .withIndex("by_business", (q: any) => q.eq("businessId", businessId))
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .collect()) as any[];
+      bump(table, rows.length);
+      for (const row of rows) {
+        if (row.storageId) storageIds.add(row.storageId);
+        const fromUrl = ourStorageId(row.imageUrl) ?? ourStorageId(row.url);
+        if (fromUrl) storageIds.add(fromUrl);
+        if (!dryRun) await ctx.db.delete(row._id);
+      }
+    }
+    const generations = await ctx.db
+      .query("postGenerations")
+      .withIndex("by_business", (q) => q.eq("businessId", businessId))
+      .collect();
+    bump("postGenerations", generations.length);
+    if (!dryRun) for (const g of generations) await ctx.db.delete(g._id);
+
+    const logo = ourStorageId(business.logoUrl);
+    if (logo) storageIds.add(logo);
+    bump("files", storageIds.size);
+
+    if (!dryRun) {
+      for (const id of storageIds) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await ctx.storage.delete(id as any);
+        } catch {
+          /* already gone */
+        }
+      }
+      // Derived-from-content fields go too; the listing link and the
+      // owner-confirmed address fields stay. Onboarding resumes at step 2
+      // so every regenerated piece is this listing's own.
+      await ctx.db.patch(businessId, {
+        logoUrl: undefined,
+        logoBackground: undefined,
+        radiusReason: undefined,
+        scanRadiusKm: undefined,
+        serviceRadiusKm: undefined,
+        servicesPushedAt: undefined,
+        listingSyncedAt: undefined,
+        metricsSyncedAt: undefined,
+        ranksCheckedAt: undefined,
+        agentActive: false,
+        agentStartedAt: undefined,
+        onboardingStep: 2,
+        onboardingComplete: false,
+      });
+    }
+
+    return { dryRun, business: business.orgName, removed: counted };
+  },
+});
+
 export const removeBusiness = internalMutation({
   args: {
     businessId: v.id("businesses"),

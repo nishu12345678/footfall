@@ -52,14 +52,13 @@ export function Hero() {
           <Headline text={HERO.headline} word={HERO.highlight} />
         </h1>
 
-        <p className="mx-auto mt-4 max-w-2xl text-base text-[var(--l-muted)] md:mt-6 md:text-xl">
-          {HERO.sub}
+        {/* The English value prop, right under the Hinglish headline. */}
+        <p className="mt-4 text-lg font-medium text-[var(--l-ink)] md:mt-5 md:text-2xl">
+          <Headline text={HERO.tagline} word={HERO.highlight} />
         </p>
 
-        {/* The one Hinglish line — in ink, a touch heavier than the
-            subhead, so it reads as a voice rather than a footnote. */}
-        <p className="mt-3 text-[17px] font-medium text-[var(--l-ink)] md:mt-4 md:text-xl">
-          <Headline text={HERO.tagline} word={HERO.highlight} />
+        <p className="mx-auto mt-3 max-w-2xl text-base text-[var(--l-muted)] md:mt-4 md:text-lg">
+          {HERO.sub}
         </p>
 
         <div className="mt-6 flex w-full flex-col items-center gap-2 sm:w-auto sm:flex-row md:mt-9 md:gap-3">

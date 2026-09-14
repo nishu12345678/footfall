@@ -56,13 +56,14 @@ export const NAV_CTA = {
 
 export const HERO = {
   chip: "For local businesses across India",
-  headline: "Get more customers from Google, without doing it yourself",
-  /* The word in the headline that gets the Google letter colours. */
-  highlight: "Google",
-  sub: "footfall is an AI that runs your Google Business Profile — posting every week, replying to every review, and keeping your photos, hours and services fresh while you run the shop.",
-  /* The one Hinglish line on the page. Roman script on purpose —
+  /* The Hinglish promise IS the headline. Roman script on purpose —
      it needs no extra font and reads naturally to the audience. */
-  tagline: "Aap dukaan chalaiye, Google hum sambhal lenge.",
+  headline: "Aap dukaan chalaiye, Google hum sambhal lenge.",
+  /* The word that gets the Google letter colours, in both lines. */
+  highlight: "Google",
+  /* The English value prop, as the deck right under the headline. */
+  tagline: "Get more customers from Google, without doing it yourself.",
+  sub: "footfall is an AI that runs your Google Business Profile — posting every week, replying to every review, and keeping your photos, hours and services fresh while you run the shop.",
   ctaPrimary: "Get my free report",
   ctaWhatsapp: "Talk on WhatsApp",
   support:

@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
   action,
   internalAction,
@@ -8,7 +8,7 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
-import { paidAction } from "./access";
+import { activeBusinessFor, paidAction } from "./access";
 import { perfBase } from "./googleHosts";
 
 /**
@@ -96,7 +96,7 @@ export const syncMetricsForUser = internalAction({
       userId,
     });
     if (!business?.gbpLocationName)
-      throw new Error("No Google listing linked.");
+      throw new ConvexError("No Google listing linked.");
 
     const token: string = await ctx.runAction(internal.google.accessTokenFor, {
       userId,
@@ -125,7 +125,7 @@ export const syncMetricsForUser = internalAction({
     const text = await res.text();
     if (!res.ok) {
       console.error(`[perf] ${res.status} ${text.slice(0, 400)}`);
-      throw new Error(
+      throw new ConvexError(
         `Google Performance API ${res.status}: ${text.slice(0, 180)}`,
       );
     }
@@ -227,7 +227,7 @@ async function mapsSearch(
   zoom = 14,
 ): Promise<any[]> {
   const key = process.env.SERPAPI_KEY;
-  if (!key) throw new Error("SERPAPI_KEY is not set.");
+  if (!key) throw new ConvexError("Rank checks aren't set up on this server yet.");
 
   const url = new URL("https://serpapi.com/search");
   url.searchParams.set("engine", "google_maps");
@@ -240,7 +240,7 @@ async function mapsSearch(
   const data = await res.json();
   if (data.error) {
     console.error(`[serpapi] ${data.error}`);
-    throw new Error(`SerpApi: ${data.error}`);
+    throw new ConvexError("The search provider couldn't answer just now. Try again in a moment.");
   }
   return data.local_results ?? [];
 }
@@ -357,7 +357,7 @@ export const checkRanksForUser = internalAction({
     let context = await ctx.runQuery(internal.performance.rankContext, {
       userId,
     });
-    if (!context) throw new Error("Connect your Google profile first.");
+    if (!context) throw new ConvexError("Connect your Google profile first.");
     if (context.lat === undefined || context.lng === undefined) {
       await ctx.runAction(internal.google.ensureCoordinates, { userId });
       context = await ctx.runQuery(internal.performance.rankContext, {
@@ -365,12 +365,12 @@ export const checkRanksForUser = internalAction({
       });
     }
     if (!context || context.lat === undefined || context.lng === undefined) {
-      throw new Error(
+      throw new ConvexError(
         "We couldn't work out where your shop is. Check the address in step 2.",
       );
     }
     if (context.keywords.length === 0) {
-      throw new Error("Add some keywords in setup first.");
+      throw new ConvexError("Add some keywords in setup first.");
     }
 
     const points = scanPoints(context.lat, context.lng, scanRadiusKm(context));
@@ -542,7 +542,7 @@ export const runGeoGrid = paidAction({
     { keyword, size = 3, stepKm = 1.5 },
   ): Promise<{ points: number; found: number }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     let context = await ctx.runQuery(internal.performance.rankContext, {
       userId,
@@ -554,7 +554,7 @@ export const runGeoGrid = paidAction({
       });
     }
     if (!context || context.lat === undefined || context.lng === undefined) {
-      throw new Error(
+      throw new ConvexError(
         "We couldn't work out where your shop is. Check the address in step 2.",
       );
     }
@@ -594,10 +594,7 @@ export const runGeoGrid = paidAction({
 export const rankContext = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const keywords = await ctx.db
@@ -631,7 +628,7 @@ export const syncMetrics = paidAction({
     directions: number;
   }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
     return await ctx.runAction(internal.performance.syncMetricsForUser, {
       userId,
       days,
@@ -645,7 +642,7 @@ export const checkRanks = paidAction({
     ctx,
   ): Promise<{ checked: number; found: number; competitors: number }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
     return await ctx.runAction(internal.performance.checkRanksForUser, {
       userId,
     });
@@ -657,10 +654,21 @@ export const checkRanks = paidAction({
 export const connectedBusinesses = internalQuery({
   args: {},
   handler: async (ctx) => {
+    // The per-user sync actions resolve the user's ACTIVE business, so each
+    // user appears once, as that business. A second business on the same
+    // account is served whenever it is the selected one.
     const rows = await ctx.db.query("businesses").collect();
-    return rows
-      .filter((b) => b.gbpLocationName && b.agentActive)
-      .map((b) => ({ userId: b.userId, name: b.orgName }));
+    const out: { userId: Id<"users">; name: string }[] = [];
+    const seen = new Set<string>();
+    for (const b of rows) {
+      if (!b.gbpLocationName || !b.agentActive) continue;
+      if (seen.has(b.userId)) continue;
+      const active = await activeBusinessFor(ctx, b.userId);
+      if (!active || active._id !== b._id) continue;
+      seen.add(b.userId);
+      out.push({ userId: b.userId, name: b.orgName });
+    }
+    return out;
   },
 });
 

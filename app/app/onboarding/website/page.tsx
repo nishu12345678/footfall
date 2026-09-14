@@ -1,16 +1,20 @@
 "use client";
 
-import { useAction, useQuery } from "convex/react";
+import Link from "next/link";
+import { useAction } from "convex/react";
+import { useQuery } from "convex-helpers/react/cache";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
-import { Steps } from "@/components/steps";
+import { OnboardingTop, nextHref, useEditMode } from "@/components/onboarding-frame";
 import { Working } from "@/components/working";
 import { shopUrl } from "@/lib/site-host";
+import { friendlyError } from "@/lib/errors";
 
 type Check = { id: string; label: string; passed: boolean; detail: string };
 
 export default function WebsiteStepPage() {
   const data = useQuery(api.site.mine);
+  const edit = useEditMode();
   const generate = useAction(api.site.generateSite);
   const review = useAction(api.site.reviewExistingSite);
 
@@ -34,7 +38,7 @@ export default function WebsiteStepPage() {
       setAuditing(true);
       void review({})
         .then(setAudit)
-        .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+        .catch((e) => setError(friendlyError(e)))
         .finally(() => setAuditing(false));
       return;
     }
@@ -42,7 +46,7 @@ export default function WebsiteStepPage() {
 
     setBuilding(true);
     void generate({})
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .catch((e) => setError(friendlyError(e)))
       .finally(() => setBuilding(false));
   }, [data, generate, review]);
 
@@ -52,7 +56,7 @@ export default function WebsiteStepPage() {
     try {
       await generate({});
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setBuilding(false);
     }
@@ -61,18 +65,18 @@ export default function WebsiteStepPage() {
   if (data === undefined) {
     return (
       <main className="grid min-h-screen place-items-center px-6">
-        <p className="font-mono text-[12px] text-muted">loading…</p>
+        <p className="text-[13px] text-muted">loading…</p>
       </main>
     );
   }
 
   if (data === null) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6">
-        <h1 className="text-[1.8rem]">connect google first</h1>
-        <a href="/app/connect" className="btn btn-primary mt-6 w-full">
+      <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
+        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
+        <Link href="/app/connect" className="btn btn-primary mt-8 w-full">
           connect google
-        </a>
+        </Link>
       </main>
     );
   }
@@ -85,54 +89,52 @@ export default function WebsiteStepPage() {
   /* ------------------------- they already have one ---------------------- */
   if (hasOwnSite) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
-        <Steps current={5} />
+      <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-12">
+        <OnboardingTop step={5} edit={edit} />
 
-        <div className="mt-7 flex-1">
-          <h1 className="text-[1.75rem]">your website</h1>
-          <p className="mt-2 break-all text-[13px] font-mono text-ink-soft">
+        <div className="mt-9 flex-1">
+          <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">your website</h1>
+          <p className="mt-3 break-all text-[13px] font-mono text-ink-soft">
             {business.website}
           </p>
-          <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+          <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">
             You already have a site, so we won&rsquo;t make you another one.
             Here&rsquo;s what it&rsquo;s missing that would help people nearby
             find you.
           </p>
 
           {auditing ? (
-            <div className="mt-6">
+            <div className="mt-8">
               <Working label="Reading your website" />
             </div>
           ) : null}
 
           {audit ? (
             <>
-              <div className="mt-6 flex items-baseline justify-between gap-3">
-                <h2 className="font-display text-[15px] font-bold">
+              <div className="mt-8 flex items-baseline justify-between gap-3">
+                <h2 className="text-[15px] font-semibold text-ink">
                   {failed.length === 0
                     ? "Nothing missing"
                     : `${failed.length} thing${failed.length === 1 ? "" : "s"} to fix`}
                 </h2>
-                <span className="flex-none font-mono text-[10px] text-muted">
+                <span className="flex-none text-[12px] text-muted">
                   {passed.length}/{audit.checks.length} passing
                 </span>
               </div>
 
-              <ul className="mt-3 space-y-2">
+              <ul className="mt-4 space-y-2.5">
                 {[...failed, ...passed].map((check, i) => (
                   <li
                     key={check.id}
-                    className={`rounded-[12px] border p-3 ${
-                      check.passed
-                        ? "border-rule bg-paper-2"
-                        : "border-pin bg-pin-soft"
+                    className={`rounded-[12px] p-4 ${
+                      check.passed ? "bg-paper-2" : "bg-pin-soft"
                     }`}
                   >
                     <div className="flex items-start gap-2.5">
                       <span
                         aria-hidden
-                        className={`mt-0.5 flex-none font-mono text-[12px] ${
-                          check.passed ? "text-open" : "text-pin"
+                        className={`mt-0.5 flex-none text-[13px] ${
+                          check.passed ? "text-open-deep" : "text-pin"
                         }`}
                       >
                         {check.passed ? "✓" : "✕"}
@@ -157,55 +159,55 @@ export default function WebsiteStepPage() {
           {error ? (
             <p
               role="alert"
-              className="mt-5 break-words rounded-[12px] border border-pin bg-pin-soft px-3.5 py-2.5 font-mono text-[12px] leading-snug"
+              className="mt-5 break-words rounded-[12px] bg-pin-soft px-3.5 py-2.5 text-[13px] leading-snug"
             >
               {error}
             </p>
           ) : null}
         </div>
 
-        <a href="/app/onboarding/others" className="btn btn-primary mt-8 w-full">
-          next
-        </a>
+        <Link href={nextHref(5, edit)} className="btn btn-primary mt-10 w-full">
+          {edit ? "done" : "next"}
+        </Link>
       </main>
     );
   }
 
   /* --------------------------- no website yet --------------------------- */
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
-      <Steps current={5} />
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-12">
+      <OnboardingTop step={5} edit={edit} />
 
-      <div className="mt-7 flex-1">
-        <h1 className="text-[1.75rem]">
+      <div className="mt-9 flex-1">
+        <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
           {site ? "your website is live" : "we’re making you a website"}
         </h1>
-        <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
+        <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
           {site
             ? "Built from your Google listing, so your name, address, phone and hours match Google exactly. That match is one of the few things you fully control that Google actually rewards."
             : "One page with your services, hours, phone and directions — built from your Google listing. Nothing to write, nothing to host, no yearly fee."}
         </p>
 
         {building ? (
-          <div className="mt-6">
+          <div className="mt-8">
             <Working label="Writing your website from your listing" />
           </div>
         ) : null}
 
         {site && !building ? (
           <>
-            <div className="mt-6 overflow-hidden rounded-[14px] border border-ink shadow-[3px_4px_0_var(--color-ink)]">
-              <div className="flex items-center gap-2 border-b border-ink bg-paper-3 px-3 py-2">
-                <span className="h-2.5 w-2.5 rounded-full border border-ink bg-pin" />
-                <span className="h-2.5 w-2.5 rounded-full border border-ink bg-star" />
-                <span className="h-2.5 w-2.5 rounded-full border border-ink bg-open" />
-                <span className="truncate font-mono text-[10px] text-ink-soft">
+            <div className="window mt-8">
+              <div className="window-bar">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
+                <span className="truncate font-mono text-[11px] text-muted">
                   /s/{site.slug}
                 </span>
               </div>
 
-              <div className="bg-paper-2 p-4">
-                <p className="font-display text-[17px] font-bold leading-tight">
+              <div className="p-5">
+                <p className="text-[17px] font-semibold leading-tight">
                   {site.headline}
                 </p>
                 {site.subhead ? (
@@ -218,7 +220,7 @@ export default function WebsiteStepPage() {
                   {site.services.slice(0, 4).map((s) => (
                     <li
                       key={s.name}
-                      className="rounded-full border border-rule bg-paper px-2 py-0.5 text-[11px]"
+                      className="rounded-full bg-paper-2 px-2.5 py-0.5 text-[11px] font-medium text-ink-soft"
                     >
                       {s.name}
                     </li>
@@ -227,14 +229,14 @@ export default function WebsiteStepPage() {
               </div>
             </div>
 
-            <ul className="mt-4 space-y-1.5 text-[13px] leading-snug text-ink-soft">
+            <ul className="mt-5 space-y-2 text-[13px] leading-snug text-ink-soft">
               <li>· {site.services.length} services, written for local search</li>
               <li>· {site.faqs.length} questions customers actually ask</li>
               <li>· your hours, phone and directions straight from Google</li>
               <li>· structured data so Google can read the page properly</li>
             </ul>
 
-            <div className="mt-5 flex flex-wrap gap-2">
+            <div className="mt-6 flex flex-wrap gap-2.5">
               <a
                 href={shopUrl(site.slug)}
                 target="_blank"
@@ -247,7 +249,7 @@ export default function WebsiteStepPage() {
                 type="button"
                 onClick={() => void build()}
                 disabled={building}
-                className="font-mono text-[11px] underline underline-offset-4 hover:text-pin disabled:opacity-50"
+                className="text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
               >
                 rewrite it
               </button>
@@ -259,7 +261,7 @@ export default function WebsiteStepPage() {
           <button
             type="button"
             onClick={() => void build()}
-            className="btn btn-primary mt-6 w-full"
+            className="btn btn-primary mt-8 w-full"
           >
             <span aria-hidden>✦</span> make my website
           </button>
@@ -268,19 +270,19 @@ export default function WebsiteStepPage() {
         {error ? (
           <p
             role="alert"
-            className="mt-5 break-words rounded-[12px] border border-pin bg-pin-soft px-3.5 py-2.5 font-mono text-[12px] leading-snug"
+            className="mt-5 break-words rounded-[12px] bg-pin-soft px-3.5 py-2.5 text-[13px] leading-snug"
           >
             {error}
           </p>
         ) : null}
       </div>
 
-      <a
-        href="/app/onboarding/others"
-        className={`btn mt-8 w-full ${site ? "btn-primary" : "btn-ghost"}`}
+      <Link
+        href={nextHref(5, edit)}
+        className={`btn mt-10 w-full ${site ? "btn-primary" : "btn-ghost"}`}
       >
-        {site ? "next" : "skip for now"}
-      </a>
+        {edit ? "done" : site ? "next" : "skip for now"}
+      </Link>
     </main>
   );
 }

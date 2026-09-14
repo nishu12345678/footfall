@@ -1,10 +1,14 @@
 "use client";
 
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAction, useMutation } from "convex/react";
+import { useQuery } from "convex-helpers/react/cache";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
-import { Steps } from "@/components/steps";
+import { OnboardingTop, nextHref, useEditMode } from "@/components/onboarding-frame";
 import { Working } from "@/components/working";
+import { friendlyError } from "@/lib/errors";
 
 type Tab = "offerings" | "specialties";
 
@@ -28,6 +32,8 @@ export default function AboutPage() {
   const add = useMutation(api.about.add);
   const remove = useMutation(api.about.remove);
   const complete = useMutation(api.about.complete);
+  const edit = useEditMode();
+  const router = useRouter();
   const suggest = useAction(api.about.suggest);
 
   const [tab, setTab] = useState<Tab>("offerings");
@@ -47,7 +53,7 @@ export default function AboutPage() {
     setThinking(true);
     void suggest({ kind: tab })
       .then((items) => setSuggestions((s) => ({ ...s, [tab]: items })))
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .catch((e) => setError(friendlyError(e)))
       .finally(() => setThinking(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, data]);
@@ -55,18 +61,18 @@ export default function AboutPage() {
   if (data === undefined) {
     return (
       <main className="grid min-h-screen place-items-center px-6">
-        <p className="font-mono text-[12px] text-muted">loading…</p>
+        <p className="text-[13px] text-muted">loading…</p>
       </main>
     );
   }
 
   if (data === null) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6">
-        <h1 className="text-[1.8rem]">connect google first</h1>
-        <a href="/app/connect" className="btn btn-primary mt-6 w-full">
+      <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
+        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
+        <Link href="/app/connect" className="btn btn-primary mt-8 w-full">
           connect google
-        </a>
+        </Link>
       </main>
     );
   }
@@ -84,7 +90,7 @@ export default function AboutPage() {
         [tab]: s[tab].filter((i) => i.toLowerCase() !== label.toLowerCase()),
       }));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     }
   }
 
@@ -95,7 +101,7 @@ export default function AboutPage() {
       const items = await suggest({ kind: tab });
       setSuggestions((s) => ({ ...s, [tab]: items }));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setThinking(false);
     }
@@ -108,14 +114,14 @@ export default function AboutPage() {
       return;
     }
     await complete({});
-    window.location.href = "/app/onboarding/gbp";
+    router.push(nextHref(3, edit));
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
-      <Steps current={3} />
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-8 sm:py-12">
+      <OnboardingTop step={3} edit={edit} />
 
-      <div className="mt-7 grid grid-cols-2 border-b border-rule">
+      <div className="mt-9 grid grid-cols-2 gap-1 rounded-full bg-paper-3 p-1">
         {(["offerings", "specialties"] as const).map((t) => (
           <button
             key={t}
@@ -124,10 +130,8 @@ export default function AboutPage() {
               setTab(t);
               setDraft("");
             }}
-            className={`-mb-px border-b-2 pb-2.5 font-display text-[14px] font-semibold transition-colors ${
-              tab === t
-                ? "border-pin text-pin"
-                : "border-transparent text-muted hover:text-ink"
+            className={`rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${
+              tab === t ? "bg-white text-ink shadow-card" : "text-muted"
             }`}
           >
             {COPY[t].tab}
@@ -135,14 +139,14 @@ export default function AboutPage() {
         ))}
       </div>
 
-      <div className="mt-7 flex-1">
-        <h1 className="text-[1.75rem]">{copy.heading}</h1>
-        <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
+      <div className="mt-9 flex-1">
+        <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">{copy.heading}</h1>
+        <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
           {copy.sub}
         </p>
 
         <form
-          className="mt-6 flex gap-2"
+          className="mt-8 flex gap-2.5"
           onSubmit={(e) => {
             e.preventDefault();
             if (!draft.trim()) return;
@@ -154,7 +158,7 @@ export default function AboutPage() {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder={copy.placeholder}
-            className="min-w-0 flex-1 rounded-[12px] border border-ink bg-paper-2 px-3.5 py-3 text-[15px] outline-none placeholder:text-muted/50"
+            className="min-w-0 flex-1 rounded-[12px] border border-rule bg-white px-4 py-3 text-[16px] outline-none placeholder:text-muted/60 focus:border-pin"
           />
           <button
             type="submit"
@@ -167,17 +171,17 @@ export default function AboutPage() {
 
         {chosen.length > 0 ? (
           <>
-            <p className="eyebrow mt-7">selected</p>
+            <p className="eyebrow mt-8">selected</p>
             <ul className="mt-3 flex flex-wrap gap-2">
               {chosen.map((row) => (
                 <li key={row._id}>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-pin bg-pin-soft py-1.5 pl-3 pr-1.5 text-[13px]">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-pin-soft py-1.5 pl-3 pr-1.5 text-[13px] font-medium text-pin">
                     {row.label}
                     <button
                       type="button"
                       onClick={() => void remove({ kind: tab, id: row._id })}
                       aria-label={`remove ${row.label}`}
-                      className="grid h-4 w-4 place-items-center rounded-full text-pin hover:bg-pin hover:text-paper-2"
+                      className="grid h-4 w-4 place-items-center rounded-full text-pin hover:bg-pin hover:text-white"
                     >
                       ×
                     </button>
@@ -188,9 +192,9 @@ export default function AboutPage() {
           </>
         ) : null}
 
-        <div className="mt-8 rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]">
+        <div className="mt-10 border-t border-rule-soft pt-6">
           <div className="flex items-center justify-between gap-3">
-            <p className="flex items-center gap-1.5 font-display text-[14px] font-bold">
+            <p className="flex items-center gap-1.5 text-[15px] font-semibold text-ink">
               <span aria-hidden className="text-pin">
                 ✦
               </span>
@@ -200,7 +204,7 @@ export default function AboutPage() {
               type="button"
               onClick={() => void getSuggestions()}
               disabled={thinking}
-              className="flex-none font-mono text-[11px] underline underline-offset-4 hover:text-pin disabled:opacity-50"
+              className="flex-none text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
             >
               more
             </button>
@@ -223,7 +227,7 @@ export default function AboutPage() {
                   <button
                     type="button"
                     onClick={() => void addLabel(idea, "ai")}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-rule bg-paper py-1.5 pl-2.5 pr-3 text-[13px] transition-colors hover:border-ink"
+                    className="pressable inline-flex items-center gap-1.5 rounded-full bg-paper-2 py-1.5 pl-2.5 pr-3 text-[13px] transition-colors hover:bg-paper-3"
                   >
                     <span aria-hidden className="text-pin">
                       +
@@ -245,7 +249,7 @@ export default function AboutPage() {
         {error ? (
           <p
             role="alert"
-            className="mt-5 rounded-[12px] border border-pin bg-pin-soft px-4 py-3 text-[14px] leading-snug"
+            className="mt-5 rounded-[12px] bg-pin-soft px-4 py-3 text-[14px] leading-snug"
           >
             {error}
           </p>
@@ -256,9 +260,9 @@ export default function AboutPage() {
         type="button"
         onClick={() => void next()}
         disabled={chosen.length === 0}
-        className="btn btn-primary mt-8 w-full disabled:cursor-not-allowed disabled:opacity-40"
+        className="btn btn-primary mt-10 w-full disabled:cursor-not-allowed disabled:opacity-40"
       >
-        {tab === "offerings" ? "save info & next" : "save & next"}
+        {tab === "offerings" ? "save info & next" : edit ? "save changes" : "save & next"}
       </button>
     </main>
   );

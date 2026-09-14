@@ -1,19 +1,23 @@
 "use client";
 
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAction, useMutation } from "convex/react";
+import { useQuery } from "convex-helpers/react/cache";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
-import { Steps } from "@/components/steps";
+import { OnboardingTop, nextHref, useEditMode } from "@/components/onboarding-frame";
 import { Working } from "@/components/working";
 import { ONBOARDING_STEPS } from "@/lib/onboarding";
 import dynamic from "next/dynamic";
+import { friendlyError } from "@/lib/errors";
 
 const AreaMap = dynamic(
   () => import("@/components/area-map").then((m) => m.AreaMap),
   {
     ssr: false,
     loading: () => (
-      <div className="h-[248px] w-full animate-pulse rounded-[14px] border border-ink bg-paper-3" />
+      <div className="h-[248px] w-full animate-pulse rounded-[14px] bg-paper-3" />
     ),
   },
 );
@@ -55,6 +59,8 @@ export default function GbpPage() {
   const setHours = useMutation(api.gbp.setHours);
   const toggleAttribute = useMutation(api.gbp.toggleAttribute);
   const complete = useMutation(api.gbp.complete);
+  const edit = useEditMode();
+  const router = useRouter();
   const researchKeywords = useAction(api.keywords.research);
   const seedAreas = useMutation(api.gbp.seedServiceAreas);
   const nearbyAreas = useAction(api.gbp.nearbyAreas);
@@ -132,18 +138,18 @@ export default function GbpPage() {
   if (data === undefined) {
     return (
       <main className="grid min-h-screen place-items-center px-6">
-        <p className="font-mono text-[12px] text-muted">loading…</p>
+        <p className="text-[13px] text-muted">loading…</p>
       </main>
     );
   }
 
   if (data === null) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6">
-        <h1 className="text-[1.8rem]">connect google first</h1>
-        <a href="/app/connect" className="btn btn-primary mt-6 w-full">
+      <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
+        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
+        <Link href="/app/connect" className="btn btn-primary mt-8 w-full">
           connect google
-        </a>
+        </Link>
       </main>
     );
   }
@@ -168,7 +174,7 @@ export default function GbpPage() {
     try {
       setAreaIdeas(await nearbyAreas({ radiusKm: km }));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setFindingAreas(false);
     }
@@ -180,7 +186,7 @@ export default function GbpPage() {
     try {
       setResearched(await researchKeywords({ deep }));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setThinking(false);
     }
@@ -202,18 +208,18 @@ export default function GbpPage() {
     setBusy(true);
     try {
       await complete({});
-      window.location.href = "/app/onboarding/website";
+      router.push(nextHref(4, edit));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
       setBusy(false);
     }
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
-      <Steps current={4} />
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-8 sm:py-12">
+      <OnboardingTop step={4} edit={edit} />
 
-      <div className="mt-7 flex gap-4 overflow-x-auto border-b border-rule">
+      <div className="no-scrollbar mt-9 flex gap-5 overflow-x-auto border-b border-rule">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -223,7 +229,7 @@ export default function GbpPage() {
               setSeen((s) => ({ ...s, [t.id]: true }));
               setDraft("");
             }}
-            className={`-mb-px flex-none border-b-2 pb-2.5 font-display text-[13px] font-semibold transition-colors ${
+            className={`-mb-px flex-none border-b-2 pb-2.5 text-[13px] font-semibold transition-colors ${
               tab === t.id
                 ? "border-pin text-pin"
                 : "border-transparent text-muted hover:text-ink"
@@ -231,7 +237,7 @@ export default function GbpPage() {
           >
             {t.label}
             {seen[t.id] && tab !== t.id ? (
-              <span aria-hidden className="ml-1 text-open">
+              <span aria-hidden className="ml-1 text-open-deep">
                 ✓
               </span>
             ) : null}
@@ -239,19 +245,19 @@ export default function GbpPage() {
         ))}
       </div>
 
-      <div className="mt-7 flex-1">
+      <div className="mt-9 flex-1">
         {tab === "areas" ? (
           <>
-            <h1 className="text-[1.75rem]">
+            <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
               where do your customers come from?
             </h1>
-            <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
+            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               How far people travel to you. We measure your &ldquo;near
               me&rdquo; ranking across this whole area, not just at your door.
             </p>
 
             {data.business.lat && data.business.lng ? (
-              <div className="mt-5">
+              <div className="mt-6">
                 <AreaMap
                   lat={data.business.lat}
                   lng={data.business.lng}
@@ -271,7 +277,7 @@ export default function GbpPage() {
             ) : null}
 
             <form
-              className="mt-6 flex gap-2"
+              className="mt-8 flex gap-2.5"
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!draft.trim()) return;
@@ -283,7 +289,7 @@ export default function GbpPage() {
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder={`e.g. ${data.business.city ?? "your area"}`}
-                className="min-w-0 flex-1 rounded-[12px] border border-ink bg-paper-2 px-3.5 py-3 text-[15px] outline-none placeholder:text-muted/50"
+                className="min-w-0 flex-1 rounded-[12px] border border-rule bg-white px-4 py-3 text-[16px] outline-none placeholder:text-muted/60 focus:border-pin"
               />
               <button
                 type="submit"
@@ -294,12 +300,12 @@ export default function GbpPage() {
               </button>
             </form>
 
-            <div className="mt-6 rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]">
+            <div className="mt-8 border-t border-rule-soft pt-6">
               <div className="flex items-center justify-between gap-3">
-                <p className="font-display text-[14px] font-bold">
+                <p className="text-[15px] font-semibold text-ink">
                   Areas near you
                 </p>
-                <div className="flex flex-none items-center gap-1 rounded-full border border-rule p-0.5">
+                <div className="flex flex-none items-center gap-1 rounded-full bg-paper-3 p-0.5">
                   {[10, 20, 30].map((km) => (
                     <button
                       key={km}
@@ -310,10 +316,10 @@ export default function GbpPage() {
                         void findAreas(km);
                       }}
                       aria-pressed={radiusKm === km}
-                      className={`rounded-full px-2 py-0.5 font-mono text-[10px] transition-colors ${
+                      className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
                         radiusKm === km
-                          ? "bg-ink text-paper-2"
-                          : "text-muted hover:text-ink"
+                          ? "bg-white text-ink shadow-card"
+                          : "text-muted"
                       }`}
                     >
                       {km}km
@@ -337,10 +343,10 @@ export default function GbpPage() {
                           type="button"
                           disabled={added}
                           onClick={() => void addArea({ name: area.name })}
-                          className={`inline-flex items-center gap-1.5 rounded-full border py-1.5 pl-2.5 pr-3 text-[13px] transition-colors ${
+                          className={`pressable inline-flex items-center gap-1.5 rounded-full py-1.5 pl-2.5 pr-3 text-[13px] transition-colors ${
                             added
-                              ? "border-pin bg-pin-soft"
-                              : "border-rule bg-paper hover:border-ink"
+                              ? "bg-pin-soft text-pin"
+                              : "bg-paper-2 hover:bg-paper-3"
                           }`}
                         >
                           <span
@@ -350,7 +356,7 @@ export default function GbpPage() {
                             {added ? "✓" : "+"}
                           </span>
                           {area.name}
-                          <span className="font-mono text-[10px] text-muted">
+                          <span className="text-[11px] text-muted">
                             {area.km}km
                           </span>
                         </button>
@@ -367,7 +373,7 @@ export default function GbpPage() {
             </div>
 
             {data.business.scanRadiusKm ? (
-              <div className="mt-4 rounded-[12px] border border-rule bg-paper-2 px-3.5 py-2.5">
+              <div className="mt-5 rounded-[12px] bg-paper-2 p-4">
                 <p className="text-[13px] font-semibold leading-snug">
                   We&rsquo;ll measure your &ldquo;near me&rdquo; ranking across{" "}
                   {data.business.scanRadiusKm}km
@@ -380,17 +386,17 @@ export default function GbpPage() {
               </div>
             ) : null}
 
-            <p className="eyebrow mt-6">you serve</p>
+            <p className="eyebrow mt-8">you serve</p>
             <ul className="mt-3 flex flex-wrap gap-2">
               {data.serviceAreas.map((area) => (
                 <li key={area._id}>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-pin bg-pin-soft py-1.5 pl-3 pr-1.5 text-[13px]">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-pin-soft py-1.5 pl-3 pr-1.5 text-[13px] font-medium text-pin">
                     {area.name}
                     <button
                       type="button"
                       onClick={() => void removeArea({ id: area._id })}
                       aria-label={`remove ${area.name}`}
-                      className="grid h-4 w-4 place-items-center rounded-full text-pin hover:bg-pin hover:text-paper-2"
+                      className="grid h-4 w-4 place-items-center rounded-full text-pin hover:bg-pin hover:text-white"
                     >
                       ×
                     </button>
@@ -403,14 +409,16 @@ export default function GbpPage() {
 
         {tab === "keywords" ? (
           <>
-            <h1 className="text-[1.75rem]">what do people search?</h1>
-            <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
+            <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
+              what do people search?
+            </h1>
+            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               We track your position for each of these every week, so you can
               see the ranking move.
             </p>
 
             <form
-              className="mt-6 flex gap-2"
+              className="mt-8 flex gap-2.5"
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!draft.trim()) return;
@@ -422,7 +430,7 @@ export default function GbpPage() {
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder="e.g. tiles shop near me"
-                className="min-w-0 flex-1 rounded-[12px] border border-ink bg-paper-2 px-3.5 py-3 text-[15px] outline-none placeholder:text-muted/50"
+                className="min-w-0 flex-1 rounded-[12px] border border-rule bg-white px-4 py-3 text-[16px] outline-none placeholder:text-muted/60 focus:border-pin"
               />
               <button
                 type="submit"
@@ -433,11 +441,11 @@ export default function GbpPage() {
               </button>
             </form>
 
-            <ul className="mt-5 space-y-2">
+            <ul className="mt-6 space-y-2.5">
               {data.keywords.map((kw) => (
                 <li
                   key={kw._id}
-                  className="flex items-center justify-between gap-3 rounded-[12px] border border-rule bg-paper-2 px-3.5 py-2.5"
+                  className="flex items-center justify-between gap-3 rounded-[12px] bg-paper-2 px-4 py-3"
                 >
                   <span className="min-w-0 truncate text-[14px]">
                     {kw.term}
@@ -446,7 +454,7 @@ export default function GbpPage() {
                     type="button"
                     onClick={() => void removeKeyword({ id: kw._id })}
                     aria-label={`remove ${kw.term}`}
-                    className="flex-none font-mono text-[13px] text-muted hover:text-pin"
+                    className="flex-none text-[13px] text-muted hover:text-pin"
                   >
                     ×
                   </button>
@@ -454,16 +462,16 @@ export default function GbpPage() {
               ))}
             </ul>
 
-            <div className="mt-7 rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]">
+            <div className="mt-8 border-t border-rule-soft pt-6">
               <div className="flex items-center justify-between gap-3">
-                <p className="font-display text-[14px] font-bold">
+                <p className="text-[15px] font-semibold text-ink">
                   Researched from Google
                 </p>
                 <button
                   type="button"
                   onClick={() => void runResearch(true)}
                   disabled={thinking}
-                  className="flex-none font-mono text-[11px] underline underline-offset-4 hover:text-pin disabled:opacity-50"
+                  className="flex-none text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
                 >
                   check competition
                 </button>
@@ -474,11 +482,11 @@ export default function GbpPage() {
                   <Working label="Finding what your customers search for" />
                 </div>
               ) : researched.length ? (
-                <ul className="mt-3 space-y-2">
+                <ul className="mt-4 space-y-2.5">
                   {researched.map((r) => (
                     <li
                       key={r.term}
-                      className="rounded-[10px] border border-rule bg-paper p-2.5"
+                      className="rounded-[12px] bg-paper-2 p-3.5"
                     >
                       <div className="flex items-center gap-2">
                         <button
@@ -490,10 +498,10 @@ export default function GbpPage() {
                           }
                           disabled={tracked.has(r.term)}
                           onClick={() => void addKeyword({ term: r.term })}
-                          className={`grid h-7 w-7 flex-none place-items-center rounded-full border border-ink font-mono text-[15px] leading-none shadow-[2px_2px_0_var(--color-ink)] transition-transform active:translate-x-px active:translate-y-px active:shadow-none ${
+                          className={`pressable grid h-7 w-7 flex-none place-items-center rounded-full text-[15px] leading-none ${
                             tracked.has(r.term)
-                              ? "bg-paper-2 text-pin shadow-none"
-                              : "bg-pin text-paper-2"
+                              ? "bg-paper-3 text-pin"
+                              : "bg-pin text-white"
                           }`}
                         >
                           {tracked.has(r.term) ? "✓" : "+"}
@@ -502,22 +510,20 @@ export default function GbpPage() {
                           {r.term}
                         </span>
                         {r.measured === "volume" && r.volume ? (
-                          <span className="flex-none rounded-full border border-open bg-open-soft px-1.5 py-0.5 font-mono text-[9px] text-open">
+                          <span className="flex-none rounded-full bg-open-soft px-2 py-0.5 text-[11px] font-medium text-open-deep">
                             {r.volume.toLocaleString("en-IN")}/mo
                           </span>
                         ) : null}
                         <span
-                          className={`flex-none rounded-full border px-1.5 py-0.5 font-mono text-[9px] ${
-                            r.demand > 0
-                              ? "border-ink text-ink"
-                              : "border-rule text-muted"
+                          className={`flex-none rounded-full bg-paper-3 px-2 py-0.5 text-[11px] font-medium ${
+                            r.demand > 0 ? "text-ink-soft" : "text-muted"
                           }`}
-                          title="demand x winnability"
+                          title="How worth chasing this search is for you: how many people type it, weighed against how hard the competition is to beat. Higher is better."
                         >
-                          {r.score}
+                          {r.score} pts
                         </span>
                       </div>
-                      <p className="mt-1 font-mono text-[9px] leading-snug text-muted">
+                      <p className="mt-1 text-[11px] leading-snug text-muted">
                         {r.why}
                       </p>
                     </li>
@@ -538,21 +544,26 @@ export default function GbpPage() {
 
         {tab === "hours" ? (
           <>
-            <h1 className="text-[1.75rem]">when are you open?</h1>
-            <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
+            <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
+              when are you open?
+            </h1>
+            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               Wrong hours are the fastest way to lose a walk-in. Check every
               day.
             </p>
 
-            <ul className="mt-6 divide-y divide-rule-soft border-y border-rule">
+            <ul className="inset-group mt-8">
               {hours.map((row) => (
-                <li key={row.day} className="flex items-center gap-3 py-2.5">
+                <li
+                  key={row.day}
+                  className="inset-row flex items-center gap-3 px-4 py-3.5"
+                >
                   <span className="w-[76px] flex-none text-[14px] font-semibold">
                     {DAYS[row.day]}
                   </span>
 
                   {row.closed ? (
-                    <span className="flex-1 font-mono text-[12px] text-muted">
+                    <span className="flex-1 text-[13px] text-muted">
                       closed
                     </span>
                   ) : (
@@ -563,7 +574,7 @@ export default function GbpPage() {
                         onChange={(e) =>
                           patchHour(row.day, { open: e.target.value })
                         }
-                        className="w-[92px] rounded-[10px] border border-rule bg-paper-2 px-2 py-1.5 font-mono text-[12px] outline-none"
+                        className="w-[92px] rounded-[10px] border border-rule bg-white px-2 py-1.5 text-[13px] outline-none focus:border-pin"
                       />
                       <span aria-hidden className="text-muted">
                         –
@@ -574,7 +585,7 @@ export default function GbpPage() {
                         onChange={(e) =>
                           patchHour(row.day, { close: e.target.value })
                         }
-                        className="w-[92px] rounded-[10px] border border-rule bg-paper-2 px-2 py-1.5 font-mono text-[12px] outline-none"
+                        className="w-[92px] rounded-[10px] border border-rule bg-white px-2 py-1.5 text-[13px] outline-none focus:border-pin"
                       />
                     </span>
                   )}
@@ -582,7 +593,7 @@ export default function GbpPage() {
                   <button
                     type="button"
                     onClick={() => patchHour(row.day, { closed: !row.closed })}
-                    className="flex-none font-mono text-[11px] text-muted underline underline-offset-4 hover:text-pin"
+                    className="flex-none text-[13px] font-medium text-pin hover:opacity-80"
                   >
                     {row.closed ? "open" : "closed"}
                   </button>
@@ -594,12 +605,14 @@ export default function GbpPage() {
 
         {tab === "attributes" ? (
           <>
-            <h1 className="text-[1.75rem]">what else should people know?</h1>
-            <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
+            <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
+              what else should people know?
+            </h1>
+            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               Small things that decide between you and the shop down the road.
             </p>
 
-            <ul className="mt-6 space-y-2">
+            <ul className="mt-8 space-y-2.5">
               {data.attributeChoices.map((choice) => {
                 const on = enabled.has(choice.key);
                 return (
@@ -614,18 +627,16 @@ export default function GbpPage() {
                         })
                       }
                       aria-pressed={on}
-                      className={`flex w-full items-center gap-3 rounded-[12px] border px-3.5 py-3 text-left text-[14px] transition-colors ${
-                        on
-                          ? "border-open bg-open-soft"
-                          : "border-rule bg-paper-2 hover:border-ink"
+                      className={`pressable flex w-full items-center gap-3 rounded-[12px] px-4 py-3.5 text-left text-[14px] transition-colors ${
+                        on ? "bg-open-soft" : "bg-paper-2 hover:bg-paper-3"
                       }`}
                     >
                       <span
                         aria-hidden
-                        className={`grid h-5 w-5 flex-none place-items-center rounded-[6px] border text-[11px] ${
+                        className={`grid h-5 w-5 flex-none place-items-center rounded-[7px] text-[11px] ${
                           on
-                            ? "border-open bg-open text-paper-2"
-                            : "border-rule text-transparent"
+                            ? "bg-open text-white"
+                            : "bg-paper-3 text-transparent"
                         }`}
                       >
                         ✓
@@ -642,14 +653,14 @@ export default function GbpPage() {
         {error ? (
           <p
             role="alert"
-            className="mt-5 rounded-[12px] border border-pin bg-pin-soft px-4 py-3 text-[14px] leading-snug"
+            className="mt-5 rounded-[12px] bg-pin-soft px-4 py-3 text-[14px] leading-snug"
           >
             {error}
           </p>
         ) : null}
       </div>
 
-      <p className="mt-8 text-center font-mono text-[10px] text-muted">
+      <p className="mt-10 text-center text-[12px] text-muted">
         step 4 of 6 · {TABS.filter((x) => seen[x.id]).length} of {TABS.length}{" "}
         sections done
       </p>
@@ -658,23 +669,25 @@ export default function GbpPage() {
         type="button"
         onClick={() => void next()}
         disabled={busy}
-        className="btn btn-primary mt-2 w-full disabled:opacity-40"
+        className="btn btn-primary mt-3 w-full disabled:opacity-40"
       >
         {tab === "hours"
           ? "save hours & next"
           : tab === "attributes"
             ? busy
               ? "saving…"
-              : "save & make my website"
+              : edit
+                ? "save changes"
+                : "save & make my website"
             : "save & next"}
       </button>
 
-      <a
-        href={ONBOARDING_STEPS[4].href}
-        className="mt-3 block text-center font-mono text-[11px] text-muted underline underline-offset-4 hover:text-pin"
+      <Link
+        href={edit ? "/app/settings" : ONBOARDING_STEPS[4].href}
+        className="mt-4 block text-center text-[13px] font-medium text-pin hover:opacity-80"
       >
-        skip the rest of this step
-      </a>
+        {edit ? "back to settings without saving the rest" : "skip the rest of this step"}
+      </Link>
     </main>
   );
 }

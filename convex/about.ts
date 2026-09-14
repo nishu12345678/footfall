@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
   action,
   internalMutation,
@@ -10,7 +10,7 @@ import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import {
+import { activeBusinessFor,
   NOT_FOUND_MESSAGE,
   ownedBusiness,
   ownedRow,
@@ -43,10 +43,7 @@ export const list = paidQuery({
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
 
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const [offerings, specialties] = await Promise.all([
@@ -103,7 +100,7 @@ export const remove = paidMutation({
     const table = kind === "specialties" ? "specialties" : "offerings";
     // The id arrives as a plain string; a malformed one is "not found" too.
     const rowId = ctx.db.normalizeId(table, id);
-    if (!rowId) throw new Error(NOT_FOUND_MESSAGE);
+    if (!rowId) throw new ConvexError(NOT_FOUND_MESSAGE);
     const { row } = await ownedRow(ctx, rowId);
     await ctx.db.delete(row._id);
   },
@@ -126,10 +123,7 @@ export const complete = paidMutation({
 export const businessContext = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const [offerings, specialties] = await Promise.all([
@@ -243,15 +237,15 @@ export const suggest = paidAction({
   args: { kind: v.string() },
   handler: async (ctx, { kind }): Promise<string[]> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const context = await ctx.runQuery(internal.about.businessContext, {
       userId,
     });
-    if (!context) throw new Error("Connect your Google profile first.");
+    if (!context) throw new ConvexError("Connect your Google profile first.");
 
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("OPENAI_API_KEY is not set.");
+    if (!apiKey) throw new ConvexError("The writing assistant isn't set up on this server yet.");
 
     const wantSpecialties = kind === "specialties";
     const site = await webContext(
@@ -305,7 +299,7 @@ export const suggest = paidAction({
     if (!res.ok) {
       const body = await res.text();
       console.error(`[openai] ${res.status} ${body.slice(0, 300)}`);
-      throw new Error(`Suggestions failed (${res.status}).`);
+      throw new ConvexError("Couldn't get suggestions just now. Try again in a moment.");
     }
 
     const data = await res.json();

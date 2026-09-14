@@ -4,44 +4,44 @@ export function Nav() {
   return (
     <>
       {/* announcement strip — the same offer that appears under pricing */}
-      <div className="bg-pin text-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-2 gap-y-1 px-5 py-2.5 text-center">
-          <span className="text-[14px] font-semibold">
+      <div className="bg-ink/95 text-white">
+        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-center gap-x-2 gap-y-1 px-6 py-2.5 text-center sm:px-10 lg:px-16">
+          <span className="text-[13px] font-medium">
             {PRICING.offer.heading}
           </span>
-          <span className="hidden text-[14px] text-white/80 sm:inline">
+          <span className="hidden text-[13px] text-white/70 sm:inline">
             — five local shops, set up by hand, this week
           </span>
           <a
             href={LINKS.cta}
-            className="text-[14px] font-semibold underline underline-offset-4 hover:text-white/80"
+            className="text-[13px] font-medium text-white underline underline-offset-4 hover:text-white/80"
           >
             Take one →
           </a>
         </div>
       </div>
 
-      <header className="sticky top-0 z-50 border-b border-rule bg-white/90 backdrop-blur-md">
-        <nav className="mx-auto flex max-w-6xl items-center gap-6 px-5 py-3">
+      <header className="material hairline-b sticky top-0 z-50">
+        <nav className="mx-auto flex max-w-[1400px] items-center gap-6 px-6 py-4 sm:px-10 lg:px-16">
           <a
             href="#top"
-            className="flex flex-none items-center gap-2 text-[21px] font-extrabold tracking-tight"
+            className="flex flex-none items-center gap-2 text-[22px] font-extrabold tracking-tight"
           >
             <span
               aria-hidden
-              className="grid h-8 w-8 place-items-center rounded-lg bg-pin text-[15px] text-white"
+              className="grid h-8 w-8 place-items-center rounded-full bg-pin text-[15px] text-white"
             >
               ◎
             </span>
             {BRAND.name}
           </a>
 
-          <ul className="ml-auto hidden items-center gap-7 lg:flex">
+          <ul className="ml-auto hidden items-center gap-8 lg:flex">
             {NAV.map((item) => (
               <li key={item.href}>
                 <a
                   href={item.href}
-                  className="text-[16px] font-medium text-ink-soft transition-colors hover:text-pin"
+                  className="text-[15px] font-semibold text-ink-soft transition-colors hover:text-ink"
                 >
                   {item.label}
                 </a>

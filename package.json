@@ -8,13 +8,15 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "webhook:fake": "node scripts/razorpay-webhook.mjs"
+    "webhook:fake": "node scripts/razorpay-webhook.mjs",
+    "env:push": "convex env set --force --from-file"
   },
   "dependencies": {
     "@auth/core": "^0.41.3",
     "@convex-dev/auth": "^0.0.95",
     "@types/leaflet": "^1.9.22",
     "convex": "^1.45.0",
+    "convex-helpers": "^0.1.124",
     "jimp": "^1.6.1",
     "jose": "^6.2.10",
     "leaflet": "^1.9.4",

@@ -1,20 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Manrope } from "next/font/google";
 import "./globals.css";
 
 /*
- * One family for the whole product.
+ * Manrope — one variable family for the whole product.
  *
- * The page had three: a display face, a body face and a monospace for
- * labels. Monospace labels read as "developer tool" to a shop owner, and
- * the display face fought with Hindi-English mixed words. Inter carries
- * all of it, and the extra weights are what give headings their authority
- * instead of a second family.
+ * Geometric but warm, open apertures, excellent at both 13px captions
+ * and 90px display sizes. It reads effortlessly (the whole brief), and
+ * the 400→800 variable range builds the entire hierarchy without a
+ * second face.
  */
-const inter = Inter({
-  variable: "--font-inter",
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -46,19 +44,26 @@ export const metadata: Metadata = {
     description:
       "Stop paying for Instagram posts nobody sees. footfall works on the listing your customers actually search.",
     type: "website",
+    images: ["/brand/og-image.png"],
+  },
+  icons: {
+    icon: [
+      { url: "/brand/favicon.ico", sizes: "any" },
+      { url: "/brand/logo-32.png", type: "image/png", sizes: "32x32" },
+      { url: "/brand/logo-16.png", type: "image/png", sizes: "16x16" },
+    ],
+    apple: "/brand/logo-180.png",
+    shortcut: "/brand/favicon.ico",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ffffff",
+  themeColor: "#faf9f7",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${manrope.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <div className="relative z-10 flex min-h-full flex-col">{children}</div>
       </body>

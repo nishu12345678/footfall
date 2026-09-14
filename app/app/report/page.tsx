@@ -1,10 +1,14 @@
 "use client";
 
-import { useAction, useQuery } from "convex/react";
+import Link from "next/link";
+import { useAction } from "convex/react";
+import { useQuery } from "convex-helpers/react/cache";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { PRICING } from "@/lib/content";
 import { shopHost, shopUrl } from "@/lib/site-host";
+import { BackButton } from "@/components/back-button";
+import { friendlyError } from "@/lib/errors";
 
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
@@ -18,20 +22,17 @@ const fmtDate = (ms: number) =>
 
 const TONE = {
   critical: {
-    ring: "border-pin",
-    chip: "bg-pin text-white",
+    chip: "bg-pin-soft text-pin",
     label: "Fix this",
     mark: "!",
   },
   warn: {
-    ring: "border-star",
-    chip: "bg-star text-white",
+    chip: "bg-star/15 text-[#8a5a13]",
     label: "Worth doing",
     mark: "•",
   },
   good: {
-    ring: "border-open",
-    chip: "bg-open text-white",
+    chip: "bg-open-soft text-open-deep",
     label: "Already good",
     mark: "✓",
   },
@@ -66,7 +67,7 @@ export default function ReportPage() {
     try {
       await refresh({});
     } catch (e) {
-      setNote(e instanceof Error ? e.message : String(e));
+      setNote(friendlyError(e));
     } finally {
       setReading(false);
     }
@@ -74,7 +75,7 @@ export default function ReportPage() {
 
   if (report === undefined) {
     return (
-      <main className="mx-auto max-w-md px-5 py-16">
+      <main className="mx-auto max-w-xl px-6 py-16">
         <p className="text-[16px] text-muted">Reading your listing…</p>
       </main>
     );
@@ -82,7 +83,7 @@ export default function ReportPage() {
 
   if (report === null) {
     return (
-      <main className="mx-auto max-w-md px-5 py-16">
+      <main className="mx-auto max-w-xl px-6 py-16">
         <p className="text-[16px] text-muted">Please sign in.</p>
       </main>
     );
@@ -90,23 +91,26 @@ export default function ReportPage() {
 
   if (!report.connected) {
     return (
-      <main className="mx-auto max-w-md px-5 py-14">
-        <h1 className="text-[1.9rem]">Connect your Google profile</h1>
+      <main className="mx-auto max-w-xl px-6 py-10 sm:py-14">
+        <BackButton fallback="/" className="-ml-2 mb-4" />
+        <h1 className="text-[clamp(1.9rem,5vw,2.2rem)]">
+          Connect your Google profile
+        </h1>
         <p className="mt-4 text-[17px] leading-relaxed text-ink-soft">
           One Google login and we&rsquo;ll read your listing and tell you
           exactly what is holding it back. Free, and it takes about 40
           seconds. Nothing is published and nothing changes.
         </p>
-        <a href="/app/connect" className="btn btn-primary mt-7 w-full">
+        <Link href="/app/connect" className="btn btn-primary mt-9 w-full">
           Connect Google Business Profile
-        </a>
+        </Link>
       </main>
     );
   }
 
   if (!report.listingSyncedAt) {
     return (
-      <main className="mx-auto max-w-md px-5 py-16 text-center">
+      <main className="mx-auto max-w-xl px-6 py-16 text-center">
         <p className="text-[19px] font-semibold">
           Reading your Google listing…
         </p>
@@ -118,7 +122,7 @@ export default function ReportPage() {
           <button
             type="button"
             onClick={readNow}
-            className="btn btn-primary mt-7 w-full"
+            className="btn btn-primary mt-9 w-full"
           >
             Try again
           </button>
@@ -137,7 +141,7 @@ export default function ReportPage() {
       const r = await generateSite({});
       setBuilt(r.slug);
     } catch (e) {
-      setNote(e instanceof Error ? e.message : String(e));
+      setNote(friendlyError(e));
     } finally {
       setBuilding(false);
     }
@@ -156,26 +160,62 @@ export default function ReportPage() {
             : "We couldn't read the site just now.",
       );
     } catch (e) {
-      setNote(e instanceof Error ? e.message : String(e));
+      setNote(friendlyError(e));
     } finally {
       setChecking(false);
     }
   };
 
   return (
-    <main className="mx-auto max-w-md px-5 py-10">
-      <p className="text-[14px] font-bold uppercase tracking-wider text-pin">
+    <main className="mx-auto max-w-xl px-6 py-8 sm:py-12">
+      {/* Settings must stay reachable from here: for an unpaid business the
+          paywall routes every app screen back to this report, and Settings
+          is where disconnecting, switching business and connecting another
+          one live. Without this link an owner can be stuck on the wrong
+          shop with no way out. */}
+      <div className="mb-4 flex items-center justify-between">
+        <BackButton fallback={report.paid ? "/app" : "/"} className="-ml-2" />
+        <Link
+          href="/app/settings"
+          className="pressable inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 py-2 text-[14px] font-medium text-ink-soft hover:text-ink"
+        >
+          <svg
+            aria-hidden
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+          settings
+        </Link>
+      </div>
+      <p className="text-[13px] font-medium uppercase tracking-[0.05em] text-pin">
         Free listing report
       </p>
-      <h1 className="mt-2 text-[1.8rem]">{report.business.name}</h1>
-      <p className="mt-1 text-[16px] text-muted">
+      <h1 className="mt-3 text-[clamp(1.8rem,5vw,2.2rem)]">
+        {report.business.name}
+      </h1>
+      <p className="mt-2 text-[16px] text-muted">
         {[report.business.category, report.business.city]
           .filter(Boolean)
           .join(" · ")}
       </p>
+      <p className="mt-2 text-[13px] text-muted">
+        Not the business you meant?{" "}
+        <Link href="/app/settings" className="font-medium text-pin hover:opacity-80">
+          switch or connect another in settings
+        </Link>
+      </p>
 
       {/* The headline number. Blunt on purpose — this is the reason to pay. */}
-      <section className="card mt-7 p-6">
+      <section className="card mt-9 p-6">
         <p className="text-[17px] leading-relaxed">
           We found{" "}
           <strong className="text-pin">
@@ -191,7 +231,7 @@ export default function ReportPage() {
             ["Unanswered", report.counts.unansweredReviews],
           ].map(([label, value]) => (
             <div key={String(label)}>
-              <dt className="text-[13px] uppercase tracking-wider text-muted">
+              <dt className="text-[13px] font-medium uppercase tracking-[0.05em] text-muted">
                 {label}
               </dt>
               <dd className="mt-1 text-[1.6rem] font-extrabold leading-none">
@@ -202,7 +242,7 @@ export default function ReportPage() {
         </dl>
       </section>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
         <p className="text-[14px] text-muted">
           Read from Google on {fmtDate(report.listingSyncedAt)}
         </p>
@@ -210,22 +250,22 @@ export default function ReportPage() {
           type="button"
           onClick={readNow}
           disabled={reading}
-          className="text-[14px] font-semibold text-pin underline underline-offset-4 disabled:opacity-60"
+          className="text-[14px] font-semibold text-pin hover:opacity-80 disabled:opacity-60"
         >
           {reading ? "Reading…" : "Refresh"}
         </button>
       </div>
 
-      <ul className="mt-6 grid gap-3">
+      <ul className="mt-8 grid gap-4">
         {report.findings.map((f) => {
           const tone = TONE[f.severity];
           return (
             <li
               key={f.id}
-              className={`rounded-[16px] border-l-4 bg-white p-5 shadow-card ${tone.ring}`}
+              className="rounded-[18px] bg-white p-6 shadow-card"
             >
               <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold ${tone.chip}`}
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold ${tone.chip}`}
               >
                 <span aria-hidden>{tone.mark}</span>
                 {tone.label}
@@ -236,8 +276,8 @@ export default function ReportPage() {
               <p className="mt-2 text-[16px] leading-relaxed text-ink-soft">
                 {f.detail}
               </p>
-              <p className="mt-3 border-t border-rule-soft pt-3 text-[15px] leading-relaxed text-ink">
-                <span className="font-semibold text-open">On a plan: </span>
+              <p className="mt-4 border-t border-rule-soft pt-4 text-[15px] leading-relaxed text-ink">
+                <span className="font-semibold text-open-deep">On a plan: </span>
                 {f.fix}
               </p>
             </li>
@@ -252,7 +292,7 @@ export default function ReportPage() {
           type="button"
           onClick={runCheck}
           disabled={checking}
-          className="btn btn-ghost mt-5 w-full disabled:opacity-60"
+          className="btn btn-ghost mt-6 w-full disabled:opacity-60"
         >
           {checking
             ? "Reading your website…"
@@ -261,7 +301,7 @@ export default function ReportPage() {
               : "Check my website too"}
         </button>
       ) : (
-        <section className="card mt-5 p-5">
+        <section className="card mt-6 p-6">
           <h2 className="text-[18px] font-bold">You have no website</h2>
           <p className="mt-2 text-[16px] leading-relaxed text-ink-soft">
             We can build you one right now from your Google listing — your
@@ -270,13 +310,13 @@ export default function ReportPage() {
             maintain.
           </p>
           {built ? (
-            <p className="mt-4 rounded-xl bg-open-soft p-4 text-[16px] leading-relaxed">
+            <p className="mt-4 rounded-[12px] bg-open-soft p-4 text-[16px] leading-relaxed">
               Your website is live at{" "}
               <a
                 href={shopUrl(built)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold text-open underline underline-offset-4"
+                className="font-semibold text-open-deep hover:opacity-80"
               >
                 {shopHost(built)}
               </a>
@@ -295,11 +335,11 @@ export default function ReportPage() {
       )}
 
       {note ? (
-        <p className="mt-3 text-center text-[15px] text-muted">{note}</p>
+        <p className="mt-4 text-center text-[15px] text-muted">{note}</p>
       ) : null}
 
       {!report.paid ? (
-        <section className="mt-10 rounded-[16px] bg-pin p-7 text-white shadow-lift">
+        <section className="mt-12 rounded-[18px] bg-pin p-8 text-white shadow-lift">
           <h2 className="text-[1.5rem] text-white">
             This is the list. We can do all of it.
           </h2>
@@ -315,12 +355,12 @@ export default function ReportPage() {
               month.
             </p>
           ) : null}
-          <a
+          <Link
             href="/app/billing"
             className="btn mt-6 w-full border-white bg-white text-pin hover:bg-white/90"
           >
             See the plans
-          </a>
+          </Link>
           <p className="mt-3 text-center text-[14px] text-white/60">
             Your report stays free either way.
           </p>

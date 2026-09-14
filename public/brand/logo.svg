@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- footfall mark: pin-blue rounded square with a white concentric double-ring -->
+  <rect width="1024" height="1024" rx="225.28" fill="#2b4eff"/>
+  <!-- ring: outer diameter 56% of side, stroke 7% of side -->
+  <circle cx="512" cy="512" r="250.88" fill="none" stroke="#ffffff" stroke-width="71.68"/>
+  <!-- inner filled dot: 18% of side -->
+  <circle cx="512" cy="512" r="92.16" fill="#ffffff"/>
+</svg>

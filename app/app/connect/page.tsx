@@ -1,4 +1,5 @@
 import { Steps } from "@/components/steps";
+import { BackButton } from "@/components/back-button";
 
 /**
  * Step 1 of onboarding — the one thing the owner has to do themselves.
@@ -12,7 +13,8 @@ export default async function ConnectPage({
   const { error } = await searchParams;
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-8 sm:py-12">
+      <BackButton fallback="/app/report" className="-ml-2 mb-4" />
       <Steps current={1} />
 
       <div className="mt-10 flex flex-1 flex-col justify-center">
@@ -25,7 +27,7 @@ export default async function ConnectPage({
           what&rsquo;s wrong on it — without you doing anything else.
         </p>
 
-        <ul className="mt-6 space-y-2.5 border-t border-rule pt-5">
+        <ul className="mt-8 space-y-3.5 border-t border-rule pt-6">
           {[
             "you sign in to Google yourself — we never see your password",
             "you can remove our access from your Google account any time",
@@ -35,7 +37,7 @@ export default async function ConnectPage({
               key={line}
               className="flex items-start gap-2.5 text-[14px] leading-snug text-ink-soft"
             >
-              <span aria-hidden className="mt-0.5 flex-none text-open">
+              <span aria-hidden className="mt-0.5 flex-none text-open-deep">
                 ✓
               </span>
               {line}
@@ -46,17 +48,17 @@ export default async function ConnectPage({
         {error ? (
           <p
             role="alert"
-            className="mt-6 rounded-[12px] border border-pin bg-pin-soft px-4 py-3 text-[14px] leading-snug"
+            className="mt-6 rounded-[12px] bg-pin-soft px-4 py-3 text-[14px] leading-snug"
           >
             {error}
           </p>
         ) : null}
 
-        <a href="/api/google/start" className="btn btn-primary mt-8 w-full">
+        <a href="/api/google/start" className="btn btn-primary mt-10 w-full">
           <span aria-hidden>◎</span> connect google business profile
         </a>
 
-        <p className="mt-4 text-center font-mono text-[11px] leading-relaxed text-muted">
+        <p className="mt-5 text-center text-[12px] leading-relaxed text-muted">
           you&rsquo;ll be asked to allow us to manage your business listings.
           that permission is what lets us do the work.
         </p>

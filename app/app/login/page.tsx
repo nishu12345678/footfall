@@ -4,6 +4,10 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { BRAND } from "@/lib/content";
+import { BRAND_ASSETS } from "@/lib/brand";
+import { BackButton } from "@/components/back-button";
+import { friendlyError, GENERIC } from "@/lib/errors";
+import { TWILIO_UI_ENABLED } from "@/lib/features";
 
 type Method = "phone" | "email";
 type Step = "identify" | "code";
@@ -14,14 +18,15 @@ export default function LoginPage() {
   const { signIn } = useAuthActions();
   const { isAuthenticated } = useConvexAuth();
 
-  const [method, setMethod] = useState<Method>("phone");
+  const [method, setMethod] = useState<Method>(
+    TWILIO_UI_ENABLED ? "phone" : "email",
+  );
   const [step, setStep] = useState<Step>("identify");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<null | "send" | "verify" | "google">(null);
   const [error, setError] = useState<string | null>(null);
-  const [detail, setDetail] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const codeRef = useRef<HTMLInputElement>(null);
 
@@ -57,22 +62,23 @@ export default function LoginPage() {
     setStep("identify");
     setCode("");
     setError(null);
-    setDetail(null);
   }
 
   function report(e: unknown, fallback: string) {
     console.error("[signIn]", e);
-    setError(fallback);
-    setDetail(e instanceof Error ? e.message : String(e));
+    // The server's own sentence when it has one ("That number isn't
+    // valid"), otherwise the fallback. Never the stack.
+    const friendly = friendlyError(e, fallback);
+    setError(friendly === GENERIC ? fallback : friendly);
   }
 
   async function sendCode() {
     setBusy("send");
     setError(null);
-    setDetail(null);
     try {
       if (method === "phone") {
-        await signIn("msg91", { phone: e164 });
+        if (!TWILIO_UI_ENABLED) throw new Error("Mobile sign-in is unavailable.");
+        await signIn("twilio", { phone: e164 });
       } else {
         await signIn("email-otp", { email: cleanEmail });
       }
@@ -93,11 +99,11 @@ export default function LoginPage() {
   async function verifyCode() {
     setBusy("verify");
     setError(null);
-    setDetail(null);
     const value = code.replace(/\D/g, "");
     try {
       if (method === "phone") {
-        await signIn("msg91", { phone: e164, code: value });
+        if (!TWILIO_UI_ENABLED) throw new Error("Mobile sign-in is unavailable.");
+        await signIn("twilio", { phone: e164, code: value });
       } else {
         await signIn("email-otp", { email: cleanEmail, code: value });
       }
@@ -111,26 +117,43 @@ export default function LoginPage() {
   async function continueWithGoogle() {
     setBusy("google");
     setError(null);
-    setDetail(null);
     try {
       await signIn("google", { redirectTo: "/app/login" });
     } catch (e) {
-      report(e, "Google sign-in didn't work. Try your number or email.");
+      report(
+        e,
+        TWILIO_UI_ENABLED
+          ? "Google sign-in didn't work. Try your number or email."
+          : "Google sign-in didn't work. Try email instead.",
+      );
       setBusy(null);
     }
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-12">
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-8 sm:py-12">
+      {/* Back: a page back to the site from the first step; a step back to
+          the number/email from the code step. */}
+      {step === "code" ? (
+        <BackButton
+          fallback="/app/login"
+          onClick={() => reset(method)}
+          className="-ml-2"
+        />
+      ) : (
+        <BackButton fallback="/" label="Back" className="-ml-2" />
+      )}
       <div className="flex flex-1 flex-col justify-center">
         <div className="text-center">
-          <span
-            aria-hidden
-            className="mx-auto grid h-12 w-12 place-items-center rounded-[14px] border border-ink bg-pin text-[20px] text-paper-2 shadow-[3px_3px_0_var(--color-ink)]"
-          >
-            ◎
-          </span>
-          <h1 className="mt-5 font-display text-[2.4rem] font-bold tracking-tight">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={BRAND_ASSETS.logo}
+            alt=""
+            width={48}
+            height={48}
+            className="mx-auto h-12 w-12 rounded-[16px] shadow-lift"
+          />
+          <h1 className="mt-5 text-[2.4rem] font-bold tracking-tight">
             {BRAND.name}
           </h1>
           <p className="mt-2 text-[15px] text-ink-soft">
@@ -141,7 +164,7 @@ export default function LoginPage() {
         </div>
 
         {step === "identify" ? (
-          <div className="mt-9">
+          <div className="mt-10">
             <button
               type="button"
               onClick={() => void continueWithGoogle()}
@@ -152,35 +175,35 @@ export default function LoginPage() {
               {busy === "google" ? "opening google…" : "continue with google"}
             </button>
 
-            <div className="my-6 flex items-center gap-3">
-              <span className="h-px flex-1 bg-rule" aria-hidden />
-              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-                or
-              </span>
-              <span className="h-px flex-1 bg-rule" aria-hidden />
+            <div className="my-7 flex items-center gap-3">
+              <span className="h-px flex-1 bg-rule-soft" aria-hidden />
+              <span className="text-[12px] text-muted">or</span>
+              <span className="h-px flex-1 bg-rule-soft" aria-hidden />
             </div>
 
-            <div
-              role="group"
-              aria-label="sign-in method"
-              className="mb-4 grid grid-cols-2 gap-1 rounded-full border border-ink bg-paper p-1"
-            >
-              {(["phone", "email"] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => reset(m)}
-                  aria-pressed={method === m}
-                  className={`rounded-full px-4 py-1.5 font-display text-[13px] font-semibold transition-colors ${
-                    method === m
-                      ? "bg-ink text-paper-2"
-                      : "text-ink-soft hover:text-ink"
-                  }`}
-                >
-                  {m === "phone" ? "mobile number" : "email"}
-                </button>
-              ))}
-            </div>
+            {TWILIO_UI_ENABLED ? (
+              <div
+                role="group"
+                aria-label="sign-in method"
+                className="mb-5 grid grid-cols-2 gap-1 rounded-full bg-paper-3 p-1"
+              >
+                {(["phone", "email"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => reset(m)}
+                    aria-pressed={method === m}
+                    className={`rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors ${
+                      method === m
+                        ? "bg-white text-ink shadow-card"
+                        : "text-muted"
+                    }`}
+                  >
+                    {m === "phone" ? "mobile number" : "email"}
+                  </button>
+                ))}
+              </div>
+            ) : null}
 
             <form
               onSubmit={(e) => {
@@ -194,7 +217,7 @@ export default function LoginPage() {
                     mobile number
                   </label>
                   <div className="mt-2 flex gap-2">
-                    <span className="flex items-center gap-1.5 rounded-[12px] border border-ink bg-paper-2 px-3 font-mono text-[14px]">
+                    <span className="flex items-center gap-1.5 rounded-[12px] border border-rule bg-white px-3 text-[14px]">
                       <span aria-hidden>🇮🇳</span> +91
                     </span>
                     <input
@@ -206,7 +229,7 @@ export default function LoginPage() {
                       placeholder="93191 02143"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value.slice(0, 12))}
-                      className="min-w-0 flex-1 rounded-[12px] border border-ink bg-paper-2 px-4 py-3.5 font-mono text-[16px] tracking-wide outline-none placeholder:text-muted/60"
+                      className="min-w-0 flex-1 rounded-[12px] border border-rule bg-white px-4 py-3.5 text-[16px] outline-none placeholder:text-muted/60 focus:border-pin"
                     />
                   </div>
                 </>
@@ -224,7 +247,7 @@ export default function LoginPage() {
                     placeholder="you@shopname.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="mt-2 w-full rounded-[12px] border border-ink bg-paper-2 px-4 py-3.5 text-[16px] outline-none placeholder:text-muted/60"
+                    className="mt-2 w-full rounded-[12px] border border-rule bg-white px-4 py-3.5 text-[16px] outline-none placeholder:text-muted/60 focus:border-pin"
                   />
                 </>
               )}
@@ -232,7 +255,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={!identifierReady || busy !== null}
-                className="btn btn-primary mt-5 w-full disabled:cursor-not-allowed disabled:opacity-40"
+                className="btn btn-primary mt-6 w-full disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {busy === "send" ? "sending…" : "send code"}
               </button>
@@ -240,7 +263,7 @@ export default function LoginPage() {
           </div>
         ) : (
           <form
-            className="mt-9"
+            className="mt-10"
             onSubmit={(e) => {
               e.preventDefault();
               if (codeReady && !busy) void verifyCode();
@@ -261,22 +284,22 @@ export default function LoginPage() {
               onChange={(e) =>
                 setCode(e.target.value.replace(/\D/g, "").slice(0, expectedLength))
               }
-              className="mt-2 w-full rounded-[12px] border border-ink bg-paper-2 px-4 py-3.5 text-center font-mono text-[26px] tracking-[0.4em] outline-none placeholder:text-muted/40"
+              className="mt-2 w-full rounded-[12px] border border-rule bg-white px-4 py-3.5 text-center font-mono text-[26px] tracking-[0.4em] outline-none placeholder:text-muted/40 focus:border-pin"
             />
 
             <button
               type="submit"
               disabled={!codeReady || busy !== null}
-              className="btn btn-primary mt-5 w-full disabled:cursor-not-allowed disabled:opacity-40"
+              className="btn btn-primary mt-6 w-full disabled:cursor-not-allowed disabled:opacity-40"
             >
               {busy === "verify" ? "checking…" : "verify"}
             </button>
 
-            <div className="mt-4 flex items-center justify-between text-[13px]">
+            <div className="mt-5 flex items-center justify-between text-[13px]">
               <button
                 type="button"
                 onClick={() => reset(method)}
-                className="text-ink-soft underline underline-offset-4 hover:text-pin"
+                className="font-medium text-pin hover:opacity-80"
               >
                 {method === "phone" ? "change number" : "change email"}
               </button>
@@ -284,7 +307,7 @@ export default function LoginPage() {
                 type="button"
                 disabled={secondsLeft > 0 || busy !== null}
                 onClick={() => void sendCode()}
-                className="text-ink-soft underline underline-offset-4 hover:text-pin disabled:no-underline disabled:opacity-50"
+                className="font-medium text-pin hover:opacity-80 disabled:opacity-50"
               >
                 {secondsLeft > 0 ? `resend in ${secondsLeft}s` : "resend code"}
               </button>
@@ -295,19 +318,14 @@ export default function LoginPage() {
         {error ? (
           <p
             role="alert"
-            className="mt-5 rounded-[12px] border border-pin bg-pin-soft px-4 py-3 text-[14px] leading-snug text-ink"
+            className="mt-5 rounded-[12px] bg-pin-soft px-4 py-3 text-[14px] leading-snug text-ink"
           >
             {error}
-            {detail ? (
-              <span className="mt-2 block max-h-40 overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-ink-soft">
-                {detail}
-              </span>
-            ) : null}
           </p>
         ) : null}
       </div>
 
-      <p className="text-center font-mono text-[11px] leading-relaxed text-muted">
+      <p className="text-center text-[12px] leading-relaxed text-muted">
         no password. we only use this to sign you in.
       </p>
     </main>

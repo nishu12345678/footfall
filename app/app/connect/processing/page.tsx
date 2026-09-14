@@ -1,9 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useAction } from "convex/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { Steps } from "@/components/steps";
+import { BackButton } from "@/components/back-button";
+import { friendlyError } from "@/lib/errors";
 
 type Location = {
   name: string;
@@ -41,7 +44,7 @@ export default function ProcessingPage() {
         setLinked(location);
         setPhase("linked");
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(friendlyError(e));
         setPhase("error");
       }
     },
@@ -66,14 +69,21 @@ export default function ProcessingPage() {
         setLocations(found);
         setPhase("choose");
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(friendlyError(e));
         setPhase("error");
       }
     })();
   }, [listLocations, link]);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-8 sm:py-12">
+      {/* No way back while the link is in flight — leaving mid-exchange is
+          what the "don't close this window" line is about. */}
+      {phase !== "working" && phase !== "linked" ? (
+        <BackButton fallback="/app/connect" className="-ml-2 mb-4" />
+      ) : (
+        <div className="mb-4 h-11" aria-hidden />
+      )}
       <Steps current={phase === "linked" ? 2 : 1} />
 
       <div className="mt-10 flex flex-1 flex-col justify-center">
@@ -83,9 +93,9 @@ export default function ProcessingPage() {
               aria-hidden
               className="mx-auto block h-9 w-9 animate-spin rounded-full border-2 border-rule border-t-pin"
             />
-            <h1 className="mt-6 text-[1.9rem]">processing</h1>
+            <h1 className="mt-6 text-[clamp(1.9rem,5vw,2.2rem)]">processing</h1>
             <p className="mt-3 text-[15px] text-ink-soft">{message}</p>
-            <p className="mt-1 font-mono text-[11px] text-muted">
+            <p className="mt-1 text-[13px] text-muted">
               please don&rsquo;t close or refresh this window
             </p>
           </div>
@@ -93,20 +103,22 @@ export default function ProcessingPage() {
 
         {phase === "choose" ? (
           <div>
-            <h1 className="text-[1.9rem]">which one is yours?</h1>
+            <h1 className="text-[clamp(1.9rem,5vw,2.2rem)]">
+              which one is yours?
+            </h1>
             <p className="mt-3 text-[15px] text-ink-soft">
               This Google account manages {locations.length} listings. Pick the
               one you want us to run.
             </p>
-            <ul className="mt-6 space-y-3">
+            <ul className="mt-8 space-y-4">
               {locations.map((loc) => (
                 <li key={loc.name}>
                   <button
                     type="button"
                     onClick={() => void link(loc)}
-                    className="w-full rounded-[14px] border border-ink bg-paper-2 p-4 text-left shadow-[3px_3px_0_var(--color-ink)] transition-transform hover:-translate-y-0.5"
+                    className="card pressable w-full p-5 text-left"
                   >
-                    <span className="block font-display text-[16px] font-bold">
+                    <span className="block text-[16px] font-semibold">
                       {loc.title}
                     </span>
                     {loc.address ? (
@@ -115,7 +127,7 @@ export default function ProcessingPage() {
                       </span>
                     ) : null}
                     {loc.category ? (
-                      <span className="mt-2 inline-block font-mono text-[10px] uppercase tracking-wider text-muted">
+                      <span className="mt-2 inline-block text-[12px] font-medium text-muted">
                         {loc.category}
                       </span>
                     ) : null}
@@ -130,45 +142,54 @@ export default function ProcessingPage() {
           <div className="text-center">
             <span
               aria-hidden
-              className="mx-auto grid h-16 w-16 place-items-center rounded-full border border-ink bg-open text-[30px] text-paper-2 shadow-[3px_3px_0_var(--color-ink)]"
+              className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-open text-[30px] text-white shadow-lift"
             >
               ✓
             </span>
-            <h1 className="mt-6 text-[2rem]">linked successfully</h1>
+            <h1 className="mt-6 text-[clamp(2rem,5vw,2.3rem)]">
+              linked successfully
+            </h1>
             <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               <strong>{linked?.title}</strong> is connected. We can now improve
               your ranking and reply to your reviews.
             </p>
-            <a href="/app/onboarding/location" className="btn btn-primary mt-8 w-full">
+            <Link
+              href="/app/onboarding/location"
+              className="btn btn-primary mt-10 w-full"
+            >
               continue setup
-            </a>
+            </Link>
           </div>
         ) : null}
 
         {phase === "empty" ? (
           <div>
-            <h1 className="text-[1.9rem]">no listings on that account</h1>
+            <h1 className="text-[clamp(1.9rem,5vw,2.2rem)]">
+              no listings on that account
+            </h1>
             <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               That Google account doesn&rsquo;t manage any business profiles.
               This usually means the listing sits with whoever did your
               marketing before, or you signed in with a different Google
               account.
             </p>
-            <a href="/app/connect" className="btn btn-ghost mt-7 w-full">
+            <Link href="/app/connect" className="btn btn-ghost mt-9 w-full">
               try another google account
-            </a>
+            </Link>
           </div>
         ) : null}
 
         {phase === "error" ? (
           <div>
-            <h1 className="text-[1.9rem]">that didn&rsquo;t work</h1>
-            <p className="mt-3 rounded-[12px] border border-pin bg-pin-soft px-4 py-3 font-mono text-[12px] leading-relaxed break-words">
+            <h1 className="text-[clamp(1.9rem,5vw,2.2rem)]">
+              that didn&rsquo;t work
+            </h1>
+            <p className="mt-4 rounded-[12px] bg-pin-soft px-4 py-3 text-[13px] leading-relaxed break-words">
               {error}
             </p>
-            <a href="/app/connect" className="btn btn-primary mt-7 w-full">
+            <Link href="/app/connect" className="btn btn-primary mt-9 w-full">
               try again
-            </a>
+            </Link>
           </div>
         ) : null}
       </div>

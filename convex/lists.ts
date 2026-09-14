@@ -1,17 +1,14 @@
 import { query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { QueryCtx } from "./_generated/server";
-import { paidQuery } from "./access";
+import { activeBusinessFor, paidQuery } from "./access";
 
 /** Rows behind the Posts, Photos and Reviews tabs. */
 
 async function myBusiness(ctx: QueryCtx) {
   const userId = await getAuthUserId(ctx);
   if (!userId) return null;
-  return await ctx.db
-    .query("businesses")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
-    .first();
+  return await activeBusinessFor(ctx, userId);
 }
 
 export const posts = paidQuery({

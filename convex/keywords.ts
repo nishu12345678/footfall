@@ -1,8 +1,8 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { action, internalMutation, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { paidAction } from "./access";
+import { activeBusinessFor, paidAction } from "./access";
 
 /**
  * Keyword research for a local business.
@@ -145,7 +145,7 @@ function serpUrl(params: Record<string, string>) {
 }
 
 async function serp(params: Record<string, string>): Promise<any> {
-  if (!process.env.SERPAPI_KEY) throw new Error("SERPAPI_KEY is not set.");
+  if (!process.env.SERPAPI_KEY) throw new ConvexError("Rank checks aren't set up on this server yet.");
   const res = await fetch(serpUrl(params));
   const data = await res.json();
   if (data.error) {
@@ -326,7 +326,7 @@ async function refine(
   },
 ): Promise<{ term: string; head: string }[]> {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not set.");
+  if (!apiKey) throw new ConvexError("The writing assistant isn't set up on this server yet.");
 
   const prompt = [
     `Business: ${business.name}`,
@@ -398,10 +398,7 @@ async function refine(
 export const context = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const [offerings, keywords, areas] = await Promise.all([
@@ -453,12 +450,12 @@ export const research = paidAction({
   args: { deep: v.optional(v.boolean()) },
   handler: async (ctx, { deep = false }): Promise<Researched[]> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const c = await ctx.runQuery(internal.keywords.context, { userId });
-    if (!c) throw new Error("Connect your Google profile first.");
+    if (!c) throw new ConvexError("Connect your Google profile first.");
     if (c.offerings.length === 0 && !c.category) {
-      throw new Error("Add what you sell first — that's what we search from.");
+      throw new ConvexError("Add what you sell first — that's what we search from.");
     }
 
     const geo = STATE_CODES[(c.state ?? "").toLowerCase()] ?? "IN";
@@ -522,7 +519,7 @@ export const research = paidAction({
       .slice(0, deep ? 18 : 28);
 
     if (candidates.length === 0) {
-      throw new Error(
+      throw new ConvexError(
         "Nothing with local buying intent came back. Add more specific offerings and try again.",
       );
     }
@@ -539,7 +536,7 @@ export const research = paidAction({
       },
     );
     if (refined.length === 0) {
-      throw new Error("Nothing relevant to your shop came back. Try again.");
+      throw new ConvexError("Nothing relevant to your shop came back. Try again.");
     }
 
     // 3 · demand. Real monthly volume for this city if DataForSEO answers,
@@ -662,10 +659,7 @@ export const research = paidAction({
 export const saveTargeted = internalMutation({
   args: { userId: v.id("users"), terms: v.array(v.string()) },
   handler: async (ctx, { userId, terms }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return 0;
 
     const existing = await ctx.db

@@ -1,9 +1,14 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useMutation } from "convex/react";
+import { useQuery } from "convex-helpers/react/cache";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
-import { Steps } from "@/components/steps";
+import { AutoTextarea } from "@/components/textarea";
+import { OnboardingTop, nextHref, saveLabel, useEditMode } from "@/components/onboarding-frame";
+import { friendlyError } from "@/lib/errors";
 
 type Fields = {
   orgName: string;
@@ -35,6 +40,8 @@ const EMPTY: Fields = {
 export default function LocationPage() {
   const business = useQuery(api.businesses.mine);
   const save = useMutation(api.businesses.updateLocation);
+  const edit = useEditMode();
+  const router = useRouter();
 
   const [fields, setFields] = useState<Fields>(EMPTY);
   const [loaded, setLoaded] = useState(false);
@@ -59,22 +66,22 @@ export default function LocationPage() {
   if (business === undefined) {
     return (
       <main className="grid min-h-screen place-items-center px-6">
-        <p className="font-mono text-[12px] text-muted">loading…</p>
+        <p className="text-[13px] text-muted">loading…</p>
       </main>
     );
   }
 
   if (business === null) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6">
-        <h1 className="text-[1.8rem]">connect google first</h1>
-        <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+      <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
+        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
+        <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">
           We fill this step in from your Google listing, so it has to be
           connected before there&rsquo;s anything to confirm.
         </p>
-        <a href="/app/connect" className="btn btn-primary mt-6 w-full">
+        <Link href="/app/connect" className="btn btn-primary mt-8 w-full">
           connect google
-        </a>
+        </Link>
       </main>
     );
   }
@@ -96,31 +103,33 @@ export default function LocationPage() {
         email: fields.email.trim() || undefined,
         website: fields.website.trim() || undefined,
       });
-      window.location.href = "/app/onboarding/about";
+      router.push(nextHref(2, edit));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
       setBusy(false);
     }
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
-      <Steps current={2} />
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-8 sm:py-12">
+      <OnboardingTop step={2} edit={edit} />
 
       <form
-        className="mt-9 flex-1"
+        className="mt-10 flex-1"
         onSubmit={(e) => {
           e.preventDefault();
           if (!busy && fields.orgName.trim()) void submit();
         }}
       >
-        <h1 className="text-[1.9rem]">location information</h1>
-        <p className="mt-2 text-[15px] text-ink-soft">
+        <h1 className="text-[clamp(1.9rem,5vw,2.2rem)]">
+          location information
+        </h1>
+        <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
           Straight from your Google listing. Fix anything that&rsquo;s wrong —
           what&rsquo;s here is what customers see.
         </p>
 
-        <div className="mt-7 space-y-4">
+        <div className="mt-9 space-y-6">
           <Field
             label="organisation name"
             value={fields.orgName}
@@ -139,7 +148,7 @@ export default function LocationPage() {
             onChange={set("streetAddress")}
             multiline
           />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             <Field label="city" value={fields.city} onChange={set("city")} />
             <Field
               label="pin code"
@@ -172,7 +181,7 @@ export default function LocationPage() {
         {error ? (
           <p
             role="alert"
-            className="mt-5 rounded-[12px] border border-pin bg-pin-soft px-4 py-3 text-[14px] leading-snug"
+            className="mt-5 rounded-[12px] bg-pin-soft px-4 py-3 text-[14px] leading-snug"
           >
             {error}
           </p>
@@ -181,9 +190,9 @@ export default function LocationPage() {
         <button
           type="submit"
           disabled={busy || !fields.orgName.trim()}
-          className="btn btn-primary mt-8 w-full disabled:cursor-not-allowed disabled:opacity-40"
+          className="btn btn-primary mt-10 w-full disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {busy ? "saving…" : "save & next"}
+          {saveLabel(edit, busy)}
         </button>
       </form>
     </main>
@@ -209,7 +218,7 @@ function Field({
 }) {
   const id = label.replace(/\s+/g, "-");
   const shared =
-    "mt-1.5 w-full rounded-[12px] border border-ink bg-paper-2 px-3.5 py-3 text-[15px] leading-snug outline-none placeholder:text-muted/50";
+    "mt-2 w-full rounded-[12px] border border-rule bg-white px-4 py-3.5 text-[16px] leading-snug outline-none placeholder:text-muted/60 focus:border-pin";
 
   return (
     <div>
@@ -218,12 +227,12 @@ function Field({
         {required ? <span className="text-pin"> *</span> : null}
       </label>
       {multiline ? (
-        <textarea
+        <AutoTextarea
           id={id}
-          rows={3}
+          minRows={2}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={`${shared} resize-none`}
+          className={shared}
         />
       ) : (
         <input
@@ -236,7 +245,7 @@ function Field({
         />
       )}
       {hint ? (
-        <p className="mt-1 font-mono text-[10px] text-muted">{hint}</p>
+        <p className="mt-1.5 text-[12px] text-muted">{hint}</p>
       ) : null}
     </div>
   );

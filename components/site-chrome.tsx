@@ -4,6 +4,7 @@ import {
   whatsappLink,
   type SiteData,
 } from "@/lib/site-data";
+import { shopPath } from "@/lib/site-host";
 
 function WhatsAppIcon() {
   return (
@@ -20,15 +21,15 @@ export function UtilityBar({ data }: { data: SiteData }) {
   const today = hours.find((h) => h.day === (new Date().getDay() + 6) % 7);
 
   return (
-    <div className="border-b border-rule bg-paper-3">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-5 gap-y-1 px-5 py-1.5 text-[12px]">
+    <div className="hairline-b bg-paper-2">
+      <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-5 gap-y-1 px-6 py-1.5 text-[12px] sm:px-10 lg:px-14">
         {today ? (
           <span className="hidden sm:inline text-ink-soft">
             {today.closed ? (
               <span className="font-semibold text-pin">Closed today</span>
             ) : (
               <>
-                <span className="font-semibold text-open">Open today</span>{" "}
+                <span className="font-semibold text-open-deep">Open today</span>{" "}
                 {today.open}–{today.close}
               </>
             )}
@@ -53,7 +54,7 @@ export function UtilityBar({ data }: { data: SiteData }) {
 
 export function SiteNav({ data }: { data: SiteData }) {
   const { site, business, whatsapp } = data;
-  const base = `/s/${site.slug}`;
+  const base = shopPath(site.slug);
   const wa = whatsappLink(
     whatsapp,
     `Hi ${business.orgName}, I found you on your website and I'd like to know more.`,
@@ -67,8 +68,8 @@ export function SiteNav({ data }: { data: SiteData }) {
   ];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-rule bg-paper/95 backdrop-blur-md">
-      <nav className="mx-auto flex max-w-5xl items-center gap-4 px-5 py-3">
+    <header className="material hairline-b sticky top-0 z-40">
+      <nav className="mx-auto flex max-w-[1280px] items-center gap-4 px-6 py-4 sm:px-10 lg:px-14">
         <a href={base} className="flex min-w-0 items-center gap-2.5">
           {business.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -77,10 +78,10 @@ export function SiteNav({ data }: { data: SiteData }) {
               alt=""
               width={36}
               height={36}
-              className="h-9 w-9 flex-none rounded-[8px] border border-ink bg-white object-contain p-0.5"
+              className="h-9 w-9 flex-none rounded-[10px] bg-white object-contain p-0.5 shadow-card"
             />
           ) : null}
-          <span className="truncate font-display text-[17px] font-bold leading-tight">
+          <span className="truncate text-[17px] font-semibold leading-tight tracking-[-0.01em]">
             {business.orgName}
           </span>
         </a>
@@ -90,7 +91,7 @@ export function SiteNav({ data }: { data: SiteData }) {
             <li key={link.href}>
               <a
                 href={link.href}
-                className="text-[14px] text-ink-soft transition-colors hover:text-pin"
+                className="text-[14px] font-medium text-ink-soft transition-colors hover:text-ink"
               >
                 {link.label}
               </a>
@@ -116,16 +117,16 @@ export function SiteNav({ data }: { data: SiteData }) {
 
 export function SiteFooter({ data }: { data: SiteData }) {
   const { site, business, whatsapp, tel, areas } = data;
-  const base = `/s/${site.slug}`;
+  const base = shopPath(site.slug);
   const directions = directionsLink(business);
 
   return (
-    <footer className="mt-16 border-t border-rule bg-paper-3">
-      <div className="mx-auto grid max-w-5xl gap-8 px-5 py-10 sm:grid-cols-2 lg:grid-cols-4">
+    <footer className="mt-24 bg-ink text-paper">
+      <div className="mx-auto grid max-w-[1280px] gap-10 px-6 py-16 sm:grid-cols-2 sm:px-10 lg:grid-cols-4 lg:gap-8 lg:px-14">
         <div>
-          <p className="font-display text-[17px] font-bold">{business.orgName}</p>
+          <p className="text-[17px] font-semibold tracking-[-0.01em] text-white">{business.orgName}</p>
           {business.primaryCategory ? (
-            <p className="mt-1 text-[13px] text-ink-soft">
+            <p className="mt-1.5 text-[13px] leading-relaxed text-white/50">
               {business.primaryCategory}
               {business.city ? ` in ${business.city}` : ""}
             </p>
@@ -133,27 +134,27 @@ export function SiteFooter({ data }: { data: SiteData }) {
         </div>
 
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
             Pages
           </p>
-          <ul className="mt-3 space-y-2 text-[14px]">
+          <ul className="mt-4 space-y-2.5 text-[13px]">
             <li>
-              <a href={base} className="text-ink-soft hover:text-pin">
+              <a href={base} className="text-white/60 transition-colors hover:text-white">
                 Home
               </a>
             </li>
             <li>
-              <a href={`${base}/services`} className="text-ink-soft hover:text-pin">
+              <a href={`${base}/services`} className="text-white/60 transition-colors hover:text-white">
                 Services
               </a>
             </li>
             <li>
-              <a href={`${base}/about`} className="text-ink-soft hover:text-pin">
+              <a href={`${base}/about`} className="text-white/60 transition-colors hover:text-white">
                 About
               </a>
             </li>
             <li>
-              <a href={`${base}/contact`} className="text-ink-soft hover:text-pin">
+              <a href={`${base}/contact`} className="text-white/60 transition-colors hover:text-white">
                 Contact
               </a>
             </li>
@@ -161,26 +162,26 @@ export function SiteFooter({ data }: { data: SiteData }) {
         </div>
 
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
             Contact
           </p>
-          <address className="mt-3 space-y-2 text-[14px] not-italic leading-relaxed text-ink-soft">
+          <address className="mt-4 space-y-2.5 text-[13px] not-italic leading-relaxed text-white/60">
             {business.streetAddress ? <p>{business.streetAddress}</p> : null}
             {tel ? (
               <p>
-                <a href={`tel:${tel}`} className="font-semibold hover:text-pin">
+                <a href={`tel:${tel}`} className="font-semibold text-white/80 transition-colors hover:text-white">
                   {business.phone}
                 </a>
               </p>
             ) : null}
           </address>
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             {whatsapp ? (
               <a
                 href={`https://wa.me/${whatsapp}`}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-full border border-ink px-2.5 py-1 text-[12px]"
+                className="pressable rounded-full bg-white/10 px-3.5 py-1.5 text-[12px] font-medium text-white/80 transition-colors hover:bg-white/15 hover:text-white"
               >
                 WhatsApp
               </a>
@@ -190,7 +191,7 @@ export function SiteFooter({ data }: { data: SiteData }) {
                 href={directions}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-full border border-ink px-2.5 py-1 text-[12px]"
+                className="pressable rounded-full bg-white/10 px-3.5 py-1.5 text-[12px] font-medium text-white/80 transition-colors hover:bg-white/15 hover:text-white"
               >
                 Directions
               </a>
@@ -200,7 +201,7 @@ export function SiteFooter({ data }: { data: SiteData }) {
                 href={business.reviewUri}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-full border border-ink px-2.5 py-1 text-[12px]"
+                className="pressable rounded-full bg-white/10 px-3.5 py-1.5 text-[12px] font-medium text-white/80 transition-colors hover:bg-white/15 hover:text-white"
               >
                 Leave a review
               </a>
@@ -214,15 +215,15 @@ export function SiteFooter({ data }: { data: SiteData }) {
               href={business.mapsUri}
               target="_blank"
               rel="noreferrer"
-              className="block overflow-hidden rounded-[12px] border border-ink"
+              className="pressable block overflow-hidden rounded-[16px] border border-white/10 bg-white/5 transition-colors hover:bg-white/10"
             >
-              <span className="grid h-[120px] place-items-center bg-paper-2 text-[13px] text-ink-soft">
+              <span className="grid h-[120px] place-items-center text-[13px] text-white/60">
                 View on Google Maps →
               </span>
             </a>
           ) : null}
           {areas.length ? (
-            <p className="mt-3 text-[12px] leading-relaxed text-muted">
+            <p className="mt-4 text-[12px] leading-relaxed text-white/40">
               Serving {areas.slice(0, 6).join(", ")}
               {areas.length > 6 ? " and nearby areas" : ""}.
             </p>
@@ -230,8 +231,8 @@ export function SiteFooter({ data }: { data: SiteData }) {
         </div>
       </div>
 
-      <div className="border-t border-rule">
-        <p className="mx-auto max-w-5xl px-5 py-4 font-mono text-[10px] text-muted">
+      <div className="border-t border-white/10">
+        <p className="mx-auto max-w-[1280px] px-6 py-6 text-[12px] text-white/40 sm:px-10 lg:px-14">
           © {new Date().getFullYear()} {business.orgName}. Site by footfall.
         </p>
       </div>
@@ -248,19 +249,19 @@ export function ContactBand({ data }: { data: SiteData }) {
   );
 
   return (
-    <section className="mx-auto max-w-5xl px-5">
-      <div className="rounded-[16px] border border-ink bg-ink p-7 text-paper-2 shadow-[4px_5px_0_var(--color-pin)] sm:p-9">
-        <h2 className="text-[clamp(1.5rem,4vw,2.2rem)] text-paper-2">
+    <section className="mx-auto max-w-[1280px] px-6 sm:px-10 lg:px-14">
+      <div className="rounded-[32px] bg-ink p-10 text-white shadow-lift sm:p-14">
+        <h2 className="text-[clamp(2rem,4.5vw,3rem)] text-white">
           Come and see us
         </h2>
-        <p className="mt-3 max-w-lg text-[15px] leading-relaxed text-paper-2/80">
+        <p className="mt-4 max-w-xl text-[16px] leading-relaxed text-white/70">
           {business.city
             ? `We're in ${business.city}. Message us on WhatsApp or call — we'll tell you what you need to know before you travel.`
             : "Message us on WhatsApp or call, and we'll tell you what you need before you travel."}
         </p>
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-8 flex flex-wrap gap-3">
           {wa ? (
-            <a href={wa} target="_blank" rel="noreferrer" className="btn btn-primary">
+            <a href={wa} target="_blank" rel="noreferrer" className="btn btn-whatsapp">
               <WhatsAppIcon />
               Message on WhatsApp
             </a>
@@ -268,7 +269,7 @@ export function ContactBand({ data }: { data: SiteData }) {
           {tel ? (
             <a
               href={`tel:${tel}`}
-              className="btn btn-ghost border-paper-2 bg-transparent text-paper-2"
+              className="btn bg-white/10 text-white backdrop-blur hover:bg-white/20"
             >
               Call {business.phone}
             </a>

@@ -123,14 +123,14 @@ const count = (table: "reviews" | "photos" | "posts" | "metrics") =>
 test("connect: the listing is found, linked and read in full", async () => {
   const found = await connect();
   expect(found).toHaveLength(1);
-  expect(found[0].title).toBe("Glow Salon");
-  expect(found[0].city).toBe("Thane");
-  expect(found[0].categoryId).toBe("gcid:beauty_salon");
+  expect(found[0].title).toBe("SR Indoor Swimming Pool");
+  expect(found[0].city).toBe("Hyderabad");
+  expect(found[0].categoryId).toBe("gcid:swimming_pool");
 
   const b = await business();
   expect(b?.gbpAccountName).toBe(MOCK_ACCOUNT);
   expect(b?.gbpLocationName).toBe(MOCK_LOCATION);
-  expect(b?.lat).toBeCloseTo(19.2183);
+  expect(b?.lat).toBeCloseTo(17.4971);
 
   // The scheduled listing sync has run: the report is built on real rows.
   expect(b?.listingSyncedAt).toBeGreaterThan(0);
@@ -158,7 +158,7 @@ test("sync: a second pass parses everything and adds nothing", async () => {
   const firstPhoto = await t.run(async (ctx) =>
     ctx.db.query("photos").first(),
   );
-  expect(firstPhoto?.url).toMatch(/\/img\/glow-[a-z]+=w1600$/);
+  expect(firstPhoto?.url).toMatch(/\/img\/pool-[a-z]+=w1600$/);
 
   const posts = await t.action(internal.posts.syncFromGoogleForUser, {
     userId,
@@ -180,7 +180,7 @@ test("publish: a post goes up and comes back in the next sync", async () => {
   const postId = await t.run(async (ctx) =>
     ctx.db.insert("posts", {
       businessId: b!._id,
-      body: "Festive offer: 20% off all hair spa bookings this week.",
+      body: "Festive offer: 20% off all monthly memberships this week.",
       status: "draft",
       generatedBy: "user",
     }),

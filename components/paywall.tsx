@@ -1,9 +1,10 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery } from "convex-helpers/react/cache";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { api } from "@/convex/_generated/api";
+import { noteRedirect } from "@/lib/nav-depth";
 
 /**
  * Keeps a free user on the free part of the app.
@@ -21,6 +22,8 @@ const FREE_PATHS = [
   "/app/billing",
   "/app/report",
   "/app/connect",
+  // Signing out and disconnecting Google must work with a lapsed plan.
+  "/app/settings",
 ];
 
 export function Paywall({ children }: { children: ReactNode }) {
@@ -33,7 +36,10 @@ export function Paywall({ children }: { children: ReactNode }) {
     !free && status !== undefined && status.signedIn && !status.active;
 
   useEffect(() => {
-    if (blocked) router.replace("/app/report");
+    if (blocked) {
+      noteRedirect();
+      router.replace("/app/report");
+    }
   }, [blocked, router]);
 
   if (free) return <>{children}</>;

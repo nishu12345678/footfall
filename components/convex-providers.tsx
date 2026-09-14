@@ -1,9 +1,11 @@
 "use client";
 
 import { ConvexAuthNextjsProvider } from "@convex-dev/auth/nextjs";
+import { ConvexQueryCacheProvider } from "convex-helpers/react/cache";
 import { ConvexReactClient } from "convex/react";
 import type { ReactNode } from "react";
 import { Paywall } from "./paywall";
+import { NavTracker } from "./nav-tracker";
 
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 const client = convexUrl ? new ConvexReactClient(convexUrl) : null;
@@ -22,8 +24,8 @@ export function ConvexProviders({ children }: { children: ReactNode }) {
             <code className="font-mono text-[13px]">NEXT_PUBLIC_CONVEX_URL</code>{" "}
             is not set, so the app can&rsquo;t reach its database.
           </p>
-          <p className="mt-3 font-mono text-[12px] leading-relaxed text-muted">
-            run <span className="text-pin">npx convex dev</span> and reload
+          <p className="mt-3 text-[13px] leading-relaxed text-muted">
+            run <span className="font-mono text-pin">npx convex dev</span> and reload
           </p>
         </div>
       </main>
@@ -32,7 +34,13 @@ export function ConvexProviders({ children }: { children: ReactNode }) {
 
   return (
     <ConvexAuthNextjsProvider client={client}>
-      <Paywall>{children}</Paywall>
+      {/* Keeps query subscriptions warm for 5 minutes after a screen
+          unmounts, so switching tabs shows the last data instantly and
+          updates in place instead of flashing "loading". */}
+      <ConvexQueryCacheProvider>
+        <NavTracker />
+        <Paywall>{children}</Paywall>
+      </ConvexQueryCacheProvider>
     </ConvexAuthNextjsProvider>
   );
 }

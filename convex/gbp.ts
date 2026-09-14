@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
   action,
   internalMutation,
@@ -9,7 +9,7 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
-import {
+import { activeBusinessFor,
   ownedBusiness,
   ownedRow,
   paidAction,
@@ -52,10 +52,7 @@ export const list = paidQuery({
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
 
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     // Queried one by one on purpose: a shared helper with a variable table
@@ -156,10 +153,7 @@ export const removeKeyword = paidMutation({
 export const keywordContext = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const [offerings, specialties, areas, keywords] = await Promise.all([
@@ -202,13 +196,13 @@ export const suggestKeywords = paidAction({
   args: {},
   handler: async (ctx): Promise<string[]> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const c = await ctx.runQuery(internal.gbp.keywordContext, { userId });
-    if (!c) throw new Error("Connect your Google profile first.");
+    if (!c) throw new ConvexError("Connect your Google profile first.");
 
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("OPENAI_API_KEY is not set.");
+    if (!apiKey) throw new ConvexError("The writing assistant isn't set up on this server yet.");
 
     const prompt = [
       `Business: ${c.name}`,
@@ -253,7 +247,7 @@ export const suggestKeywords = paidAction({
     if (!res.ok) {
       const body = await res.text();
       console.error(`[openai] ${res.status} ${body.slice(0, 300)}`);
-      throw new Error(`Keyword suggestions failed (${res.status}).`);
+      throw new ConvexError("Couldn't get keyword ideas just now. Try again in a moment.");
     }
 
     const data = await res.json();
@@ -390,7 +384,7 @@ type Researched = {
 
 async function autocomplete(seed: string): Promise<string[]> {
   const key = process.env.SERPAPI_KEY;
-  if (!key) throw new Error("SERPAPI_KEY is not set.");
+  if (!key) throw new ConvexError("Rank checks aren't set up on this server yet.");
 
   const url = new URL("https://serpapi.com/search");
   url.searchParams.set("engine", "google_autocomplete");
@@ -416,7 +410,7 @@ async function competition(
   lng: number,
 ): Promise<{ topReviews: number; rivals: number }> {
   const key = process.env.SERPAPI_KEY;
-  if (!key) throw new Error("SERPAPI_KEY is not set.");
+  if (!key) throw new ConvexError("Rank checks aren't set up on this server yet.");
 
   const url = new URL("https://serpapi.com/search");
   url.searchParams.set("engine", "google_maps");
@@ -443,16 +437,16 @@ export const researchKeywords = paidAction({
   args: { deep: v.optional(v.boolean()) },
   handler: async (ctx, { deep = false }): Promise<Researched[]> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const c = await ctx.runQuery(internal.gbp.keywordContext, { userId });
-    if (!c) throw new Error("Connect your Google profile first.");
+    if (!c) throw new ConvexError("Connect your Google profile first.");
 
     const business = await ctx.runQuery(internal.google.businessForUser, {
       userId,
     });
     if (!business?.lat || !business?.lng) {
-      throw new Error("We don't have coordinates for your shop yet.");
+      throw new ConvexError("We don't have coordinates for your shop yet.");
     }
 
     // Seeds come from what the shop actually sells, plus its category.
@@ -461,7 +455,7 @@ export const researchKeywords = paidAction({
       ...c.offerings.slice(0, 4).map((o: string) => o.toLowerCase()),
     ].slice(0, 5);
 
-    if (seeds.length === 0) throw new Error("Add some offerings first.");
+    if (seeds.length === 0) throw new ConvexError("Add some offerings first.");
 
     const pool = new Map<string, number>();
     for (const seed of seeds) {
@@ -607,16 +601,252 @@ export const setServiceRadius = paidMutation({
   },
 });
 
+type NearbyArea = {
+  name: string;
+  km: number;
+  kind: string;
+  lat: number;
+  lng: number;
+};
+
+function haversineKm(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
+): number {
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(a));
+}
+
+/**
+ * Free first: OpenStreetMap Overpass. Individual mirrors drop connections
+ * or time out often enough that one endpoint isn't reliable, so a couple
+ * are tried in turn before giving up on Overpass entirely.
+ *
+ * Worldwide mirrors only. overpass.osm.ch used to sit in this list and it
+ * is the *Swiss* instance: it answers 200 with a perfectly valid, perfectly
+ * empty result for any Indian coordinate, which the screen then reported
+ * as "no areas near you".
+ */
+async function overpassNearby(
+  lat: number,
+  lng: number,
+  radiusKm: number,
+): Promise<NearbyArea[] | null> {
+  const radius = Math.round(radiusKm * 1000);
+  const query =
+    `[out:json][timeout:25];` +
+    `(node["place"~"^(suburb|neighbourhood|quarter|town|village)$"]` +
+    `(around:${radius},${lat},${lng}););out body 80;`;
+
+  const MIRRORS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+  ];
+
+  // Ask mirrors concurrently and cap the whole free-provider attempt. This
+  // avoids making the owner wait through two consecutive 25-second timeouts.
+  const attempts = await Promise.all(
+    MIRRORS.map(async (mirror) => {
+      try {
+        const res = await fetch(mirror, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": "footfall/1.0 (local business listing tool)",
+            Accept: "application/json",
+          },
+          body: new URLSearchParams({ data: query }),
+          signal: AbortSignal.timeout(12_000),
+        });
+        if (!res.ok) return { error: `${mirror} -> ${res.status}` };
+        const body = await res.json();
+        // A busy Overpass answers 200 with a "remark" (usually a timeout)
+        // and no elements. That is a failure, not an empty map.
+        if (body?.remark && !(body.elements ?? []).length) {
+          return {
+            error: `${mirror} -> remark: ${String(body.remark).slice(0, 120)}`,
+          };
+        }
+        return { body };
+      } catch (error) {
+        return {
+          error: `${mirror} -> ${error instanceof Error ? error.message : String(error)}`,
+        };
+      }
+    }),
+  );
+
+  // Prefer any non-empty response. A valid empty response is believable only
+  // when no mirror returned data, but remains distinct from total failure.
+  const usable = attempts.find((a) => (a.body?.elements ?? []).length > 0);
+  const empty = attempts.find((a) => a.body);
+  const data = usable?.body ?? empty?.body ?? null;
+  if (!data) {
+    console.error(
+      `[overpass] all mirrors failed. ${attempts.map((a) => a.error).filter(Boolean).join("; ")}`,
+    );
+    return null;
+  }
+  console.log(
+    `[overpass] ${(data.elements ?? []).length} places within ${radiusKm}km of ${lat},${lng}`,
+  );
+
+  const seen = new Set<string>();
+  return (data.elements ?? [])
+    .filter((e: any) => e?.tags?.name && e.lat && e.lon)
+    .map((e: any) => ({
+      name: String(e.tags.name),
+      kind: String(e.tags.place),
+      km: Math.round(haversineKm(lat, lng, e.lat, e.lon) * 10) / 10,
+      lat: e.lat as number,
+      lng: e.lon as number,
+    }))
+    .filter((e: { name: string }) => {
+      const key = e.name.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a: { km: number }, b: { km: number }) => a.km - b.km)
+    .slice(0, 30);
+}
+
+/**
+ * Paid fallback: Google Geocoding. Places Nearby Search deliberately rejects
+ * locality concepts such as `neighborhood` and `sublocality` as filters — it
+ * is for establishments, not for enumerating administrative areas. Reverse
+ * geocoding points around the chosen radius returns exactly those structured
+ * address components instead.
+ *
+ * This is reached only when every free Overpass mirror fails. Thirteen small
+ * requests (the centre plus two six-point rings) run concurrently, so the
+ * fallback remains quick and its paid usage stays bounded.
+ */
+async function googleGeocodingNearby(
+  lat: number,
+  lng: number,
+  radiusKm: number,
+): Promise<NearbyArea[] | null> {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) return null;
+
+  const AREA_TYPES = new Set([
+    "neighborhood",
+    "sublocality",
+    "sublocality_level_1",
+    "sublocality_level_2",
+    "sublocality_level_3",
+    "locality",
+    "administrative_area_level_3",
+    "administrative_area_level_4",
+  ]);
+
+  // Sample the shop itself and two rings. At each point Google returns the
+  // containing neighbourhood/locality; deduplication below turns those into
+  // a compact list of real nearby areas.
+  const samples: { lat: number; lng: number }[] = [{ lat, lng }];
+  for (const fraction of [0.45, 0.9]) {
+    const ringKm = radiusKm * fraction;
+    for (let i = 0; i < 6; i += 1) {
+      const angle = (i * Math.PI * 2) / 6;
+      samples.push({
+        lat: lat + (ringKm * Math.cos(angle)) / 111.32,
+        lng:
+          lng +
+          (ringKm * Math.sin(angle)) /
+            (111.32 * Math.max(0.2, Math.cos((lat * Math.PI) / 180))),
+      });
+    }
+  }
+
+  const attempts = await Promise.all(
+    samples.map(async (sample) => {
+      try {
+        const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+        url.searchParams.set("latlng", `${sample.lat},${sample.lng}`);
+        url.searchParams.set("key", apiKey);
+        url.searchParams.set("language", "en");
+        const res = await fetch(url, { signal: AbortSignal.timeout(8_000) });
+        if (!res.ok) return { error: `HTTP ${res.status}`, results: [] };
+        const body = await res.json();
+        if (body?.status !== "OK" && body?.status !== "ZERO_RESULTS") {
+          return {
+            error: `${body?.status ?? "unknown"}: ${body?.error_message ?? "request failed"}`,
+            results: [],
+          };
+        }
+        return {
+          results: Array.isArray(body?.results) ? body.results : [],
+          error: "",
+        };
+      } catch (error) {
+        return {
+          error: error instanceof Error ? error.message : String(error),
+          results: [],
+        };
+      }
+    }),
+  );
+
+  const successful = attempts.filter((a) => !a.error);
+  if (successful.length === 0) {
+    console.error(
+      `[google-geocoding] all requests failed. ${attempts
+        .map((a) => a.error)
+        .filter(Boolean)
+        .slice(0, 3)
+        .join("; ")}`,
+    );
+    return null;
+  }
+
+  const seen = new Set<string>();
+  const out: NearbyArea[] = [];
+  for (const attempt of successful) {
+    for (const result of attempt.results) {
+      const rlat = result?.geometry?.location?.lat;
+      const rlng = result?.geometry?.location?.lng;
+      if (typeof rlat !== "number" || typeof rlng !== "number") continue;
+
+      for (const component of result?.address_components ?? []) {
+        const types: string[] = Array.isArray(component?.types)
+          ? component.types
+          : [];
+        const kind = types.find((type) => AREA_TYPES.has(type));
+        const name: string | undefined = component?.long_name;
+        if (!kind || !name) continue;
+        const key = name.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({
+          name,
+          kind,
+          km: Math.round(haversineKm(lat, lng, rlat, rlng) * 10) / 10,
+          lat: rlat,
+          lng: rlng,
+        });
+      }
+    }
+  }
+
+  console.log(
+    `[google-geocoding] ${out.length} areas from ${successful.length}/${samples.length} samples within ${radiusKm}km of ${lat},${lng}`,
+  );
+  return out.sort((a, b) => a.km - b.km).slice(0, 30);
+}
+
 export const nearbyAreas = paidAction({
   args: { radiusKm: v.optional(v.number()) },
-  handler: async (
-    ctx,
-    { radiusKm = 20 },
-  ): Promise<
-    { name: string; km: number; kind: string; lat: number; lng: number }[]
-  > => {
+  handler: async (ctx, { radiusKm = 20 }): Promise<NearbyArea[]> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     let business = await ctx.runQuery(internal.google.businessForUser, {
       userId,
@@ -631,85 +861,29 @@ export const nearbyAreas = paidAction({
       });
     }
     if (!business?.lat || !business?.lng) {
-      throw new Error(
+      throw new ConvexError(
         "We couldn't work out where your shop is. Check the address in step 2.",
       );
     }
 
-    const radius = Math.round(Math.min(Math.max(radiusKm, 2), 50) * 1000);
-    const query =
-      `[out:json][timeout:25];` +
-      `(node["place"~"^(suburb|neighbourhood|quarter|town|village)$"]` +
-      `(around:${radius},${business.lat},${business.lng}););out body 80;`;
+    const clampedRadius = Math.min(Math.max(radiusKm, 2), 50);
+    const lat = business.lat;
+    const lng = business.lng;
 
-    // Overpass asks callers to identify themselves, and individual mirrors
-    // drop connections often enough that one endpoint isn't reliable.
-    const MIRRORS = [
-      "https://overpass-api.de/api/interpreter",
-      "https://overpass.osm.ch/api/interpreter",
-      "https://overpass.kumi.systems/api/interpreter",
-    ];
+    const fromOverpass = await overpassNearby(lat, lng, clampedRadius);
+    if (fromOverpass && fromOverpass.length > 0) return fromOverpass;
 
-    let data: any = null;
-    let lastError = "";
+    const fromGoogle = await googleGeocodingNearby(lat, lng, clampedRadius);
+    if (fromGoogle && fromGoogle.length > 0) return fromGoogle;
 
-    for (const mirror of MIRRORS) {
-      try {
-        const res = await fetch(mirror, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": "footfall/1.0 (local business listing tool)",
-            Accept: "application/json",
-          },
-          body: new URLSearchParams({ data: query }),
-        });
-        if (!res.ok) {
-          lastError = `${mirror} -> ${res.status}`;
-          continue;
-        }
-        data = await res.json();
-        break;
-      } catch (error) {
-        lastError = `${mirror} -> ${error instanceof Error ? error.message : String(error)}`;
-      }
-    }
+    // Overpass answering with a believable empty result (no other mirror
+    // disagreed) is not an error — some rural coordinates genuinely have
+    // nothing named around them at this radius.
+    if (fromOverpass) return fromOverpass;
 
-    if (!data) {
-      console.error(`[overpass] all mirrors failed. ${lastError}`);
-      throw new Error(
-        "Couldn't reach the map service just now. Add your areas by hand, or try again in a minute.",
-      );
-    }
-    const toRad = (x: number) => (x * Math.PI) / 180;
-    const distance = (lat: number, lng: number) => {
-      const dLat = toRad(lat - business.lat!);
-      const dLng = toRad(lng - business.lng!);
-      const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(business.lat!)) *
-          Math.cos(toRad(lat)) *
-          Math.sin(dLng / 2) ** 2;
-      return 2 * 6371 * Math.asin(Math.sqrt(a));
-    };
-
-    const seen = new Set<string>();
-    return (data.elements ?? [])
-      .filter((e: any) => e?.tags?.name && e.lat && e.lon)
-      .map((e: any) => ({
-        name: String(e.tags.name),
-        kind: String(e.tags.place),
-        km: Math.round(distance(e.lat, e.lon) * 10) / 10,
-        lat: e.lat as number,
-        lng: e.lon as number,
-      }))
-      .filter((e: { name: string }) => {
-        const key = e.name.toLowerCase();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .sort((a: { km: number }, b: { km: number }) => a.km - b.km)
-      .slice(0, 30);
+    console.error("[nearbyAreas] overpass and google places both failed");
+    throw new ConvexError(
+      "Couldn't reach the map service just now. Add your areas by hand, or try again in a minute.",
+    );
   },
 });

@@ -1,12 +1,15 @@
 "use client";
 
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useAction, useMutation } from "convex/react";
+import { useQuery } from "convex-helpers/react/cache";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
 import { Working } from "@/components/working";
+import { AutoTextarea } from "@/components/textarea";
 import { square } from "@/lib/images";
 import type { Id } from "@/convex/_generated/dataModel";
+import { friendlyError } from "@/lib/errors";
 
 function ago(timestamp: number): string {
   const days = Math.floor((Date.now() - timestamp) / 86_400_000);
@@ -23,7 +26,7 @@ function Stars({ rating }: { rating: number }) {
   return (
     <span
       aria-label={`${rating} out of 5`}
-      className="flex-none font-mono text-[11px] tracking-tight text-star"
+      className="flex-none text-[12px] tracking-tight text-star"
     >
       {"★".repeat(rating)}
       <span className="text-rule">{"★".repeat(5 - rating)}</span>
@@ -59,7 +62,7 @@ export default function ReviewsPage() {
         setError(r.error ?? "Google wouldn't take it.");
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setBusy(null);
     }
@@ -74,7 +77,7 @@ export default function ReviewsPage() {
       if (text && editing === id) setEditText(text);
       if (!text) setError("Couldn't write another one just now.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setBusy(null);
     }
@@ -86,7 +89,7 @@ export default function ReviewsPage() {
     pulled.current = true;
     setSyncing(true);
     void syncFromGoogle({})
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .catch((e) => setError(friendlyError(e)))
       .finally(() => setSyncing(false));
   }, [data, syncFromGoogle]);
 
@@ -102,16 +105,16 @@ export default function ReviewsPage() {
       location={business.locationName ?? business.city}
       logoUrl={business.logoUrl}
     >
-      <h1 className="text-[1.6rem]">reviews</h1>
+      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">reviews</h1>
       <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
         Every review on your Google listing, newest first.
       </p>
 
       {/* --------------------------- summary ---------------------------- */}
-      <div className="mt-5 rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]">
+      <div className="card mt-7 p-5">
         <div className="flex items-end gap-4">
           <div>
-            <p className="font-display text-[2rem] font-bold leading-none">
+            <p className="text-[2rem] font-bold leading-none tracking-[-0.02em]">
               {summary.average ?? "—"}
             </p>
             <div className="mt-1.5">
@@ -129,7 +132,7 @@ export default function ReviewsPage() {
                 : ""}
             </p>
             {summary.newest ? (
-              <p className="mt-0.5 font-mono text-[10px] text-muted">
+              <p className="mt-0.5 text-[11px] text-muted">
                 last one {ago(summary.newest)}
               </p>
             ) : null}
@@ -138,34 +141,32 @@ export default function ReviewsPage() {
 
         {summary.total > 0 ? (
           <>
-            <div className="mt-3.5 flex gap-2">
-              <span className="flex-1 rounded-[10px] border border-rule bg-paper px-3 py-2">
-                <span className="block font-display text-[17px] font-bold leading-none">
+            <div className="mt-5 flex gap-2.5">
+              <span className="flex-1 rounded-[12px] bg-paper-2 px-3 py-2">
+                <span className="block text-[17px] font-semibold leading-none">
                   {summary.replyRate ?? 0}%
                 </span>
-                <span className="mt-1 block font-mono text-[9px] uppercase tracking-wider text-muted">
+                <span className="mt-1 block text-[10px] font-medium uppercase tracking-[0.05em] text-muted">
                   replied
                 </span>
               </span>
-              <span className="flex-1 rounded-[10px] border border-rule bg-paper px-3 py-2">
-                <span className="block font-display text-[17px] font-bold leading-none">
+              <span className="flex-1 rounded-[12px] bg-paper-2 px-3 py-2">
+                <span className="block text-[17px] font-semibold leading-none">
                   {summary.medianReplyHours === null
                     ? "—"
                     : summary.medianReplyHours < 24
                       ? `${summary.medianReplyHours}h`
                       : `${Math.round(summary.medianReplyHours / 24)}d`}
                 </span>
-                <span className="mt-1 block font-mono text-[9px] uppercase tracking-wider text-muted">
+                <span className="mt-1 block text-[10px] font-medium uppercase tracking-[0.05em] text-muted">
                   typical wait
                 </span>
               </span>
             </div>
 
             <p
-              className={`mt-2.5 rounded-[10px] border px-3 py-2 text-[12.5px] leading-snug ${
-                summary.awaiting === 0
-                  ? "border-open bg-open-soft"
-                  : "border-star bg-star/20"
+              className={`mt-3 rounded-[12px] px-3.5 py-2.5 text-[12.5px] leading-snug ${
+                summary.awaiting === 0 ? "bg-open-soft" : "bg-star/15"
               }`}
             >
               {summary.awaiting === 0
@@ -177,7 +178,7 @@ export default function ReviewsPage() {
       </div>
 
       {syncing ? (
-        <div className="mt-4">
+        <div className="mt-5">
           <Working label="Reading your reviews from Google" />
         </div>
       ) : null}
@@ -185,41 +186,41 @@ export default function ReviewsPage() {
       {error ? (
         <p
           role="alert"
-          className="mt-4 break-words rounded-[12px] border border-pin bg-pin-soft px-3.5 py-2.5 font-mono text-[12px] leading-snug"
+          className="mt-5 break-words rounded-[12px] bg-pin-soft px-4 py-3 text-[13px] leading-snug"
         >
           {error}
         </p>
       ) : null}
 
       {note ? (
-        <p className="mt-4 rounded-[12px] border border-open bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
+        <p className="mt-5 rounded-[12px] bg-open-soft px-4 py-3 text-[13px] leading-snug">
           {note}
         </p>
       ) : null}
 
       {/* ------------------------ waiting for you ------------------------ */}
       {held.length > 0 ? (
-        <section className="mt-7">
-          <h2 className="font-display text-[15px] font-bold">
+        <section className="mt-10">
+          <h2 className="text-[15px] font-semibold text-ink">
             Waiting for you to send
           </h2>
-          <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-soft">
+          <p className="mt-2 text-[12.5px] leading-relaxed text-ink-soft">
             We&rsquo;ve written a reply to each of these. A low rating goes out
             under your name only when you say so.
           </p>
 
-          <ul className="mt-3 space-y-3">
+          <ul className="mt-4 space-y-4">
             {held.map((row) => (
               <li
                 key={row._id}
-                className="rounded-[14px] border border-ink bg-paper-2 p-4 shadow-[3px_3px_0_var(--color-ink)]"
+                className="card p-5"
               >
                 <div className="flex items-center gap-2">
                   <Stars rating={row.rating} />
                   <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
                     {row.authorName ?? "A customer"}
                   </span>
-                  <span className="flex-none font-mono text-[10px] text-muted">
+                  <span className="flex-none text-[11px] text-muted">
                     {ago(row.createdAt)}
                   </span>
                 </div>
@@ -231,19 +232,19 @@ export default function ReviewsPage() {
                 ) : null}
 
                 {editing === row._id ? (
-                  <textarea
+                  <AutoTextarea
                     value={editText}
                     onChange={(e) => setEditText(e.target.value)}
-                    rows={6}
-                    className="mt-3 w-full resize-none rounded-[10px] border border-ink bg-paper p-3 text-[13px] leading-relaxed outline-none"
+                    minRows={4}
+                    className="mt-3 w-full rounded-[12px] border border-rule bg-white p-3 text-[13px] leading-relaxed outline-none focus:border-pin"
                   />
                 ) : (
-                  <p className="mt-3 whitespace-pre-wrap rounded-[10px] border-l-2 border-star bg-paper px-3 py-2 text-[13px] leading-relaxed">
+                  <p className="mt-3 whitespace-pre-wrap rounded-[12px] bg-pin-soft px-4 py-3 text-[13px] leading-relaxed text-ink">
                     {row.replyText}
                   </p>
                 )}
 
-                <div className="mt-3 flex flex-wrap items-center gap-2">
+                <div className="mt-4 flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() =>
@@ -278,7 +279,7 @@ export default function ReviewsPage() {
                   <button
                     type="button"
                     onClick={() => void discardDraft({ id: row._id })}
-                    className="ml-auto font-mono text-[10px] text-muted underline underline-offset-4 hover:text-pin"
+                    className="ml-auto text-[13px] font-medium text-pin hover:opacity-80"
                   >
                     leave it
                   </button>
@@ -291,17 +292,17 @@ export default function ReviewsPage() {
 
       {/* ---------------------------- the list --------------------------- */}
       {rows.length === 0 ? (
-        <p className="mt-6 rounded-[14px] border border-dashed border-rule px-4 py-10 text-center text-[13px] leading-relaxed text-muted">
+        <p className="card mt-8 px-5 py-12 text-center text-[13px] leading-relaxed text-muted">
           {syncing
             ? "Checking…"
             : "Nothing on your listing yet. The first few reviews move a new listing more than anything else you can do."}
         </p>
       ) : (
-        <ul className="mt-6 space-y-3">
+        <ul className="mt-8 space-y-4">
           {rows.map((row) => (
             <li
               key={row._id}
-              className="rounded-[14px] border border-rule bg-paper-2 p-4"
+              className="card p-5"
             >
               <div className="flex items-center gap-2.5">
                 {row.authorPhoto ? (
@@ -311,12 +312,12 @@ export default function ReviewsPage() {
                     alt=""
                     loading="lazy"
                     referrerPolicy="no-referrer"
-                    className="h-8 w-8 flex-none rounded-full border border-rule object-cover"
+                    className="h-8 w-8 flex-none rounded-full object-cover shadow-card"
                   />
                 ) : (
                   <span
                     aria-hidden
-                    className="grid h-8 w-8 flex-none place-items-center rounded-full border border-rule font-display text-[13px] font-bold"
+                    className="grid h-8 w-8 flex-none place-items-center rounded-full bg-paper-3 text-[13px] font-semibold"
                   >
                     {(row.authorName ?? "?").slice(0, 1).toUpperCase()}
                   </span>
@@ -328,7 +329,7 @@ export default function ReviewsPage() {
                   </span>
                   <span className="mt-0.5 flex items-center gap-2">
                     <Stars rating={row.rating} />
-                    <span className="font-mono text-[10px] text-muted">
+                    <span className="text-[11px] text-muted">
                       {ago(row.createdAt)}
                     </span>
                   </span>
@@ -346,8 +347,8 @@ export default function ReviewsPage() {
               )}
 
               {row.replyText ? (
-                <div className="mt-3 rounded-[10px] border-l-2 border-open bg-paper px-3 py-2">
-                  <p className="font-mono text-[9px] uppercase tracking-wider text-muted">
+                <div className="mt-4 rounded-[12px] bg-paper-2 px-3.5 py-2.5">
+                  <p className="text-[10px] font-medium uppercase tracking-[0.05em] text-muted">
                     Your reply
                     {row.repliedAt ? ` · ${ago(row.repliedAt)}` : ""}
                   </p>
@@ -356,11 +357,11 @@ export default function ReviewsPage() {
                   </p>
                 </div>
               ) : row.replyError ? (
-                <p className="mt-3 break-words rounded-[10px] border border-pin bg-pin-soft px-3 py-2 font-mono text-[10px] leading-snug">
+                <p className="mt-3 break-words rounded-[12px] bg-pin-soft px-3 py-2 text-[12px] leading-snug">
                   {row.replyError}
                 </p>
               ) : (
-                <p className="mt-3 font-mono text-[10px] text-muted">
+                <p className="mt-3 text-[12px] text-muted">
                   No reply yet.
                 </p>
               )}
@@ -370,7 +371,7 @@ export default function ReviewsPage() {
       )}
 
       {summary.total > rows.length ? (
-        <p className="mt-4 text-center font-mono text-[10px] text-muted">
+        <p className="mt-6 text-center text-[12px] text-muted">
           Showing the newest {rows.length} of {summary.total}.
         </p>
       ) : null}

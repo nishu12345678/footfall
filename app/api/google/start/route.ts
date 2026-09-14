@@ -94,7 +94,11 @@ export const GET = async (request: NextRequest) => {
   url.searchParams.set("response_type", "code");
   url.searchParams.set("scope", scope);
   url.searchParams.set("access_type", "offline");
-  url.searchParams.set("prompt", "consent");
+  // "consent" so Google returns a refresh token every time (it only does
+  // on a fresh consent); "select_account" so the owner can pick which
+  // Google account holds the listing, rather than Google silently reusing
+  // whichever one the browser used last.
+  url.searchParams.set("prompt", "consent select_account");
   url.searchParams.set("state", state);
   url.searchParams.set("code_challenge", challenge);
   url.searchParams.set("code_challenge_method", "S256");

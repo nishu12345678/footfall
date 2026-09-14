@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 import {
@@ -28,31 +29,102 @@ import type { Doc, Id, TableNames } from "./_generated/dataModel";
 export const PAYWALL_MESSAGE =
   "Your footfall plan has ended. Renew to keep the listing running.";
 
-/** True when this user has a paid row that hasn't run out yet. */
+/**
+ * The business the app is currently acting for. An account can run several
+ * listings; the selection row names the one every screen and plan check
+ * resolves to, falling back to the newest business when nothing is chosen.
+ */
+export async function activeBusinessFor(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<"users">,
+): Promise<Doc<"businesses"> | null> {
+  const selection = await ctx.db
+    .query("businessSelections")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .first();
+  if (selection) {
+    const chosen = await ctx.db.get(selection.businessId);
+    if (chosen && chosen.userId === userId) return chosen;
+  }
+  const rows = await ctx.db
+    .query("businesses")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .collect();
+  if (rows.length === 0) return null;
+  return rows.sort((a, b) => b._creationTime - a._creationTime)[0];
+}
+
+/**
+ * Which business a subscription row written before per-business plans
+ * belongs to: the user's OLDEST business — the only one that existed when
+ * such a row could have been paid. Deterministic on purpose: were legacy
+ * rows to follow the *selected* business instead, one old plan could be
+ * walked from listing to listing and unlock them all.
+ */
+export async function legacyPlanBusinessId(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<"users">,
+): Promise<Id<"businesses"> | null> {
+  const rows = await ctx.db
+    .query("businesses")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .collect();
+  if (rows.length === 0) return null;
+  return rows.sort((a, b) => a._creationTime - b._creationTime)[0]._id;
+}
+
+/** The business a subscription row pays for, legacy rows included. */
+export function subscriptionBusinessId(
+  row: { businessId?: Id<"businesses"> },
+  legacyId: Id<"businesses"> | null,
+): Id<"businesses"> | null {
+  return row.businessId ?? legacyId;
+}
+
+/**
+ * True when the user's ACTIVE business has a paid row that hasn't run out.
+ * Plans are per business: paying for one listing never unlocks another.
+ */
 export async function hasActivePlan(
   ctx: QueryCtx | MutationCtx,
   userId: string,
 ): Promise<boolean> {
+  const uid = userId as Id<"users">;
+  const business = await activeBusinessFor(ctx, uid);
+  if (!business) return false;
+  const legacyId = await legacyPlanBusinessId(ctx, uid);
+
   const rows = await ctx.db
     .query("subscriptions")
     .withIndex("by_user", (q) => q.eq("userId", userId as never))
     .collect();
 
+  // "paid" and "partially_refunded" grant; a full refund ends the period
+  // by moving expiresAt back, so the date check covers it too.
   const now = Date.now();
   return rows.some(
-    (r) => r.status === "paid" && (r.expiresAt ?? 0) > now,
+    (r) =>
+      (r.status === "paid" || r.status === "partially_refunded") &&
+      (r.expiresAt ?? 0) > now &&
+      subscriptionBusinessId(r, legacyId) === business._id,
   );
 }
 
 async function requirePaidRead(ctx: QueryCtx | MutationCtx) {
   const userId = await getAuthUserId(ctx);
-  if (!userId) throw new Error("Sign in first.");
-  if (!(await hasActivePlan(ctx, userId))) throw new Error(PAYWALL_MESSAGE);
+  if (!userId) throw new ConvexError("Sign in first.");
+  if (!(await hasActivePlan(ctx, userId))) throw new ConvexError(PAYWALL_MESSAGE);
 }
 
 async function requirePaidAction(ctx: ActionCtx) {
+  // Known, accepted gap: an action's paywall check and its work run in
+  // separate transactions, so an owner racing switchTo between the two can
+  // aim one paid call at their own unpaid business. That costs us a single
+  // AI/API call of the kind their other business already pays for — not a
+  // data leak — and closing it means threading businessId through every
+  // internal action. Queries and mutations are atomic and unaffected.
   const ok: boolean = await ctx.runQuery(internal.billing.isActive, {});
-  if (!ok) throw new Error(PAYWALL_MESSAGE);
+  if (!ok) throw new ConvexError(PAYWALL_MESSAGE);
 }
 
 /* The casts keep each wrapper's public type identical to the Convex
@@ -119,16 +191,13 @@ export type Owned<T extends OwnedTable> = {
   business: Doc<"businesses">;
 };
 
-/** The business behind a user, or a thrown error. */
+/** The user's active business, or a thrown error. */
 export async function businessOf(
   ctx: QueryCtx | MutationCtx,
   userId: Id<"users">,
 ): Promise<Doc<"businesses">> {
-  const business = await ctx.db
-    .query("businesses")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
-    .first();
-  if (!business) throw new Error("Connect your Google profile first.");
+  const business = await activeBusinessFor(ctx, userId);
+  if (!business) throw new ConvexError("Connect your Google profile first.");
   return business;
 }
 
@@ -137,7 +206,7 @@ export async function ownedBusiness(
   ctx: QueryCtx | MutationCtx,
 ): Promise<Doc<"businesses">> {
   const userId = await getAuthUserId(ctx);
-  if (!userId) throw new Error("Sign in first.");
+  if (!userId) throw new ConvexError("Sign in first.");
   return await businessOf(ctx, userId);
 }
 
@@ -150,7 +219,7 @@ async function rowOf<T extends OwnedTable>(
   // Every OwnedTable document carries a businessId; TypeScript can't see
   // through the generic to know it, hence the narrow read.
   const owner = (row as { businessId?: Id<"businesses"> } | null)?.businessId;
-  if (!row || owner !== business._id) throw new Error(NOT_FOUND_MESSAGE);
+  if (!row || owner !== business._id) throw new ConvexError(NOT_FOUND_MESSAGE);
   return row;
 }
 

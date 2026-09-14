@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
   action,
   internalAction,
@@ -9,7 +9,7 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
-import {
+import { activeBusinessFor,
   ownedRow,
   ownedRowFor,
   paidAction,
@@ -99,7 +99,7 @@ export const syncForUser = internalAction({
       userId,
     });
     if (!business?.gbpAccountName || !business.gbpLocationName) {
-      throw new Error("No Google listing linked.");
+      throw new ConvexError("No Google listing linked.");
     }
 
     const token: string = await ctx.runAction(internal.google.accessTokenFor, {
@@ -128,7 +128,7 @@ export const syncForUser = internalAction({
       if (!res.ok) {
         console.error(`[gbp/reviews] ${res.status} ${text.slice(0, 400)}`);
         if (page > 0) break; // keep what we already have
-        throw new Error(
+        throw new ConvexError(
           `Google refused (${res.status}): ${text.slice(0, 200)}`,
         );
       }
@@ -206,7 +206,7 @@ export const syncFromGoogle = paidAction({
     ctx,
   ): Promise<{ added: number; total: number; average: number | null }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
     return await ctx.runAction(internal.reviews.syncForUser, { userId });
   },
 });
@@ -264,10 +264,7 @@ export const syncAllReviews = internalAction({
 export const replyContext = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const [reviews, offerings] = await Promise.all([
@@ -607,6 +604,17 @@ export const noteHeld = internalMutation({
         "We've written a reply, but a low rating goes out under your name only when you say so.",
       createdAt: Date.now(),
     });
+    const business = await ctx.db.get(businessId);
+    if (business) {
+      // One email per day at most, however many syncs find the same review.
+      const day = new Date().toISOString().slice(0, 10);
+      await ctx.scheduler.runAfter(0, internal.email.sendToUser, {
+        userId: business.userId,
+        template: "reviews_need_approval",
+        dedupeKey: `reviews_need_approval:${businessId}:${day}`,
+        params: { count: held },
+      });
+    }
   },
 });
 
@@ -620,7 +628,7 @@ export const approveReply = paidAction({
     { id, text },
   ): Promise<{ ok: boolean; error?: string }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const { row: review }: Owned<"reviews"> = await ctx.runQuery(
       internal.reviews.ownedReview,
@@ -642,7 +650,7 @@ export const rewriteReply = paidAction({
   args: { id: v.id("reviews") },
   handler: async (ctx, { id }): Promise<string | null> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const text: string | null = await ctx.runAction(
       internal.reviews.draftReply,
@@ -682,7 +690,7 @@ export const answerNow = paidAction({
   args: {},
   handler: async (ctx): Promise<{ published: number; held: number }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
     return await ctx.runAction(internal.reviews.answerNewReviews, { userId });
   },
 });

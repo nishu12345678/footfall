@@ -3,6 +3,7 @@
 import { useAction, useQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
+import { friendlyError } from "@/lib/errors";
 
 /**
  * Relevance is the first of Google's three local ranking factors, and it is
@@ -38,14 +39,14 @@ export function Relevance() {
       if (r.error) setError(r.error);
       else setNote(`${r.pushed} services written to your Google listing.`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setPushing(false);
     }
   }
 
   return (
-    <section className="mt-7">
+    <section className="mt-10">
       <h2 className="font-display text-[15px] font-bold">
         What Google thinks you do
       </h2>
@@ -54,8 +55,8 @@ export function Relevance() {
         else. This is what your listing currently claims.
       </p>
 
-      <div className="mt-3 rounded-[14px] border border-rule bg-paper-2 p-4">
-        <p className="font-mono text-[10px] uppercase tracking-wider text-muted">
+      <div className="mt-4 rounded-[16px] bg-paper-2 p-5">
+        <p className="text-[13px] font-medium text-muted">
           Main category
         </p>
         <p className="mt-1 text-[15px] font-semibold">
@@ -67,7 +68,7 @@ export function Relevance() {
             {extraCategories.map((c) => (
               <li
                 key={c.id}
-                className="rounded-full border border-rule px-2 py-0.5 font-mono text-[10px]"
+                className="rounded-full bg-paper-3 px-2 py-0.5 text-[11px] font-medium"
               >
                 {c.name}
               </li>
@@ -82,15 +83,15 @@ export function Relevance() {
       </div>
 
       {missingCategories.length > 0 ? (
-        <div className="mt-3 rounded-[14px] border border-pin bg-pin-soft p-4">
+        <div className="mt-4 rounded-[16px] bg-pin-soft p-5">
           <p className="text-[13px] font-semibold leading-snug">
             Shops ahead of you claim categories you don&rsquo;t
           </p>
-          <ul className="mt-3 divide-y divide-rule-soft">
+          <ul className="mt-3 divide-y divide-black/10">
             {missingCategories.map((c) => (
               <li key={c.name} className="flex items-baseline gap-3 py-2">
                 <span className="min-w-0 flex-1 text-[14px]">{c.name}</span>
-                <span className="flex-none font-mono text-[11px] text-muted">
+                <span className="flex-none text-[11px] font-medium text-muted">
                   {c.used} of {competitorsChecked}
                 </span>
               </li>
@@ -103,13 +104,13 @@ export function Relevance() {
           </p>
         </div>
       ) : competitorsChecked > 0 ? (
-        <p className="mt-3 rounded-[12px] border border-open bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
+        <p className="mt-4 rounded-[12px] bg-open-soft px-4 py-3 text-[13px] leading-snug text-open-deep">
           Your categories match the shops ranking around you.
         </p>
       ) : null}
 
       {/* services */}
-      <div className="mt-3 rounded-[14px] border border-rule bg-paper-2 p-4">
+      <div className="mt-4 rounded-[16px] bg-paper-2 p-5">
         <p className="text-[13px] font-semibold leading-snug">
           Your services on Google
         </p>
@@ -133,14 +134,14 @@ export function Relevance() {
         </button>
 
         {note ? (
-          <p className="mt-3 rounded-[12px] border border-open bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug">
+          <p className="mt-3 rounded-[12px] bg-open-soft px-3.5 py-2.5 text-[13px] leading-snug text-open-deep">
             {note}
           </p>
         ) : null}
         {error ? (
           <p
             role="alert"
-            className="mt-3 break-words rounded-[12px] border border-pin bg-pin-soft px-3.5 py-2.5 font-mono text-[12px] leading-snug"
+            className="mt-3 break-words rounded-[12px] bg-pin-soft px-3.5 py-2.5 text-[13px] leading-snug"
           >
             {error}
           </p>

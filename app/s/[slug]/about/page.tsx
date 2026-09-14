@@ -8,7 +8,7 @@ import {
 } from "@/components/site-chrome";
 import { loadSite } from "@/lib/site-data";
 import { breadcrumbs } from "@/lib/site-schema";
-import { shopUrl } from "@/lib/site-host";
+import { shopUrl, shopPath } from "@/lib/site-host";
 
 export async function generateMetadata({
   params,
@@ -36,7 +36,7 @@ export default async function AboutPage({
   if (!data) notFound();
 
   const { site, business, areas, photos, rating, reviewCount } = data;
-  const base = `/s/${site.slug}`;
+  const base = shopPath(site.slug);
 
   return (
     <>
@@ -44,7 +44,7 @@ export default async function AboutPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(
-            breadcrumbs(base, [
+            breadcrumbs(shopUrl(site.slug), [
               { name: "Home", href: "" },
               { name: "About", href: "/about" },
             ]),
@@ -55,8 +55,8 @@ export default async function AboutPage({
       <UtilityBar data={data} />
       <SiteNav data={data} />
 
-      <main className="mx-auto max-w-5xl px-5 pt-12 pb-10">
-        <nav aria-label="Breadcrumb" className="font-mono text-[11px] text-muted">
+      <main className="mx-auto max-w-[1280px] px-6 pt-16 pb-16 sm:px-10 sm:pt-24 sm:pb-24 lg:px-14">
+        <nav aria-label="Breadcrumb" className="text-[12px] text-muted">
           <a href={base} className="hover:text-pin">
             Home
           </a>
@@ -64,48 +64,48 @@ export default async function AboutPage({
           <span>About</span>
         </nav>
 
-        <h1 className="mt-4 text-[clamp(2rem,6vw,3rem)]">
+        <h1 className="mt-5 text-[clamp(2.4rem,5.5vw,4rem)]">
           About {business.orgName}
         </h1>
-        <p className="mt-5 max-w-2xl text-[17px] leading-relaxed text-ink-soft">
+        <p className="mt-6 max-w-3xl text-[18px] leading-relaxed text-ink-soft">
           {site.about}
         </p>
 
         {/* Only real, checkable numbers go here. */}
-        <ul className="mt-8 grid gap-3 sm:grid-cols-3">
+        <ul className="mt-14 grid gap-6 sm:grid-cols-3 lg:gap-8">
           {rating !== null ? (
-            <li className="rounded-[14px] border border-ink bg-paper-2 p-5 text-center shadow-[3px_4px_0_var(--color-ink)]">
-              <p className="font-display text-[2rem] font-bold leading-none">
+            <li className="card rounded-[22px] p-8 text-center">
+              <p className="text-[40px] font-extrabold leading-none tracking-[-0.03em]">
                 {rating}
                 <span className="text-star"> ★</span>
               </p>
-              <p className="mt-1 text-[13px] text-muted">
+              <p className="mt-2 text-[13px] text-muted">
                 from {reviewCount} Google review{reviewCount === 1 ? "" : "s"}
               </p>
             </li>
           ) : null}
           {site.services.length ? (
-            <li className="rounded-[14px] border border-ink bg-paper-2 p-5 text-center shadow-[3px_4px_0_var(--color-ink)]">
-              <p className="font-display text-[2rem] font-bold leading-none">
+            <li className="card rounded-[22px] p-8 text-center">
+              <p className="text-[40px] font-extrabold leading-none tracking-[-0.03em]">
                 {site.services.length}
               </p>
-              <p className="mt-1 text-[13px] text-muted">services offered</p>
+              <p className="mt-2 text-[13px] text-muted">services offered</p>
             </li>
           ) : null}
           {areas.length ? (
-            <li className="rounded-[14px] border border-ink bg-paper-2 p-5 text-center shadow-[3px_4px_0_var(--color-ink)]">
-              <p className="font-display text-[2rem] font-bold leading-none">
+            <li className="card rounded-[22px] p-8 text-center">
+              <p className="text-[40px] font-extrabold leading-none tracking-[-0.03em]">
                 {areas.length}
               </p>
-              <p className="mt-1 text-[13px] text-muted">areas served</p>
+              <p className="mt-2 text-[13px] text-muted">areas served</p>
             </li>
           ) : null}
         </ul>
 
         {photos.length ? (
-          <section className="mt-12">
-            <h2 className="text-[1.5rem]">Inside {business.orgName}</h2>
-            <ul className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+          <section className="mt-16 sm:mt-24">
+            <h2 className="text-[clamp(1.8rem,3.5vw,2.6rem)]">Inside {business.orgName}</h2>
+            <ul className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
               {photos.slice(0, 8).map((photo, i) =>
                 photo.url ? (
                   <li key={photo._id}>
@@ -114,7 +114,7 @@ export default async function AboutPage({
                       src={photo.url}
                       alt={photo.caption ?? `${business.orgName} photo ${i + 1}`}
                       loading="lazy"
-                      className="aspect-square w-full rounded-[10px] border border-rule object-cover"
+                      className="aspect-square w-full rounded-[18px] object-cover shadow-card"
                     />
                   </li>
                 ) : null,
@@ -123,7 +123,7 @@ export default async function AboutPage({
           </section>
         ) : null}
 
-        <div className="mt-12">
+        <div className="mt-16 sm:mt-24">
           <ContactBand data={data} />
         </div>
       </main>

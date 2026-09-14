@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
   action,
   internalMutation,
@@ -9,7 +9,7 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
-import { paidAction, paidMutation, paidQuery } from "./access";
+import { activeBusinessFor, paidAction, paidMutation, paidQuery } from "./access";
 
 /**
  * A free one-page website for shops that don't have one.
@@ -139,10 +139,7 @@ export const mine = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
 
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const site = await ctx.db
@@ -159,10 +156,7 @@ export const mine = query({
 export const siteContext = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    const business = await activeBusinessFor(ctx, userId);
     if (!business) return null;
 
     const [offerings, specialties, areas, keywords, hours] = await Promise.all([
@@ -272,13 +266,13 @@ export const generateSite = action({
   args: {},
   handler: async (ctx): Promise<{ slug: string }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const c = await ctx.runQuery(internal.site.siteContext, { userId });
-    if (!c) throw new Error("Connect your Google profile first.");
+    if (!c) throw new ConvexError("Connect your Google profile first.");
 
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("OPENAI_API_KEY is not set.");
+    if (!apiKey) throw new ConvexError("The writing assistant isn't set up on this server yet.");
 
     const b = c.business;
     const where = [b.city, b.pinCode].filter(Boolean).join(" ");
@@ -363,7 +357,7 @@ export const generateSite = action({
     if (!res.ok) {
       const text = await res.text();
       console.error(`[openai] ${res.status} ${text.slice(0, 300)}`);
-      throw new Error(`Could not write the website (${res.status}).`);
+      throw new ConvexError("Couldn't write the website just now. Try again in a moment.");
     }
 
     const data = await res.json();
@@ -371,7 +365,7 @@ export const generateSite = action({
     try {
       copy = JSON.parse(data?.choices?.[0]?.message?.content ?? "{}");
     } catch {
-      throw new Error("The model returned something we couldn't read.");
+      throw new ConvexError("Couldn't get an answer just now. Try again.");
     }
 
     const slug: string = await ctx.runMutation(internal.site.saveSite, {
@@ -405,19 +399,16 @@ export const setPublished = mutation({
   args: { published: v.boolean() },
   handler: async (ctx, { published }) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
-    const business = await ctx.db
-      .query("businesses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
-    if (!business) throw new Error("Connect your Google profile first.");
+    const business = await activeBusinessFor(ctx, userId);
+    if (!business) throw new ConvexError("Connect your Google profile first.");
 
     const site = await ctx.db
       .query("sites")
       .withIndex("by_business", (q) => q.eq("businessId", business._id))
       .first();
-    if (!site) throw new Error("No website yet.");
+    if (!site) throw new ConvexError("No website yet.");
 
     await ctx.db.patch(site._id, { published });
   },
@@ -442,15 +433,15 @@ export const reviewExistingSite = paidAction({
     ctx,
   ): Promise<{ url: string; checks: SiteCheck[]; advice: string[] }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Sign in first.");
+    if (!userId) throw new ConvexError("Sign in first.");
 
     const business = await ctx.runQuery(internal.google.businessForUser, {
       userId,
     });
-    if (!business?.website) throw new Error("No website on file to look at.");
+    if (!business?.website) throw new ConvexError("No website on file to look at.");
 
     const key = process.env.FIRECRAWL_API_KEY;
-    if (!key) throw new Error("FIRECRAWL_API_KEY is not set.");
+    if (!key) throw new ConvexError("Website reading isn't set up on this server yet.");
 
     const res = await fetch("https://api.firecrawl.dev/v2/scrape", {
       method: "POST",
@@ -466,7 +457,7 @@ export const reviewExistingSite = paidAction({
     });
 
     if (!res.ok) {
-      throw new Error(`Couldn't read your website (${res.status}).`);
+      throw new ConvexError("Couldn't read your website just now. Check the address, or try again later.");
     }
 
     const data = await res.json();

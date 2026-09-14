@@ -10,27 +10,124 @@ without a Google Cloud project, and without a rupee moving. This page is how.
 | Next.js app | `npm run dev` (or `docker compose up`) on port 3000 | `.env.local` |
 | Convex backend | `npx convex dev` on the host, local deployment on ports 3210 (API) and 3211 (HTTP) | Convex env vars, set with `npx convex env set KEY value` |
 
-`npx convex env set` is the only thing that puts a value on the backend.
-Writing it into `.env.convex` alone does nothing; that file is your own
-notebook. `.env.local` is read by Next automatically.
+Next reads `.env.local` at the repo root on its own. Convex reads nothing
+from disk: a deployment's variables live on the deployment, and the CLI
+pushes them there. So there are two kinds of file, and each holds only
+what its side actually reads.
+
+## Env files, one per side
+
+**`.env.local`**: Next, plus which deployment the CLI targets. Nothing
+else, and no secrets. Next doesn't read them, and `docker compose` hands
+this whole file to the container.
+
+```
+# Which Convex deployment the CLI pushes to and the app talks to. Swap
+# these three lines to move between the local backend and a cloud one.
+CONVEX_DEPLOYMENT=anonymous:anonymous-footfall
+NEXT_PUBLIC_CONVEX_URL=http://127.0.0.1:3210
+NEXT_PUBLIC_CONVEX_SITE_URL=http://127.0.0.1:3211
+
+# The app's own address, and the domain shop sites live on in production.
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SITE_DOMAIN=footfall.zone
+# Show mobile OTP in the login UI only when Twilio is enabled on Convex too.
+NEXT_PUBLIC_TWILIO_ENABLED=0
+
+# Serve the fake Google at /api/mock/google.
+GOOGLE_MOCK_ENABLED=1
+
+# Only for the real Google consent screen. Unused while the mock is on.
+# GOOGLE_CLIENT_ID=
+```
+
+**`convex/.env.<name>`**: one file per Convex deployment, holding
+that deployment's variables and nothing about Next. Both are gitignored
+by the `.env*` rule.
+
+```
+# Where the OAuth callback sends the browser back.
+SITE_URL=http://localhost:3000
+# Dev only: prints sign-in codes to the backend log.
+OTP_DEV_ECHO=1
+
+OPENAI_API_KEY=
+FIRECRAWL_API_KEY=
+# Optional, paid per search: rank checks and keyword research.
+SERPAPI_KEY=
+# Optional: keyword volumes.
+DATAFORSEO_AUTH=
+
+RAZORPAY_KEY_ID=rzp_test_
+RAZORPAY_KEY_SECRET=
+RAZORPAY_WEBHOOK_SECRET=
+# Exact verified login emails; use only when testing the live production flow.
+RAZORPAY_ONE_RUPEE_TEST_EMAILS=
+# Dev only: leave the grant to the webhook.
+# RAZORPAY_WEBHOOK_ONLY=1
+
+# The fake Google. A cloud deployment needs a tunnel URL here.
+GOOGLE_API_MOCK_URL=http://127.0.0.1:3000/api/mock/google
+
+# Only for the real Google consent screen and "sign in with Google".
+# GOOGLE_CLIENT_ID=
+# GOOGLE_CLIENT_SECRET=
+# AUTH_GOOGLE_ID=
+# AUTH_GOOGLE_SECRET=
+
+# SMS/WhatsApp through Twilio, email through Resend. Credentials stay inert
+# unless the backend master switch is exactly 1.
+TWILIO_ENABLED=0
+# TWILIO_ACCOUNT_SID=
+# TWILIO_AUTH_TOKEN=
+# TWILIO_MESSAGING_SERVICE_SID=   # or TWILIO_FROM_NUMBER=+91...
+# TWILIO_WHATSAPP_FROM=           # optional
+# RESEND_API_KEY=
+# EMAIL_FROM="footfall <hello@footfall.zone>"
+# RESEND_WEBHOOK_SECRET=
+```
+
+Not in that file: `CONVEX_SITE_URL` and `CONVEX_CLOUD_URL` (Convex sets
+them itself), `JWT_PRIVATE_KEY` and `JWKS` (generated per deployment by
+`npx @convex-dev/auth`), and anything `NEXT_PUBLIC_`.
+
+Push a file to the deployment named in `.env.local`:
+
+```
+npm run env:push -- convex/.env.local
+```
+
+Or to a specific deployment, whatever `.env.local` says:
+
+```
+npm run env:push -- convex/.env.stage --deployment precious-lobster-374
+```
+
+The file wins over what is already on the deployment. Check the result
+with `npx convex env list`, adding `--deployment <name>` for a cloud one.
 
 ## Which keys you need
 
 | Key | Where | Needed for | Without it |
 |---|---|---|---|
-| `OTP_DEV_ECHO=1` | Convex | Signing in with phone or email while MSG91 and Resend are unset. The code is printed in the `npx convex dev` log. | You cannot sign in. |
+| `OTP_DEV_ECHO=1` | Convex | Development-only OTP logging. Email OTP can be inspected in logs without Resend. Phone OTP additionally requires `TWILIO_ENABLED=1`; never enable echo in production. | Codes are not printed to logs. |
 | `GOOGLE_MOCK_ENABLED=1` | `.env.local` | The fake Google at `/api/mock/google` | Route answers 404 |
 | `GOOGLE_API_MOCK_URL=http://127.0.0.1:3000/api/mock/google` | Convex | Backend talks to the fake Google | Backend calls the real Google APIs, which fail without a listing |
 | `SITE_URL=http://localhost:3000` | Convex | Where the OAuth callback sends the browser back | Lands on the wrong host |
 | `NEXT_PUBLIC_SITE_URL=http://localhost:3000` | `.env.local` | Shop links, the copy button and canonical tags point at your own host. `NEXT_PUBLIC_SITE_DOMAIN` can stay set; subdomain links are only used when the app is served from that domain. | Links point at production |
 | `RAZORPAY_KEY_ID` (`rzp_test_…`), `RAZORPAY_KEY_SECRET` | Convex | Paying for a plan in test mode | Billing page cannot create an order |
 | `RAZORPAY_WEBHOOK_SECRET` | Convex | The webhook path, real or faked | Webhook returns 500 |
+| `RAZORPAY_ONE_RUPEE_TEST_EMAILS` | Convex production | Exact comma-separated verified login emails that pay ₹1 through live Razorpay while receiving the full selected plan | Everyone pays the normal server price |
 | `OPENAI_API_KEY` | Convex | Writing posts, review replies, keyword ideas, the shop site, post images | Those buttons error; everything else works |
 | `FIRECRAWL_API_KEY` | Convex | Reading the shop's website for the report and for suggestions | Website check reports nothing |
 | `SERPAPI_KEY` | Convex | Rank checks and the geo-grid. Every pin per keyword is one paid search, so leave this blank unless you are testing ranking. | Rank check errors; the rest of Performance works from the mock's metrics |
 | `DATAFORSEO_AUTH` | Convex | Keyword search volumes | Keywords show without volumes |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Convex | Only for the real Google consent screen. Not needed with the mock. | Nothing, with the mock on |
-| `MSG91_*`, `AUTH_RESEND_KEY` | Convex | Real SMS and email codes | Nothing, with `OTP_DEV_ECHO` on |
+| `TWILIO_ENABLED=1` | Convex | Master backend gate for every Twilio call: phone OTP, SMS reminders and WhatsApp/SMS review invites | All Twilio sends are intentionally skipped; phone OTP is rejected with a friendly message |
+| `NEXT_PUBLIC_TWILIO_ENABLED=1` | `.env.local` / Vercel | Shows mobile OTP in the login UI | Login offers Google and email only |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, sender vars | Convex | Credentials/senders used only after `TWILIO_ENABLED=1` | Twilio remains unavailable even if the feature flags are on |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Convex | Every email: sign-in codes, welcome, receipts, payment failures, refunds, plan reminders, posts/reviews awaiting approval, Google disconnected | Nothing, with `OTP_DEV_ECHO` on; sends are logged as "skipped" |
+| `RESEND_WEBHOOK_SECRET` | Convex | Delivered / bounced / complained landing on the `emails` table via `<CONVEX_SITE_URL>/resend/webhook` | Rows stop at "sent" |
 
 ## Turn the fake Google on
 
@@ -54,11 +151,21 @@ the backend"*, the second half is missing: run the `env set` line again
 from the repo root and check `.env.local` names the same deployment that
 `npx convex dev` is serving.
 
-What you get is one account managing one listing, Glow Salon in Thane,
-with 8 reviews (4 unanswered, one of them a 2-star complaint that the
-agent will hold for approval), 6 photos, 2 old posts, and a month of
-views, calls and direction requests. Photos are drawn by the mock, so
-they load without internet.
+What you get is one account managing one listing, SR Indoor Swimming
+Pool in Miyapur, Hyderabad, with 8 reviews (4 unanswered, one of them a
+2-star complaint that the agent will hold for approval), 6 photos, 2 old
+posts, and a month of views, calls and direction requests. Photos are
+drawn by the mock, so they load without internet.
+
+The listing itself is a real public business: the name, address, phone,
+coordinates and website are the real ones. That is deliberate. The parts
+of the product that never go through Google, keyword research (SerpApi,
+DataForSEO), rank checks and the geo grid (SerpApi), and the "does your
+website match your listing" check (Firecrawl), run against real search
+results and a real page, so they can be tested with the mock on. The
+reviews, photos and posts are invented. Those three APIs are live and
+paid; put their keys in `convex/.env.local` only when you want to
+exercise them.
 
 The mock keeps state in memory. A post you publish shows up in the next
 sync; a reply lands on its review. `POST _control/reset` starts over,
@@ -76,7 +183,7 @@ refuses to serve unless `GOOGLE_MOCK_ENABLED=1`, so production meets a
    The 4-digit code is in the `npx convex dev` terminal, on a line
    starting `[otp-dev-echo]`.
 2. Press **connect Google**. With the mock on there is no consent screen;
-   you land on the processing page and Glow Salon is linked.
+   you land on the processing page and SR Indoor Swimming Pool is linked.
 3. **Continue setup** sends you to onboarding step 2, which is behind the
    plan, so you are bounced to the free report at `/app/report`. That is
    the product working as designed: connect and the report are free, the
@@ -134,7 +241,7 @@ fire one yourself:
    answer `400 bad signature` and change nothing.
 
 The script reads the secret from `RAZORPAY_WEBHOOK_SECRET` in your shell
-or from `.env.convex`, and the target from `NEXT_PUBLIC_CONVEX_SITE_URL`
+or from `convex/.env.local`, and the target from `NEXT_PUBLIC_CONVEX_SITE_URL`
 in `.env.local`. Both can be overridden with `--secret` and `--url`.
 
 ### Webhook-only mode: the production path, live
@@ -190,6 +297,70 @@ tables, and file storage, so the next run begins at sign-in:
 npx convex run admin:wipe '{"includeAuth": true}'
 curl -s -X POST http://127.0.0.1:3000/api/mock/google/_control/reset
 ```
+
+## Using a cloud dev deployment instead of the local backend
+
+A Convex cloud dev deployment (create one in the Convex dashboard) runs
+the same code with two differences: it can't reach your laptop, and the
+outside world can reach it. So the fake Google needs a public address,
+and Razorpay can deliver real test-mode webhooks.
+
+1. **Point the CLI and the app at it.** In `.env.local`, replace the three
+   Convex lines (keep the old ones commented out for switching back):
+
+   ```
+   CONVEX_DEPLOYMENT=dev:<deployment-name>
+   NEXT_PUBLIC_CONVEX_URL=https://<deployment-name>.convex.cloud
+   NEXT_PUBLIC_CONVEX_SITE_URL=https://<deployment-name>.convex.site
+   ```
+
+   Run `npx convex login` once, then `npx convex dev`. The first run pushes
+   the branch's functions and schema. Keep it running.
+
+2. **Give it its env vars.** A fresh deployment has none. Convex Auth's
+   signing keys come from its own setup command; everything else is
+   `env set`, with the values from your `convex/.env.stage` file:
+
+   ```
+   npx @convex-dev/auth                     # JWT_PRIVATE_KEY, JWKS, SITE_URL
+   npx convex env set SITE_URL http://localhost:3000
+   npx convex env set OTP_DEV_ECHO 1
+   npx convex env set OPENAI_API_KEY ...
+   npx convex env set FIRECRAWL_API_KEY ...
+   npx convex env set RAZORPAY_KEY_ID rzp_test_...
+   npx convex env set RAZORPAY_KEY_SECRET ...
+   npx convex env set RAZORPAY_WEBHOOK_SECRET ...
+   ```
+
+   `SITE_URL` stays `http://localhost:3000` because that is where the
+   browser is; the OAuth callback bounces back there.
+
+3. **Expose the fake Google.** The cloud backend can't see
+   `127.0.0.1:3000`, so tunnel your Next dev server and point the backend
+   at the tunnel:
+
+   ```
+   npx cloudflared tunnel --url http://localhost:3000     # prints https://<random>.trycloudflare.com
+   npx convex env set GOOGLE_API_MOCK_URL https://<random>.trycloudflare.com/api/mock/google
+   ```
+
+   ngrok works the same way. The tunnel address changes each time you
+   restart it, so update the variable when it does. Mock state still lives
+   in your local Next process, so published posts and replies persist.
+   (Pointing the backend at a Vercel preview's `/api/mock/google` also
+   answers the reads, but preview functions don't share memory, so
+   publishes and replies won't stick.)
+
+4. **Let Razorpay deliver real webhooks.** In the Razorpay dashboard, in
+   test mode, under **Settings → Webhooks**, add
+   `https://<deployment-name>.convex.site/razorpay/webhook` with the same
+   secret as `RAZORPAY_WEBHOOK_SECRET` and the `payment.captured` event.
+   Pay on `/app/billing` and watch the delivery in `npx convex logs` and
+   in Razorpay's webhook log. `RAZORPAY_WEBHOOK_ONLY=1` lets you watch the
+   webhook grant the plan alone, exactly as in the section above.
+
+5. **Switching back** is the three `.env.local` lines and a restart of
+   `npx convex dev`.
 
 ## Tests
 

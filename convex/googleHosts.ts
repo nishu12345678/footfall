@@ -40,6 +40,12 @@ export function tokenUrl(): string {
   return m ? `${m}/oauth2/token` : "https://oauth2.googleapis.com/token";
 }
 
+/** OAuth 2 revocation endpoint: gives our access back when the owner asks. */
+export function revokeUrl(): string {
+  const m = mockBase();
+  return m ? `${m}/oauth2/revoke` : "https://oauth2.googleapis.com/revoke";
+}
+
 /** Account Management API: which accounts this Google user manages. */
 export function accountsUrl(): string {
   const m = mockBase();

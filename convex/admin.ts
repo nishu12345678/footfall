@@ -8,6 +8,7 @@ import { internalMutation, internalQuery } from "./_generated/server";
  */
 
 const APP_TABLES = [
+  "businessSelections",
   "sites",
   "offerings",
   "specialties",
@@ -72,6 +73,7 @@ export const wipe = internalMutation({
     for (const table of tables) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rows = (await ctx.db.query(table as any).collect()) as {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         _id: any;
       }[];
       for (const row of rows) await ctx.db.delete(row._id);

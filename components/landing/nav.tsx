@@ -24,13 +24,15 @@ export function Nav() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[var(--l-line)] bg-white">
       <nav className="mx-auto flex h-[72px] max-w-[1400px] items-center justify-between px-6">
-        <a href="#top" className="flex items-center gap-2.5">
-          <span
-            aria-hidden
-            className="grid h-7 w-7 place-items-center rounded-lg bg-[var(--l-primary)] text-white"
-          >
-            <Icon name="map-pin" size={15} strokeWidth={2.25} />
-          </span>
+        <a href="#top" className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/brand/logo-64.png"
+            alt=""
+            width={32}
+            height={32}
+            className="h-8 w-8"
+          />
           <span className="text-xl font-semibold tracking-tight">{BRAND.name}</span>
         </a>
 

@@ -1,13 +1,22 @@
 #!/usr/bin/env python3
 """Generate all footfall brand assets into public/brand/.
 
-The mark: a pin-blue (#2b4eff) rounded square (corner radius ~22% of side)
-with a white concentric double-ring "◎" centred on it — outer ring stroke
-~7% of side, ring outer diameter ~56% of side, inner filled dot ~18% of side.
+The mark is the storefront-pin artwork in public/brand/source.png
+(a blue map pin holding a green shopfront). This script cuts the mark
+out of its flat background and derives every size the app references:
 
-Everything is drawn procedurally at 4x supersample, then downscaled with
-LANCZOS for clean antialiasing. Safe to re-run any time (idempotent: it
-simply overwrites the outputs).
+- logo-{1024,512,192,180,64,32,16}.png — transparent-background mark
+  (180 is the apple-touch icon and gets an opaque paper background,
+  because iOS composites transparent icons onto black)
+- favicon.ico — classic 16/32/48 multi-size favicon
+- logo-maskable-512.png — full-bleed paper background, mark inside the
+  80% safe zone (PWA maskable)
+- og-image.png — 1200×630 Open Graph card, paper background, mark
+  centred-left (no text; the title comes from the page metadata)
+
+Previous-generation assets live in public/brand/v1/.
+
+Safe to re-run any time (idempotent: it simply overwrites the outputs).
 
 Usage: python3 scripts/make-brand-assets.py
 """
@@ -16,86 +25,109 @@ import os
 
 from PIL import Image, ImageDraw
 
-PIN_BLUE = (43, 78, 255, 255)  # #2b4eff
 PAPER = (250, 249, 247, 255)  # #faf9f7
-WHITE = (255, 255, 255, 255)
-
-SS = 4  # supersample factor
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_DIR = os.path.join(ROOT, "public", "brand")
+SOURCE = os.path.join(OUT_DIR, "source.png")
 
 
-def draw_mark(draw: ImageDraw.ImageDraw, x: float, y: float, side: float) -> None:
-    """Draw the full logo mark (rounded square + rings) with its top-left
-    corner at (x, y) and the given side length, in supersampled coords."""
-    radius = 0.22 * side
-    draw.rounded_rectangle(
-        [x, y, x + side - 1, y + side - 1], radius=radius, fill=PIN_BLUE
+def cut_mark() -> Image.Image:
+    """The pin artwork alone: background made transparent, cropped to
+    content, padded back out to a square canvas.
+
+    The source has a flat near-white background (white page corners and
+    an off-white rounded card, all connected). A flood fill from each
+    corner removes exactly that; the whites inside the artwork survive
+    because the navy outline seals them off.
+    """
+    img = Image.open(SOURCE).convert("RGBA")
+    w, h = img.size
+
+    sentinel = (255, 0, 255, 0)  # transparent magenta, never in the art
+    for corner in [(0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)]:
+        ImageDraw.floodfill(img, corner, sentinel, thresh=45)
+
+    # JPEG noise leaves stray near-white specks the flood fill missed.
+    # Anything still opaque but close to the background colour that has
+    # a transparent neighbour is fringe — clear it, a few passes deep.
+    px = img.load()
+    for _ in range(3):
+        fringe = []
+        for y in range(h):
+            for x in range(w):
+                r, g, b, a = px[x, y]
+                if a == 0 or not (r > 225 and g > 225 and b > 220):
+                    continue
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < w and 0 <= ny < h and px[nx, ny][3] == 0:
+                        fringe.append((x, y))
+                        break
+        if not fringe:
+            break
+        for x, y in fringe:
+            px[x, y] = sentinel
+
+    bbox = img.getbbox()
+    if bbox is None:
+        raise SystemExit("source.png came out empty — check the flood fill")
+    mark = img.crop(bbox)
+
+    # Square canvas with 4% padding so nothing touches the edge.
+    side = int(max(mark.size) * 1.08)
+    canvas = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+    canvas.paste(
+        mark, ((side - mark.width) // 2, (side - mark.height) // 2), mark
     )
-
-    cx = x + side / 2
-    cy = y + side / 2
-
-    def circle(diameter: float, fill) -> None:
-        r = diameter / 2
-        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=fill)
-
-    ring_outer = 0.56 * side  # outer diameter of the ring
-    stroke = 0.07 * side  # ring stroke width
-    circle(ring_outer, WHITE)  # ring, outer edge
-    circle(ring_outer - 2 * stroke, PIN_BLUE)  # punch the ring hole
-    circle(0.18 * side, WHITE)  # inner filled dot
+    return canvas
 
 
-def make_logo(size: int) -> Image.Image:
-    """The mark alone on a transparent square canvas of the given size."""
-    big = size * SS
-    img = Image.new("RGBA", (big, big), (0, 0, 0, 0))
-    draw_mark(ImageDraw.Draw(img), 0, 0, big)
-    return img.resize((size, size), Image.LANCZOS)
+def on_paper(mark: Image.Image, size: int, scale: float = 0.86) -> Image.Image:
+    """The mark centred on an opaque paper square (apple touch, maskable)."""
+    img = Image.new("RGBA", (size, size), PAPER)
+    inner = int(size * scale)
+    m = mark.resize((inner, inner), Image.LANCZOS)
+    off = (size - inner) // 2
+    img.paste(m, (off, off), m)
+    return img
 
 
-def make_maskable(size: int) -> Image.Image:
-    """Full-bleed #2b4eff background; the rounded square fills only the
-    inner 80% safe zone (for PWA maskable icons)."""
-    big = size * SS
-    img = Image.new("RGBA", (big, big), PIN_BLUE)
-    side = 0.8 * big
-    off = (big - side) / 2
-    draw_mark(ImageDraw.Draw(img), off, off, side)
-    return img.resize((size, size), Image.LANCZOS)
-
-
-def make_og(width: int = 1200, height: int = 630, mark: int = 220) -> Image.Image:
-    """Paper background with the logo mark centred-left. No text."""
-    big_w, big_h = width * SS, height * SS
-    img = Image.new("RGBA", (big_w, big_h), PAPER)
-    side = mark * SS
-    x = 120 * SS  # left margin — mark sits centred-left
-    y = (big_h - side) / 2
-    draw_mark(ImageDraw.Draw(img), x, y, side)
-    return img.resize((width, height), Image.LANCZOS).convert("RGB")
+def make_og(mark: Image.Image, width: int = 1200, height: int = 630) -> Image.Image:
+    """Paper background with the mark centred-left. No text."""
+    img = Image.new("RGBA", (width, height), PAPER)
+    side = 340
+    m = mark.resize((side, side), Image.LANCZOS)
+    img.paste(m, (120, (height - side) // 2), m)
+    return img.convert("RGB")
 
 
 def main() -> None:
     os.makedirs(OUT_DIR, exist_ok=True)
+    mark = cut_mark()
 
-    for size in (1024, 512, 192, 180, 64, 32, 16):
+    for size in (1024, 512, 192, 64, 32, 16):
         path = os.path.join(OUT_DIR, f"logo-{size}.png")
-        make_logo(size).save(path)
+        mark.resize((size, size), Image.LANCZOS).save(path)
         print(f"wrote {path}")
 
+    # Apple touch icon: opaque background, mark in the middle.
+    apple_path = os.path.join(OUT_DIR, "logo-180.png")
+    on_paper(mark, 180).save(apple_path)
+    print(f"wrote {apple_path}")
+
     ico_path = os.path.join(OUT_DIR, "favicon.ico")
-    make_logo(48).save(ico_path, sizes=[(16, 16), (32, 32), (48, 48)])
+    mark.resize((48, 48), Image.LANCZOS).save(
+        ico_path, sizes=[(16, 16), (32, 32), (48, 48)]
+    )
     print(f"wrote {ico_path}")
 
     maskable_path = os.path.join(OUT_DIR, "logo-maskable-512.png")
-    make_maskable(512).save(maskable_path)
+    on_paper(mark, 512, scale=0.72).save(maskable_path)
     print(f"wrote {maskable_path}")
 
     og_path = os.path.join(OUT_DIR, "og-image.png")
-    make_og().save(og_path)
+    make_og(mark).save(og_path)
     print(f"wrote {og_path}")
 
 

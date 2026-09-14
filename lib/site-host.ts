@@ -55,6 +55,22 @@ export function shopPath(slug: string, path = "") {
   return SUBDOMAIN_LIVE ? shopUrl(slug, path) : `/s/${slug}${path}`;
 }
 
+/**
+ * The internal-link base for the host actually serving this request.
+ *
+ * shopPath falls back to an absolute URL because it cannot know the
+ * request host — and an absolute href forces a full page load on every
+ * click. Given the host, the answer is exact: on the shop's own subdomain
+ * the site lives at the root ("" — links read /services and the host
+ * rewrite resolves them), anywhere else it lives under /s/<slug>. Both
+ * forms are plain paths, which is what lets next/link keep navigation
+ * client-side. Use `base || "/"` for the home link.
+ */
+export function shopBase(slug: string, host: string | null | undefined) {
+  const h = (host ?? "").split(":")[0].toLowerCase();
+  return DOMAIN && h === `${slug}.${DOMAIN}`.toLowerCase() ? "" : `/s/${slug}`;
+}
+
 /** The same thing without the scheme, for printing on a page. */
 export function shopHost(slug: string) {
   return SUBDOMAIN_LIVE

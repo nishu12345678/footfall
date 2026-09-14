@@ -13,7 +13,9 @@ import {
   whatsappLink,
 } from "@/lib/site-data";
 import { breadcrumbs } from "@/lib/site-schema";
-import { shopUrl, shopPath } from "@/lib/site-host";
+import Link from "next/link";
+import { headers } from "next/headers";
+import { shopUrl, shopBase } from "@/lib/site-host";
 
 export async function generateMetadata({
   params,
@@ -46,7 +48,7 @@ export default async function ContactPage({
   if (!data) notFound();
 
   const { site, business, hours, tel } = data;
-  const base = shopPath(site.slug);
+  const base = shopBase(site.slug, (await headers()).get("host"));
   const wa = whatsappLink(
     data.whatsapp,
     `Hi ${business.orgName}, I found you on your website and I'd like to know more.`,
@@ -73,9 +75,9 @@ export default async function ContactPage({
 
       <main className="mx-auto max-w-[1280px] px-6 pt-16 pb-16 sm:px-10 sm:pt-24 sm:pb-24 lg:px-14">
         <nav aria-label="Breadcrumb" className="text-[12px] text-muted">
-          <a href={base} className="hover:text-pin">
+          <Link href={base || "/"} className="hover:text-pin">
             Home
-          </a>
+          </Link>
           <span aria-hidden> / </span>
           <span>Contact</span>
         </nav>

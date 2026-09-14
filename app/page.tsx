@@ -1,32 +1,45 @@
-import { Does } from "@/components/does";
-import { Faq } from "@/components/faq";
-import { Footer } from "@/components/footer";
-import { Hero } from "@/components/hero";
-import { How } from "@/components/how";
-import { Nav } from "@/components/nav";
-import { Pricing } from "@/components/pricing";
-import { Proof } from "@/components/proof";
-import { Report } from "@/components/report";
-import { Start } from "@/components/start";
-import { Trades, TrustBar } from "@/components/trades";
-import { Vision } from "@/components/vision";
+import { DM_Sans } from "next/font/google";
+import { Does } from "@/components/landing/does";
+import { Faq } from "@/components/landing/faq";
+import { Footer } from "@/components/landing/footer";
+import { Hero } from "@/components/landing/hero";
+import { How } from "@/components/landing/how";
+import { MobileCta } from "@/components/landing/mobile-cta";
+import { Nav } from "@/components/landing/nav";
+import { Pricing } from "@/components/landing/pricing";
+import { Proof } from "@/components/landing/proof";
+import { Report } from "@/components/landing/report";
+import { Start } from "@/components/landing/start";
+import { Trades } from "@/components/landing/trades";
+import { Vision } from "@/components/landing/vision";
+import { Why } from "@/components/landing/why";
+
+/*
+ * DM Sans for the marketing page only. The app keeps Manrope; fonts from
+ * next/font are scoped to wherever their className lands, and this one
+ * lands on the .landing wrapper (see globals.css).
+ */
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
+  subsets: ["latin"],
+  display: "swap",
+});
 
 export default function Page() {
   return (
-    <>
+    <div className={`landing ${dmSans.variable} min-h-dvh overflow-x-clip`}>
       <Nav />
       <main>
         <Hero />
-        {/* Reassurance, then "this is for you", before any argument.
-            An owner decides whether the page is talking to them long
-            before they reach the reasoning. */}
-        <TrustBar />
+        {/* "This is for you" before any argument. An owner decides whether
+            the page is talking to them long before they reach the reasoning. */}
         <Trades />
         {/* The free report is the cheapest yes on the page, so it comes
-            before any argument about price. */}
+            before anything about price. */}
         <Report />
         <How />
         <Does />
+        <Why />
         <Vision />
         <Proof />
         <Pricing />
@@ -34,6 +47,7 @@ export default function Page() {
         <Start />
       </main>
       <Footer />
-    </>
+      <MobileCta />
+    </div>
   );
 }

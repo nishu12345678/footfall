@@ -477,6 +477,246 @@ a.link:hover {
   }
 }
 
+/* ------------------------------- landing --------------------------------
+   The marketing page has its own, quieter system: pure white, cool
+   greys, hairline borders, square-ish corners, no shadows and no
+   scroll animation. Everything is scoped under .landing so the app
+   pages (which use the warm system above) are untouched. Type is
+   DM Sans, loaded in app/page.tsx and set on the wrapper. */
+
+.landing {
+  --l-ink: #111827;
+  --l-ink-2: #1f2937;
+  --l-muted: #6b7280;
+  --l-line: #eef0f2;
+  --l-wash: #f9fafb;
+  --l-wash-2: #f3f4f6;
+  --l-primary: #171717;
+  --l-google: #1a73e8;
+  --l-green: #16a34a;
+
+  background: #ffffff;
+  color: var(--l-ink);
+  font-family: var(--font-dm-sans), -apple-system, BlinkMacSystemFont,
+    system-ui, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.landing * {
+  border-color: var(--l-line);
+}
+
+.landing h1,
+.landing h2,
+.landing h3,
+.landing h4 {
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.landing h3 {
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+
+.landing ::selection {
+  background: rgb(17 24 39 / 0.12);
+}
+
+.landing :focus-visible {
+  outline: 3px solid rgb(17 24 39 / 0.25);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Buttons: the aidm move is a squared-off near-black button that lifts a
+   hair on hover, and an outlined twin that fills on hover. */
+.lb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.15s ease-out,
+    background-color 0.15s ease-out,
+    color 0.15s ease-out,
+    box-shadow 0.15s ease-out,
+    border-color 0.15s ease-out;
+}
+
+.lb:active {
+  transform: scale(0.99);
+}
+
+.lb svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.lb-lg {
+  height: 52px;
+  padding: 0 24px;
+  border-radius: 12px;
+  font-size: 16px;
+}
+
+.lb-primary {
+  background: var(--l-primary);
+  color: #ffffff;
+}
+
+.lb-primary:hover {
+  background: rgb(23 23 23 / 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.lb-primary:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.lb-outline {
+  border-color: var(--l-ink);
+  color: var(--l-ink);
+  background: #ffffff;
+}
+
+.lb-outline:hover {
+  background: var(--l-ink);
+  color: #ffffff;
+}
+
+.lb-white {
+  background: #ffffff;
+  color: var(--l-ink);
+}
+
+.lb-white:hover {
+  background: var(--l-wash-2);
+}
+
+.lb-link {
+  padding: 0 16px;
+  color: var(--l-ink);
+  text-underline-offset: 4px;
+}
+
+.lb-link:hover {
+  text-decoration: underline;
+}
+
+.lb-whatsapp {
+  background: #25d366;
+  color: #ffffff;
+}
+
+.lb-whatsapp:hover {
+  background: #1fb85a;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgb(37 211 102 / 0.25);
+}
+
+/* A small tinted pill — the badge above the headline, tags on cards. */
+.l-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+/* Icon inside a soft circle, used in every bullet list on the page. */
+.l-dot {
+  display: flex;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+}
+
+.l-dot svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Testimonial and feature strips scroll sideways on a phone. */
+.l-snap {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.l-snap::-webkit-scrollbar {
+  display: none;
+}
+
+.l-snap > * {
+  scroll-snap-align: center;
+}
+
+/* The mobile bar slides up once the hero has scrolled past. */
+.l-mobile-bar {
+  transform: translateY(100%);
+  transition: transform 0.3s ease-out;
+}
+
+.l-mobile-bar.is-on {
+  transform: translateY(0);
+}
+
+/* <details> accordion: the chevron turns, the answer has room. */
+.landing details > summary {
+  list-style: none;
+}
+
+.landing details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.landing details[open] .l-chev {
+  transform: rotate(180deg);
+}
+
+.l-chev {
+  transition: transform 0.2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lb,
+  .lb:hover,
+  .lb:active {
+    transform: none;
+    transition-property: background-color, color, border-color, box-shadow;
+  }
+  .l-mobile-bar {
+    transition: none;
+  }
+  .l-chev {
+    transition: none;
+  }
+}
+
 /* Three quiet dots, the way an assistant "thinks". */
 @keyframes thinking {
   0%,

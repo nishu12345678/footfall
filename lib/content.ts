@@ -30,6 +30,7 @@ const WHATSAPP = `https://wa.me/${COMPANY.phoneHref.replace(
 
 export const LINKS = {
   cta: "/app",
+  login: "/app/login",
   secondary: "#how",
   whatsapp: WHATSAPP,
   support: `mailto:${COMPANY.email}`,
@@ -43,9 +44,17 @@ export const NAV = [
   { label: "FAQ", href: "#faq" },
 ];
 
+/** The two buttons in the header and the sticky bar on a phone. */
+export const NAV_CTA = {
+  primary: "Get my free report",
+  login: "Login",
+};
+
 export const HERO = {
   chip: "Built for Indian shops, clinics and salons",
   headline: "Get more customers from Google, without doing it yourself",
+  /* The one word in the headline that gets colour. */
+  highlight: "Google",
   sub: "footfall is an AI that runs your Google Business Profile — posting every week, replying to every review, and answering enquiries on WhatsApp while you run the shop.",
   ctaPrimary: "Get my free report",
   ctaWhatsapp: "Talk on WhatsApp",
@@ -246,6 +255,39 @@ export const REPORT = {
   note: "About 40 seconds. Nothing is published and nothing on your listing changes.",
 };
 
+/* ------------------------------ why google -------------------------------
+   Four numbers, the way a SaaS page shows why its channel matters. Each
+   one is a published figure — check them against the source before
+   changing the wording, and keep the source line on the page. */
+
+export const WHY = {
+  heading: "Why Google, not Instagram?",
+  sub: "Instagram is where people scroll. Google is where someone two streets away, with money in their pocket, decides.",
+  stats: [
+    {
+      value: "76%",
+      label: "of people who search for something nearby on their phone visit a business within a day",
+      source: "Google",
+    },
+    {
+      value: "28%",
+      label: "of those nearby searches end in a purchase",
+      source: "Google",
+    },
+    {
+      value: "87%",
+      label: "of consumers used Google to check out a local business in the last year",
+      source: "BrightLocal",
+    },
+    {
+      value: "98%",
+      label: "read online reviews before choosing a local business",
+      source: "BrightLocal",
+    },
+  ],
+  note: "Sources: Google consumer research on “near me” searches; BrightLocal Local Consumer Review Survey.",
+};
+
 export const VISION = {
   eyebrow: "Why we built this",
   heading: "The money is going to the wrong screen",
@@ -266,6 +308,11 @@ export const FOUNDER = {
   /* drop a square photo at /public/founder.jpg and set this to "/founder.jpg" */
   photo: "",
   initial: "G",
+};
+
+export const HOW = {
+  heading: "Connect once. It runs every week.",
+  sub: "Nothing to install and nothing to learn. Everything reaches you as a WhatsApp message you approve or ignore.",
 };
 
 export const STEPS = [
@@ -329,6 +376,7 @@ export const DOES = {
 
 export const PROOF = {
   eyebrow: "Proof",
+  heading: "What owners tell us",
   /* ⚠ REPLACE. this must be a number you can screenshot. */
   stat: {
     value: "3",
@@ -494,6 +542,13 @@ export const FAQ = {
       a: "Yes. Nothing auto-debits — you pay for a period and that period is what you get. If you don't pay again it simply stops, your report stays free, and everything we published stays up on your listing.",
     },
   ],
+};
+
+/** The last thing on the page before the footer. */
+export const START = {
+  heading: "Let’s look at your listing together",
+  sub: "Send us your business name and area. We’ll pull up your Google listing, tell you exactly what’s broken on it, and fix the first three things with you — today, while you watch.",
+  note: "No card. No call booking. No 40-minute demo.",
 };
 
 export const FOOTER = {

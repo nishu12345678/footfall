@@ -31,6 +31,7 @@ export const home = paidQuery({
       keywords,
       metrics,
       offerings,
+      site,
     ] = await Promise.all([
       ctx.db
         .query("posts")
@@ -65,6 +66,10 @@ export const home = paidQuery({
         .query("offerings")
         .withIndex("by_business", (q) => q.eq("businessId", id))
         .collect(),
+      ctx.db
+        .query("sites")
+        .withIndex("by_business", (q) => q.eq("businessId", id))
+        .first(),
     ]);
 
     /*
@@ -112,6 +117,11 @@ export const home = paidQuery({
 
     return {
       business,
+      /* The free site footfall generated, if any. The website tile must
+         agree with /app/website, which reads this same table — checking
+         only business.website (the external URL on the Google listing)
+         told owners with a live generated site that they had nothing. */
+      site: site ? { slug: site.slug, published: site.published } : null,
       reviews: {
         total: reviews.length,
         thisWeek: reviews.filter((r) => r.createdAt >= weekAgo).length,

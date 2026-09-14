@@ -13,8 +13,8 @@ const BIG: Record<string, ShotKey> = {
 
 const SMALL_ICON: Record<string, IconName> = {
   Keywords: "search",
-  "Review collection": "qr-code",
-  "Service pages": "layers",
+  Photos: "image",
+  Website: "globe",
 };
 
 export function Does() {

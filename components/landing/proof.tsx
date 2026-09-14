@@ -1,4 +1,5 @@
 import { PROOF } from "@/lib/content";
+import { Shot } from "./shot";
 import { Heading, Section } from "./ui";
 
 /**
@@ -13,6 +14,22 @@ export function Proof() {
         title={PROOF.heading}
         sub={`${PROOF.stat.value} ${PROOF.stat.label}. ${PROOF.note}`}
       />
+
+      {/* Screenshots from a live listing footfall runs — the app doing
+          the work, not a mockup of it. */}
+      <div className="mt-12 grid gap-6 md:grid-cols-2">
+        {PROOF.evidence.map((e) => (
+          <figure
+            key={e.shot}
+            className="overflow-hidden rounded-3xl border border-[var(--l-line)]"
+          >
+            <Shot name={e.shot} plain />
+            <figcaption className="border-t border-[var(--l-line)] px-6 py-4 text-[13px] text-[var(--l-muted)]">
+              {e.caption}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
 
       <div className="l-snap -mx-6 mt-12 flex gap-6 overflow-x-auto px-6 pb-2 md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0 lg:grid-cols-4">
         {PROOF.quotes.map((q) => (

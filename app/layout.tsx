@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   },
   title: "footfall — The AI that runs your Google listing",
   description:
-    "Your Google listing is where customers nearby decide. footfall posts every week, replies to every review, collects new ones and answers enquiries on WhatsApp — so people walk in. Built for Indian salons, clinics and shops.",
+    "Your Google listing is where customers nearby decide. footfall posts every week, replies to every review, and keeps your photos and hours fresh — so people walk in. Built for Indian salons, clinics and shops.",
   openGraph: {
     title: "footfall — The AI that runs your Google listing",
     description:

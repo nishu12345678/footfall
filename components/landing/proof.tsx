@@ -1,6 +1,13 @@
+import type { ReactNode } from "react";
 import { PROOF } from "@/lib/content";
-import { Shot } from "./shot";
+import { AppPerformanceMock, AppReviewsMock } from "./app-mock";
 import { Heading, Section } from "./ui";
+
+/* Which mock renders in which evidence card. */
+const EVIDENCE: Record<string, ReactNode> = {
+  reviews: <AppReviewsMock />,
+  performance: <AppPerformanceMock />,
+};
 
 /**
  * Quotes in a row that scrolls sideways on a phone and sits four-up on
@@ -15,21 +22,24 @@ export function Proof() {
         sub={`${PROOF.stat.value} ${PROOF.stat.label}. ${PROOF.note}`}
       />
 
-      {/* Screenshots from a live listing footfall runs — the app doing
-          the work, not a mockup of it. */}
-      <div className="mt-12 grid gap-6 md:grid-cols-2">
+      {/* The app rebuilt in HTML with sample data — sharp at every
+          width, nothing to screenshot or anonymise. */}
+      <div className="mx-auto mt-12 grid max-w-3xl gap-6 md:grid-cols-2">
         {PROOF.evidence.map((e) => (
           <figure
-            key={e.shot}
-            className="overflow-hidden rounded-3xl border border-[var(--l-line)]"
+            key={e.id}
+            className="flex flex-col overflow-hidden rounded-3xl border border-[var(--l-line)]"
           >
-            <Shot name={e.shot} plain />
+            <div className="flex-1">{EVIDENCE[e.id]}</div>
             <figcaption className="border-t border-[var(--l-line)] px-6 py-4 text-[13px] text-[var(--l-muted)]">
               {e.caption}
             </figcaption>
           </figure>
         ))}
       </div>
+      <p className="mt-4 text-center text-[12px] text-[#9ca3af]">
+        {PROOF.evidenceNote}
+      </p>
 
       <div className="l-snap -mx-6 mt-12 flex gap-6 overflow-x-auto px-6 pb-2 md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0 lg:grid-cols-4">
         {PROOF.quotes.map((q) => (

@@ -66,36 +66,8 @@ export const SHOTS = {
     prompt:
       "Documentary-style editorial photograph, natural light, 35mm, shallow depth of field. A confident Indian woman in her late thirties, owner of a small unisex salon, standing at her reception counter looking at her phone with a slight smile. Behind her, slightly out of focus: a salon chair, a mirror with warm bulbs, a shelf of products, a small idol and a flower garland. On the counter in front of her: a small acrylic standee with a QR code and the words 'Rate us on Google'. Real, unposed, warm skin tones, no text overlays, no logos, no heavy retouching. Horizontal, 4:3.",
   },
-
-  /* ------------------------- app screenshots -------------------------
-     Captured from the real product, not generated. Anonymise before
-     capture: rename the business and any reviewer names (edit the text
-     in devtools before taking the shot, or hand me the raw capture and
-     I'll patch it). Capture at 2× on a ~430px-wide viewport so the text
-     stays sharp. Dimensions below are estimates — I adjust the manifest
-     to the real file when it lands. */
-  "app-posts": {
-    width: 900,
-    height: 1100,
-    alt: "A drafted Google post in footfall, waiting for the owner's one-tap approve",
-    role: "How it works. Replaces the retired WhatsApp mockup — the real approve/edit card from /app/posts is the honest version of 'you stay in control'.",
-    prompt:
-      "SCREENSHOT of /app/posts: one drafted post card showing the generated image, the post text, and the approve / edit / delete row. Crop to the single card. Anonymise the business name first.",
-  },
-  "app-reviews": {
-    width: 900,
-    height: 1100,
-    alt: "footfall's review inbox: every review answered, replies published minutes after they arrive",
-    role: "Proof section. The 100%-replied review list is the strongest evidence on the page.",
-    prompt:
-      "SCREENSHOT of /app/reviews: two or three reviews with their published replies, ideally with the 'your reply · N days ago' metadata visible. Anonymise reviewer names and the business name first.",
-  },
-  "app-performance": {
-    width: 900,
-    height: 1100,
-    alt: "footfall's performance screen: views, calls and direction requests from the listing",
-    role: "Proof section, beside app-reviews. Real numbers from a real listing.",
-    prompt:
-      "SCREENSHOT of /app/performance: the top block — views / calls / directions cards and the views-per-day chart. Anonymise the business name first.",
-  },
 } as const;
+
+/* The app screens shown in "how it works" and "proof" are not image
+   slots: they're rebuilt in HTML with sample data — see
+   components/landing/app-mock.tsx. */

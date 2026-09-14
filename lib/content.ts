@@ -1,5 +1,4 @@
 import { COMPANY } from "./company";
-import type { ShotKey } from "./landing-images";
 /* ---------------------------------------------------------------------------
    footfall — every word on the landing page lives here.
    edit copy in this file. don't edit copy inside components.
@@ -100,6 +99,67 @@ export const MAP_PACK = {
   beforeLabel: "You were here — page 1, position 7",
   afterLabel: "Top 3. This is where the calls come from.",
   note: "An illustration of the outcome we work toward, not a guaranteed result. Ranking moves over weeks.",
+};
+
+/* ------------------------------ app mockups ------------------------------
+   The product screens on the landing page — the approve card, the review
+   inbox and the performance screen — rebuilt in HTML instead of
+   screenshots, so they stay sharp, anonymised and in step with the app.
+   All of it is sample data and the page says so. The screens mirror
+   /app/posts, /app/reviews and /app/performance faithfully: posts are
+   drafts until approved, happy reviews auto-reply, complaints wait. */
+export const APP_MOCK = {
+  business: { initial: "S", name: "Sharma Hair Studio", meta: "Thane West" },
+  tabs: ["Home", "Performance", "Posts", "Photos", "Reviews"],
+  post: {
+    label: "This week's post",
+    status: "draft",
+    headline: "Monsoon rate — haircut + beard shape ₹299",
+    photoNote: "Your own photo from the listing, with the headline over it",
+    body: "Monsoon rate — haircut + beard shape ₹299, weekdays before 2 PM. Walk in, no appointment needed.",
+    approve: "approve",
+    edit: "edit",
+    remove: "delete",
+    footer: "Approved posts take the next free Mon, Wed or Fri morning slot.",
+  },
+  reviews: {
+    title: "Reviews",
+    pill: "1 waiting for you",
+    replied: {
+      initial: "P",
+      color: "#db2777",
+      name: "Priya K.",
+      stars: 5,
+      when: "2 days ago",
+      text: "Went in on a Sunday without booking and still got done in 20 minutes. Good with kids also.",
+      replyLabel: "Your reply · 2 days ago",
+      reply:
+        "Thank you Priya! On Sundays we keep two chairs free for walk-ins. See you next time.",
+    },
+    held: {
+      initial: "A",
+      color: "#ea580c",
+      name: "Amit R.",
+      stars: 2,
+      when: "3 hours ago",
+      text: "Waited 40 min on a Saturday, nobody told me how long it would be.",
+      replyLabel: "Drafted · waiting for your approval",
+      reply:
+        "Sorry Amit, Saturdays after 5 get crowded and we should have told you. Come by any weekday before 2 and we'll take you straight in.",
+    },
+  },
+  performance: {
+    ranges: ["7 days", "30 days", "90 days"],
+    stats: [
+      { label: "Views", value: "350" },
+      { label: "Calls", value: "4" },
+      { label: "Directions", value: "9" },
+    ],
+    chartLabel: "Views per day",
+    bars: [64, 112, 38, 96, 22, 48, 71, 26],
+    axis: ["7 Sept", "peak 112", "14 Sept"],
+    footer: "Synced nightly from Google's own numbers.",
+  },
 };
 
 /* ------------------------------ who it's for -----------------------------
@@ -358,18 +418,22 @@ export const PROOF = {
     placeholder: true,
   },
   note: "We're onboarding shops one at a time and sitting with each owner while they use it.",
-  /* Real screenshots from a live listing footfall runs. Captions must
-     stay true to the capture; anonymise names before shipping. */
+  /* The app itself, rebuilt in HTML with sample data — no screenshots
+     to capture or anonymise, and it never drifts from the design. The
+     note under the grid says the data is sample data. */
   evidence: [
     {
-      shot: "app-reviews" as ShotKey,
-      caption: "Every review answered — replies drafted in the owner's voice, complaints held for approval.",
+      id: "reviews",
+      caption:
+        "The review inbox — praise answered on its own within hours; anything three stars or below drafted and held for you.",
     },
     {
-      shot: "app-performance" as ShotKey,
-      caption: "Views, calls and direction requests, pulled nightly from Google's own numbers.",
+      id: "performance",
+      caption:
+        "Performance — views, calls and direction requests, pulled nightly from Google's own numbers.",
     },
   ],
+  evidenceNote: "Product shown with sample data.",
   /* ⚠ PLACEHOLDERS. do not ship invented praise.
      paste what people actually said and set placeholder: false.
      anything still marked placeholder renders a visible "Sample" tag

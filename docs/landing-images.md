@@ -13,9 +13,12 @@ placeholders. The source of truth for slots is `lib/landing-images.ts`.
 | `feature-posts` | `feature-posts.webp` | ✅ Done |
 | `feature-reviews` | `feature-reviews.webp` | ✅ Done |
 | `owner-portrait` | `owner-portrait.webp` | ✅ Done |
-| `app-posts` | `app-posts.webp` | 📸 Waiting on your screenshot |
-| `app-reviews` | `app-reviews.webp` | 📸 Waiting on your screenshot |
-| `app-performance` | `app-performance.webp` | 📸 Waiting on your screenshot |
+
+The app screens ("how it works" and "proof") are **not image slots**:
+they're rebuilt in HTML with sample data in
+`components/landing/app-mock.tsx`, so they stay sharp at any width,
+need no anonymising, and never drift from the product's design. Edit
+their copy in `APP_MOCK` in `lib/content.ts`.
 
 ## 1 · Hero — regenerate (one Gemini run)
 
@@ -55,31 +58,11 @@ photoreal person, sharp legible card text, 16:9.
 Save as `public/marketing/hero-composite.webp` (or hand me the jpeg —
 I'll convert). Keep the 16:9-ish landscape shape.
 
-## 2 · App screenshots — you capture, three of them
-
-These come from the real app, not Gemini. Real product screenshots are
-the strongest images on the page.
-
-**Anonymise first.** The demo listing is a real client with real
-reviewer names. Easiest way: open the page, press F12, double-click the
-business name / reviewer names in the DOM and retype them (e.g.
-"Sharma Dental Clinic", "Amit R."), then screenshot. Or capture as-is
-and hand them to me — I'll patch the names before anything ships.
-
-**How to capture sharp shots:** devtools → device toolbar → width
-~430px → set zoom/DPR to 2× → screenshot the node or area.
-
-| File | Page | What to frame |
-|---|---|---|
-| `app-posts` | `/app/posts` | One drafted post card with its image, text and the **approve / edit / delete** row. Crop to the single card. |
-| `app-reviews` | `/app/reviews` | Two or three reviews with their published replies, "your reply · N days ago" visible. |
-| `app-performance` | `/app/performance` | The top block: views / calls / directions cards + the views-per-day chart. |
-
-Drop them in `~/Downloads` with any name and tell me — I'll convert,
-rename, and fix the manifest dimensions to match the real files.
-
 ## Retired
 
 - `whatsapp-approval` — cut. It illustrated a WhatsApp approval flow
-  the product does not have; approval happens in the app, which
-  `app-posts` now shows truthfully.
+  the product does not have; approval happens in the app, which the
+  `AppPostsMock` HTML mock now shows truthfully.
+- `app-posts` / `app-reviews` / `app-performance` — never captured;
+  replaced by the HTML mocks in `components/landing/app-mock.tsx`
+  before any screenshot was taken.

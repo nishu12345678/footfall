@@ -1,6 +1,6 @@
 import { HOW, LINKS, REPORT, STEPS } from "@/lib/content";
+import { AppPostsMock } from "./app-mock";
 import { Icon, type IconName } from "./icons";
-import { Shot } from "./shot";
 import { Bullet, Section } from "./ui";
 
 const STEP_ICON: IconName[] = ["log-in", "zap", "users"];
@@ -15,10 +15,10 @@ export function How() {
     <Section id="how" wash>
       <div className="grid items-center gap-12 md:grid-cols-2 md:gap-16">
         <div className="order-2 md:order-1">
-          {/* The real approve/edit card from /app/posts — the honest
-              version of "you stay in control". */}
-          <div className="mx-auto max-w-sm overflow-hidden rounded-3xl border border-[var(--l-line)] shadow-[0_24px_60px_-30px_rgba(17,24,39,0.25)]">
-            <Shot name="app-posts" plain />
+          {/* The approve/edit card from /app/posts, rebuilt in HTML —
+              the honest version of "you stay in control". */}
+          <div className="mx-auto max-w-sm overflow-hidden rounded-3xl border border-[var(--l-line)] bg-white shadow-[0_24px_60px_-30px_rgba(17,24,39,0.25)]">
+            <AppPostsMock />
           </div>
         </div>
 

@@ -17,7 +17,9 @@ import { COMPANY } from "./company";
 export const BRAND = {
   name: "footfall",
   tagline: "The AI that runs your Google listing, so people nearby walk in.",
-  city: "Muzaffarnagar",
+  /* Shown in the footer's "Built in …" line. The registered-office city
+     stays in lib/company.ts for the legal pages. */
+  city: "India",
 };
 
 /** The number people can just message. Same one as the footer. */

@@ -69,8 +69,11 @@ export const saveGooglePhotos = internalMutation({
         caption: v.optional(v.string()),
       }),
     ),
+    /** True when `items` is the complete Google gallery, which makes it
+        safe to drop mirrored rows Google no longer lists. */
+    removeMissing: v.optional(v.boolean()),
   },
-  handler: async (ctx, { businessId, items }) => {
+  handler: async (ctx, { businessId, items, removeMissing = false }) => {
     const existing = await ctx.db
       .query("photos")
       .withIndex("by_business", (q) => q.eq("businessId", businessId))
@@ -88,6 +91,19 @@ export const saveGooglePhotos = internalMutation({
         publishedAt: Date.now(),
       });
       added += 1;
+    }
+
+    // A photo the owner deleted on Google used to linger here forever —
+    // the sync only ever added. Mirrored rows (no storageId: we did not
+    // upload them) that Google stopped listing go away with it.
+    if (removeMissing) {
+      const incoming = new Set(items.map((i) => i.url));
+      for (const row of existing) {
+        if (row.storageId) continue; // our own upload, not a mirror
+        if (row.status !== "published") continue; // still in our queue
+        if (!row.url || incoming.has(row.url)) continue;
+        await ctx.db.delete(row._id);
+      }
     }
     return added;
   },
@@ -120,24 +136,45 @@ export const syncForUser = internalAction({
       throw new ConvexError("Google refused that request. Try again, or reconnect your profile from Settings.");
     }
 
+    type MediaItem = {
+      googleUrl?: string;
+      thumbnailUrl?: string;
+      description?: string;
+      locationAssociation?: { category?: string };
+    };
     const data = JSON.parse(text || "{}");
-    const items = (data.mediaItems ?? [])
-      .filter((m: any) => m?.googleUrl || m?.thumbnailUrl)
+    const media: MediaItem[] = data.mediaItems ?? [];
+    // The list comes newest-first, which makes the shop's latest upload
+    // the site's hero by accident. The owner's chosen COVER (then
+    // PROFILE) photo leads instead; everything else keeps API order.
+    const rank = (m: MediaItem) => {
+      const c = m.locationAssociation?.category ?? "";
+      return c === "COVER" ? 0 : c === "PROFILE" ? 1 : 2;
+    };
+    const items = media
+      .filter((m) => m?.googleUrl || m?.thumbnailUrl)
       // Google's media list carries the owner's account picture alongside
       // the shop's photos. Its URL sits under /a-/ or /a/, and a headshot
       // on a post about root canals helps nobody.
-      .filter((m: any) => {
+      .filter((m) => {
         const url = String(m.googleUrl ?? m.thumbnailUrl);
         return !/googleusercontent\.com\/a[-/]/.test(url);
       })
-      .map((m: any) => ({
+      .sort((a, b) => rank(a) - rank(b))
+      .map((m) => ({
         url: sized(String(m.googleUrl ?? m.thumbnailUrl), 1600),
         caption: m.description ? String(m.description) : undefined,
       }));
 
     const added: number = await ctx.runMutation(
       internal.photos.saveGooglePhotos,
-      { businessId: business._id, items },
+      {
+        businessId: business._id,
+        items,
+        // Only reconcile deletions when this page held the whole gallery —
+        // otherwise photos beyond the first page would look "gone".
+        removeMissing: !data.nextPageToken,
+      },
     );
 
     return { added, total: items.length };

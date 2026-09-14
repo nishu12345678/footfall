@@ -621,11 +621,17 @@ export const completeLink = internalAction({
     // two halves of the switch disagree, and Google's "Malformed auth code"
     // would tell the owner nothing.
     if (code === MOCK_AUTH_CODE && !googleMocked()) {
+      // Suggest the mock URL this deployment can actually reach: the
+      // frontend that handed out the mock code also serves the mock.
+      // 127.0.0.1 is only right when the backend itself runs locally.
+      const site = (process.env.SITE_URL ?? "http://127.0.0.1:3000").replace(
+        /\/+$/,
+        "",
+      );
       return {
         ok: false,
         returnTo: link.returnTo,
-        error:
-          "The fake Google is on in .env.local but not on the backend. Run: npx convex env set GOOGLE_API_MOCK_URL http://127.0.0.1:3000/api/mock/google",
+        error: `The fake Google is on in the frontend but not on the backend. Run: npx convex env set GOOGLE_API_MOCK_URL ${site}/api/mock/google`,
       };
     }
 

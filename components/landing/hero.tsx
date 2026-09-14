@@ -52,15 +52,17 @@ export function Hero() {
         <p className="mt-4 text-[14px] text-[var(--l-muted)]">{HERO.support}</p>
       </div>
 
-      <div className="mx-auto mt-8 w-full max-w-5xl md:mt-14">
-        <div className="overflow-hidden rounded-2xl border border-[var(--l-line)] bg-white">
-          <Shot
-            name="hero-dashboard"
-            priority
-            plain
-            sizes="(min-width: 1024px) 1024px, 100vw"
-          />
-        </div>
+      {/* A person-composite on white: no frame, no border — the image's
+          own white ground merges with the page, the way the reference
+          floats its hero art. Narrower than the old panel because the
+          subject is a centered figure, not a wide dashboard. */}
+      <div className="mx-auto mt-8 w-full max-w-3xl md:mt-12">
+        <Shot
+          name="hero-composite"
+          priority
+          plain
+          sizes="(min-width: 1024px) 768px, 100vw"
+        />
       </div>
 
       {/* Reassurance line under the picture: plain, not a marquee. */}

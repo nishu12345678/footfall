@@ -72,7 +72,11 @@ export function Report() {
         </div>
 
         <div>
-          <Shot name="report-phone" />
+          {/* The composite draws its own soft panel background, so the
+              slot only rounds the corners — no border of its own. */}
+          <div className="overflow-hidden rounded-3xl">
+            <Shot name="report-composite" plain className="rounded-3xl" />
+          </div>
         </div>
       </div>
     </Section>

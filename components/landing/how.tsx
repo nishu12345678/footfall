@@ -15,7 +15,8 @@ export function How() {
     <Section id="how" wash>
       <div className="grid items-center gap-12 md:grid-cols-2 md:gap-16">
         <div className="order-2 md:order-1">
-          <Shot name="whatsapp-approval" />
+          {/* A single floating phone on white — no frame around it. */}
+          <Shot name="whatsapp-approval" plain />
         </div>
 
         <div className="order-1 md:order-2">

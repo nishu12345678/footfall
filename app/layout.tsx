@@ -38,11 +38,11 @@ export const metadata: Metadata = {
   },
   title: "footfall — The AI that runs your Google listing",
   description:
-    "Your Google listing is where customers nearby decide. footfall posts every week, replies to every review, and keeps your photos and hours fresh — so people walk in. Built for Indian salons, clinics and shops.",
+    "Your Google listing is where customers nearby decide. footfall posts every week, replies to every review, and keeps your photos and hours fresh — so people walk in. For local businesses across India.",
   openGraph: {
     title: "footfall — The AI that runs your Google listing",
     description:
-      "Stop paying for Instagram posts nobody sees. footfall works on the listing your customers actually search.",
+      "footfall runs your Google Business Profile — posts, review replies, photos and hours — so customers nearby find you and walk in.",
     type: "website",
     images: ["/brand/og-image.png"],
   },

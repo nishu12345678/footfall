@@ -2,14 +2,37 @@ import { HERO, LINKS, TRUST } from "@/lib/content";
 import { Icon, WhatsAppIcon } from "./icons";
 import { Shot } from "./shot";
 
-/** Colours one word of the headline; everything else stays ink. */
+/** Google's own letter colours: blue, red, yellow, blue, green, red. */
+const GOOGLE_COLORS = [
+  "#4285F4",
+  "#EA4335",
+  "#FBBC05",
+  "#4285F4",
+  "#34A853",
+  "#EA4335",
+];
+
+/** "Google", letter by letter in the brand palette. */
+function GoogleWord({ word }: { word: string }) {
+  return (
+    <span className="whitespace-nowrap">
+      {word.split("").map((ch, i) => (
+        <span key={i} style={{ color: GOOGLE_COLORS[i % GOOGLE_COLORS.length] }}>
+          {ch}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** Colours one word of the text; everything else stays ink. */
 function Headline({ text, word }: { text: string; word: string }) {
   const i = text.indexOf(word);
   if (i < 0) return <>{text}</>;
   return (
     <>
       {text.slice(0, i)}
-      <span style={{ color: "var(--l-google)" }}>{word}</span>
+      <GoogleWord word={word} />
       {text.slice(i + word.length)}
     </>
   );
@@ -31,6 +54,12 @@ export function Hero() {
 
         <p className="mx-auto mt-4 max-w-2xl text-base text-[var(--l-muted)] md:mt-6 md:text-xl">
           {HERO.sub}
+        </p>
+
+        {/* The one Hinglish line — in ink, a touch heavier than the
+            subhead, so it reads as a voice rather than a footnote. */}
+        <p className="mt-3 text-[17px] font-medium text-[var(--l-ink)] md:mt-4 md:text-xl">
+          <Headline text={HERO.tagline} word={HERO.highlight} />
         </p>
 
         <div className="mt-6 flex w-full flex-col items-center gap-2 sm:w-auto sm:flex-row md:mt-9 md:gap-3">

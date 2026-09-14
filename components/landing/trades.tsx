@@ -2,8 +2,8 @@ import { TRADES } from "@/lib/content";
 import { Heading, Section } from "./ui";
 
 /**
- * Naming the trade is what makes an owner read on. Ten plain bordered
- * tiles, text only — the name in ink, the searches in grey.
+ * Naming the trade is what makes an owner read on. Fifteen plain
+ * bordered tiles, text only — the name in ink, the searches in grey.
  */
 export function Trades() {
   return (

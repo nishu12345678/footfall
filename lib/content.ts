@@ -28,12 +28,16 @@ const WHATSAPP = `https://wa.me/${COMPANY.phoneHref.replace(
   "Hi, I want to know how footfall can get me more customers from Google.",
 )}`;
 
+/** The address people write to from the landing page. The legal pages
+    keep COMPANY.email — Google's OAuth review checks that one. */
+export const CONTACT_EMAIL = "contact@footfall.zone";
+
 export const LINKS = {
   cta: "/app",
   login: "/app/login",
   secondary: "#how",
   whatsapp: WHATSAPP,
-  support: `mailto:${COMPANY.email}`,
+  support: `mailto:${CONTACT_EMAIL}`,
 };
 
 export const NAV = [
@@ -51,11 +55,14 @@ export const NAV_CTA = {
 };
 
 export const HERO = {
-  chip: "Built for Indian shops, clinics and salons",
+  chip: "For local businesses across India",
   headline: "Get more customers from Google, without doing it yourself",
-  /* The one word in the headline that gets colour. */
+  /* The word in the headline that gets the Google letter colours. */
   highlight: "Google",
   sub: "footfall is an AI that runs your Google Business Profile — posting every week, replying to every review, and keeping your photos, hours and services fresh while you run the shop.",
+  /* The one Hinglish line on the page. Roman script on purpose —
+     it needs no extra font and reads naturally to the audience. */
+  tagline: "Aap dukaan chalaiye, Google hum sambhal lenge.",
   ctaPrimary: "Get my free report",
   ctaWhatsapp: "Talk on WhatsApp",
   support:
@@ -222,6 +229,31 @@ export const TRADES = {
       name: "Repairs & services",
       line: "“Near me” searches at the moment something has broken.",
     },
+    {
+      icon: "🍬",
+      name: "Sweet shops & bakeries",
+      line: "Festival counters, bulk order enquiries, photos of fresh trays.",
+    },
+    {
+      icon: "📱",
+      name: "Mobile & electronics",
+      line: "New launches, exchange offers, repair enquiries answered.",
+    },
+    {
+      icon: "💍",
+      name: "Jewellers",
+      line: "Wedding season collections, and reviews that build trust.",
+    },
+    {
+      icon: "💊",
+      name: "Chemists & pharmacies",
+      line: "Correct timings and “open now”, when it matters most.",
+    },
+    {
+      icon: "✂️",
+      name: "Boutiques & tailors",
+      line: "Festival rush, stitching timelines, photos of finished work.",
+    },
   ],
   note: "And any other shop people find by searching your trade and your area.",
 };
@@ -295,8 +327,8 @@ export const REPORT = {
    changing the wording, and keep the source line on the page. */
 
 export const WHY = {
-  heading: "Why Google, not Instagram?",
-  sub: "Instagram is where people scroll. Google is where someone two streets away, with money in their pocket, decides.",
+  heading: "Why your Google listing matters",
+  sub: "When someone nearby needs what you sell, they search Google first — and they decide fast. Your listing is what they see.",
   stats: [
     {
       value: "76%",
@@ -417,7 +449,7 @@ export const PROOF = {
     label: "local shops running on footfall this week",
     placeholder: true,
   },
-  note: "We're onboarding shops one at a time and sitting with each owner while they use it.",
+  note: "We set up every shop ourselves and stay with the owner until it works. These are the problems owners come to us with.",
   /* The app itself, rebuilt in HTML with sample data — no screenshots
      to capture or anonymise, and it never drifts from the design. The
      note under the grid says the data is sample data. */
@@ -471,7 +503,7 @@ export const PRICING = {
   heading: "One plan. Two ways to pay.",
   sub: "The report is free for everyone. A plan is what makes footfall actually do the work.",
   anchor:
-    "The freelancer posting on your Instagram charges ₹8,000–15,000 a month. This is the same work, done on the screen your customers actually search, for a fraction of it.",
+    "An agency or freelancer charges ₹8,000–15,000 a month for marketing. footfall does the Google side of that work — the screen people search when they are ready to buy — for a fraction of it.",
   launchNote:
     "Launch pricing. It goes up once the first shops are running — whatever you start on is what you keep paying.",
   free: {
@@ -552,8 +584,8 @@ export const FAQ = {
       a: "It's an AI that runs your Google Business Profile — the listing that shows up when someone nearby searches for what you sell. It posts every week, replies to your reviews, keeps your photos flowing, and tracks whether the calls and direction requests are actually going up. You connect it once and check in for two minutes a week.",
     },
     {
-      q: "Why Google and not Instagram?",
-      a: "Instagram is where people scroll. Google is where people decide. Somebody typing “salon near me” is two streets away and ready to spend money in the next hour, and that person never sees your Instagram post. This isn't an argument against Instagram — it's an argument for fixing the thing that is actually connected to your door.",
+      q: "I already do Instagram. Do I still need this?",
+      a: "Yes, and keep doing Instagram — it builds your brand and keeps your regulars close. Google does a different job: it catches the person nearby who needs you right now and has never heard of you. Somebody typing “salon near me” is ready to spend money within the hour, and your Google listing decides whether they call you or the shop two streets over. The two work together — footfall simply takes the Google half off your plate.",
     },
     {
       q: "Do I have to give you my Google password?",
@@ -625,12 +657,12 @@ export const FOOTER = {
       title: "Contact",
       links: [
         { label: "WhatsApp", href: WHATSAPP },
-        { label: COMPANY.email, href: `mailto:${COMPANY.email}` },
+        { label: CONTACT_EMAIL, href: `mailto:${CONTACT_EMAIL}` },
         { label: COMPANY.phone, href: `tel:${COMPANY.phoneHref}` },
         { label: "LinkedIn", href: COMPANY.founder.linkedin },
       ],
     },
   ],
-  legal: `A product of ${COMPANY.legalName}. footfall is an independent product — it is not affiliated with, endorsed by, or a product of Google.`,
+  legal: `footfall is a product of “${COMPANY.legalName}”. Google, Google Maps and Google Business Profile are trademarks of Google LLC. footfall is an independent service that helps you manage your own Business Profile — it is not affiliated with, sponsored by, or endorsed by Google. Search rankings depend on many factors and improve over weeks; no specific position or result is ever guaranteed.`,
   copyright: `© ${BRAND.name}, 2026 · Built in ${BRAND.city}`,
 };

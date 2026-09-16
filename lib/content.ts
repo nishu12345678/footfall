@@ -338,28 +338,41 @@ export const REPORT = {
 };
 
 /* ------------------------------ why google -------------------------------
-   Four numbers, the way a SaaS page shows why its channel matters.
+   ⚠ ALL FOUR NUMBERS ARE UNVERIFIED. Run `python3 scripts/verify-stats.py`
+   — it currently reports 4 of 4 failing. What that check found:
 
-   ⚠ UNVERIFIED — do not treat these as checked.
+   87%  "used Google to check out a local business in the last year"
+        Not in BrightLocal's current survey at all. It is a figure from an
+        older edition. Worse, the current edition's headline finding runs the
+        other way — "Google is Losing Traction", with Google's share of
+        reviews falling from 83% in 2025 to 71% in 2026 — so quoting a stale
+        rising-Google number is not just out of date, it inverts the trend.
 
-   An attempt was made to trace all four to a live primary source and it
-   failed on every one:
+   98%  "read online reviews before choosing a local business"
+        The number BrightLocal publishes is 97%, and the claim it supports is
+        weaker than ours: "at least *occasionally* read online reviews".
+        "Occasionally reads" is not "reads before choosing". Even with the
+        digit corrected the sentence would still overstate the source.
 
-     · The two Google figures are the much-repeated "near me" numbers from a
-       2016 Google/Ipsos study. Every thinkwithgoogle.com path tried returns
-       HTTP 200 from a single-page-app catch-all that serves the same shell
-       for any URL, so a 200 there proves nothing and no live page carrying
-       these numbers could be found. They have no `href` below for exactly
-       that reason — a citation nobody can follow is worse than none.
+   76%  "…visit a business within a day"   ·   28%  "…end in a purchase"
+        Both trace to a Google/Ipsos study from 2016 — a decade old. No live
+        page carrying them could be found, and thinkwithgoogle.com cannot be
+        used to check: it answers 200 for any path and returns the same shell
+        for all of them, byte-identical across two different URLs. They are
+        left unlinked deliberately; a citation nobody can follow is worse
+        than none.
 
-     · BrightLocal's Local Consumer Review Survey is real and is linked, but
-       it is re-run every year and the percentages move between editions.
-       The hub is linked rather than a year, so the link cannot rot; the
-       figures themselves still need checking against the current edition.
+   One more thing worth weighing before these are repaired rather than
+   dropped: BrightLocal's panel is 1,002 **US** consumers. This page sells to
+   a shop owner in Thane. US review behaviour is not evidence about the
+   customer walking into their salon, whatever the number says.
 
-   Before this page goes in front of anyone: confirm each number, or drop it.
-   A wrong statistic on a page selling trust is an expensive thing to be
-   caught out on. Add `href` once a figure is confirmed and it renders as a
+   Current, checkable figures from the same survey, if this section is kept:
+   97% read reviews · 41% "always" read them when browsing, up from 29% ·
+   47% won't use a business with under 20 reviews · 74% only count reviews
+   from the last three months.
+
+   Add `href` to a stat once its figure is confirmed and it renders as a
    link automatically. */
 
 export const WHY = {

@@ -41,24 +41,36 @@ function Headline({ text, word }: { text: string; word: string }) {
 /**
  * Centered hero: badge, headline with one coloured word, one-line sub,
  * a black button and a text link, then the product — big.
+ *
+ * The three copy lines can be overridden so the design-review harness can
+ * flip between headline candidates without touching lib/content.ts. With no
+ * props it renders exactly what content.ts says.
  */
-export function Hero() {
+export function Hero({
+  headline = HERO.headline,
+  tagline = HERO.tagline,
+  sub = HERO.sub,
+}: {
+  headline?: string;
+  tagline?: string;
+  sub?: string;
+} = {}) {
   return (
     <section id="top" className="w-full px-6 pb-6 pt-10 md:pb-10 md:pt-16">
       <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
         <p className="l-pill bg-[#f3e9fc] text-[#7c3aed]">{HERO.chip}</p>
 
         <h1 className="mt-5 max-w-4xl text-[2.5rem] leading-[1.12] md:mt-7 md:text-6xl md:leading-[1.05]">
-          <Headline text={HERO.headline} word={HERO.highlight} />
+          <Headline text={headline} word={HERO.highlight} />
         </h1>
 
         {/* The English value prop, right under the Hinglish headline. */}
         <p className="mt-4 text-lg font-medium text-[var(--l-ink)] md:mt-5 md:text-2xl">
-          <Headline text={HERO.tagline} word={HERO.highlight} />
+          <Headline text={tagline} word={HERO.highlight} />
         </p>
 
         <p className="mx-auto mt-3 max-w-2xl text-base text-[var(--l-muted)] md:mt-4 md:text-lg">
-          {HERO.sub}
+          {sub}
         </p>
 
         <div className="mt-6 flex w-full flex-col items-center gap-2 sm:w-auto sm:flex-row md:mt-9 md:gap-3">

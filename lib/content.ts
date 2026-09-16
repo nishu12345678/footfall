@@ -10,8 +10,7 @@ import { COMPANY } from "./company";
 
    things to change before you send this to anyone:
      1. BRAND.name          — if "footfall" isn't the name you want
-     2. FOUNDER             — your name, your photo, your handle
-     3. PROOF.stat + quotes — replace the placeholders with real ones
+     2. PROOF.stat + quotes — replace the placeholders with real ones
 --------------------------------------------------------------------------- */
 
 export const BRAND = {
@@ -412,18 +411,6 @@ export const VISION = {
     "Meanwhile the screen that decides whether anyone walks in — their Google listing — hasn't been touched in eight months. No posts. Reviews from two years ago sitting unanswered. Wrong closing time. The last photo, from the day the shop opened.",
     "That gap is the whole business. Google is where somebody nearby, right now, with money in their pocket, is choosing between you and the shop two streets over. We point an AI at that screen and nothing else.",
   ],
-  kicker:
-    "It's early. We're doing this by hand for the first few shops so we learn what actually moves the needle. Tell us what's broken.",
-};
-
-export const FOUNDER = {
-  name: "Gaurav",
-  role: "Founder",
-  handle: "@gaurav",
-  href: "#",
-  /* drop a square photo at /public/founder.jpg and set this to "/founder.jpg" */
-  photo: "",
-  initial: "G",
 };
 
 export const HOW = {

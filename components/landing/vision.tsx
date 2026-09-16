@@ -1,11 +1,10 @@
-import { FOUNDER, VISION } from "@/lib/content";
+import { VISION } from "@/lib/content";
 import { Shot } from "./shot";
 import { Section } from "./ui";
 
 /**
  * The one place the page speaks in the first person. A photograph of
- * an owner on the left, the argument on the right, the founder signing
- * it off at the bottom.
+ * an owner on the left, the argument on the right.
  */
 export function Vision() {
   return (
@@ -30,24 +29,6 @@ export function Vision() {
             {VISION.body.map((p) => (
               <p key={p.slice(0, 32)}>{p}</p>
             ))}
-          </div>
-          <p className="mt-6 border-l-2 border-[var(--l-ink)] pl-4 text-[15px] leading-relaxed text-[var(--l-muted)]">
-            {VISION.kicker}
-          </p>
-
-          <div className="mt-8 flex items-center gap-3">
-            <span
-              aria-hidden
-              className="grid h-10 w-10 place-items-center rounded-full bg-[var(--l-ink)] text-[15px] font-semibold text-white"
-            >
-              {FOUNDER.initial}
-            </span>
-            <span>
-              <span className="block text-[15px] font-semibold">{FOUNDER.name}</span>
-              <span className="block text-[13px] text-[var(--l-muted)]">
-                {FOUNDER.role}, footfall
-              </span>
-            </span>
           </div>
         </div>
       </div>

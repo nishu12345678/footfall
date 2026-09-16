@@ -83,18 +83,16 @@ export function AppPostsMock() {
         </div>
 
         <div className="relative mt-3 overflow-hidden rounded-xl">
-          {/* ⬜ Borrowed art: this is owner-portrait, a woman at a reception
-              counter, sitting under a headline selling 'haircut + beard
-              shape'. The picture and the offer are selling different
-              things. Swap to '/marketing/post-photo.webp' once that slot is
-              generated — see lib/landing-images.ts. Left as-is until the
-              file exists, because this is a raw <Image>: a missing src here
-              would render broken, not a placeholder. */}
+          {/* The photo has to agree with the offer composited over it: the
+              headline sells 'haircut + beard shape', so the picture shows a
+              beard being shaped. Its lower third is deliberately dark and
+              quiet — the gradient and white headline below sit there. See
+              the 'post-photo' slot in lib/landing-images.ts. */}
           <Image
-            src="/marketing/owner-portrait.webp"
+            src="/marketing/post-photo.webp"
             alt=""
-            width={800}
-            height={597}
+            width={1600}
+            height={900}
             className="h-40 w-full object-cover"
           />
           <div

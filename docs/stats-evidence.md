@@ -2,6 +2,19 @@
 
 Retrieved **2026-09-16**. Re-check with `python3 scripts/verify-stats.py`.
 
+As of the rewrite on 2026-09-16 the page carries **four figures, all from
+the same source, all linked, all passing `verify-stats.py`**:
+
+| Figure | Claim |
+| --- | --- |
+| 97% | read reviews for local businesses |
+| 47% | won’t use a business with fewer than 20 reviews |
+| 74% | only care about reviews from the last three months |
+| 41% | now “always” read reviews when browsing (up from 29%) |
+
+The four figures that used to be here (76% / 28% / 87% / 98%) were
+removed, not reworded — see "Removed" below for why each one failed.
+
 Everything below is a **verbatim quote** pulled from the rendered page at
 that URL on that date — not a summary, not a recollection. Where a claim
 could not be evidenced, it says so plainly rather than guessing.
@@ -80,7 +93,7 @@ this page sells to a shop owner in Thane.
 
 ---
 
-## ❌ Not evidenced
+## ❌ Removed from the page (not evidenced)
 
 ### "87% of consumers used Google to check out a local business in the last year"
 

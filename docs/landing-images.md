@@ -12,9 +12,9 @@ placeholders. The source of truth for slots is `lib/landing-images.ts`.
 | `report-composite` | `report-composite.webp` | ✅ Done |
 | `feature-posts` | `feature-posts.webp` | ✅ Done |
 | `feature-reviews` | `feature-reviews.webp` | ✅ Done |
-| `owner-portrait` | `owner-portrait.webp` | ✅ Done — but used in two slots it doesn't fit, see below |
-| `post-photo` | — | ⬜ **To generate** |
-| `owner-wrong-screen` | — | ⬜ **To generate** |
+| `owner-portrait` | `owner-portrait.webp` | ⚪ Installed but **unused** — see below |
+| `post-photo` | `post-photo.webp` | ✅ Installed |
+| `owner-wrong-screen` | `owner-wrong-screen.webp` | ✅ Installed |
 
 The app screens ("how it works" and "proof") are **not image slots**:
 they're rebuilt in HTML with sample data in
@@ -60,15 +60,16 @@ photoreal person, sharp legible card text, 16:9.
 Save as `public/marketing/hero-composite.webp` (or hand me the jpeg —
 I'll convert). Keep the 16:9-ish landscape shape.
 
-## 2 · Two photos that argue with the words next to them
+## 2 · Two photos that used to argue with the words next to them
 
-One photograph, `owner-portrait.webp`, is currently doing three jobs. In
-two of them the picture contradicts the copy sitting on top of it.
+**Both done.** One photograph, `owner-portrait.webp`, had been doing three
+jobs, and in two of them the picture contradicted the copy on top of it: a
+woman at a reception counter sat under a headline selling a beard trim, and
+a cheerful owner illustrated a paragraph about a neglected listing.
 
-Neither slot is wired up yet, deliberately: pointing a live slot at a
-file that does not exist would replace a good photo with a dashed
-placeholder on a page being reviewed right now. Generate the art, drop
-the file in, then make the one-line swap noted under each.
+Each now has its own photograph, installed and wired up. The prompts below
+are kept verbatim — not as a to-do, but because each encodes a constraint
+any replacement must also meet.
 
 ### 2a · `post-photo` — the photo inside the post draft
 
@@ -105,8 +106,10 @@ in the image. Horizontal 16:9, and keep the subject near the centre
 because the frame is cropped to a wide strip.
 ```
 
-Save as `public/marketing/post-photo.webp` (1600×900). Then in
-`app-mock.tsx` change the `src` to `/marketing/post-photo.webp`.
+**Installed** as `public/marketing/post-photo.webp` (1600×900) and wired up
+in `app-mock.tsx`. The prompt is kept because a replacement must satisfy the
+same constraint: the card crops to a wide strip and composites a white
+headline over the bottom, so the lower third has to stay dark and quiet.
 
 ### 2b · `owner-wrong-screen` — "the money is going to the wrong screen"
 
@@ -141,11 +144,16 @@ styling, no props arranged for the camera, no text overlays, no signage,
 no brand marks, no heavy retouching. Horizontal, 4:3.
 ```
 
-Save as `public/marketing/owner-wrong-screen.webp` (1600×1194). Then in
-`vision.tsx` change the `Shot` name to `owner-wrong-screen`.
+**Installed** as `public/marketing/owner-wrong-screen.webp` (1600×1194) and
+wired up in `vision.tsx`. The prompt is kept because a replacement has to
+keep the same two properties: it must show the *unsolved* state, and it must
+photograph the owner with respect — he is the customer, not a punchline.
 
-Once both are in, `owner-portrait.webp` is still used by nothing on the
-page — keep it around as a spare or delete it.
+`owner-portrait.webp` is now referenced by nothing on the page. It is kept
+rather than deleted: it is good art showing the *solved* state — an owner
+relaxed at her counter beside a 'Rate us on Google' standee — so it is a
+candidate for a future testimonial or after-state section. Do not reach for
+it to illustrate a problem.
 
 ## Retired
 

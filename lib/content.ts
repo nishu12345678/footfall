@@ -338,43 +338,35 @@ export const REPORT = {
 };
 
 /* ------------------------------ why google -------------------------------
-   ⚠ NONE OF THESE FOUR SENTENCES IS SUPPORTED AS WRITTEN. Verbatim quotes
-   and URLs are in docs/stats-evidence.md; re-check with
-   `python3 scripts/verify-stats.py`. In short:
+   Every number here is a verbatim quote from one source — BrightLocal's
+   Local Consumer Review Survey 2026 — and every one links to the page it
+   came from. Quotes and retrieval date: docs/stats-evidence.md. Re-check
+   any time with `python3 scripts/verify-stats.py`.
 
-   87%  "used Google to check out a local business in the last year"
-        Not in BrightLocal's current survey at all. It is a figure from an
-        older edition. Worse, the current edition's headline finding runs the
-        other way — "Google is Losing Traction", with Google's share of
-        reviews falling from 83% in 2025 to 71% in 2026 — so quoting a stale
-        rising-Google number is not just out of date, it inverts the trend.
+   Four earlier figures were removed rather than reworded, because each was
+   wrong in a way the reader could not have caught:
 
-   98%  "read online reviews before choosing a local business"
-        The number BrightLocal publishes is 97%, and the claim it supports is
-        weaker than ours: "at least *occasionally* read online reviews".
-        "Occasionally reads" is not "reads before choosing". Even with the
-        digit corrected the sentence would still overstate the source.
+   87%  "used Google to check out a local business" — not in the survey at
+        all, and it inverted the trend: the 2026 edition's own heading is
+        "Google is Losing Traction", with Google's share of reviews falling
+        83% → 71%.
+   98%  "read reviews before choosing" — the published figure is 97%, and it
+        supports a weaker claim: "at least *occasionally* read". Occasional
+        reading is not reading before choosing.
+   76% / 28%  — a Google/Ipsos study from 2016, a decade old, with no live
+        page carrying it. thinkwithgoogle.com cannot confirm or deny it: it
+        answers 200 for any path with the same shell, byte-identical across
+        two different URLs, so a 200 there proves nothing.
 
-   76%  "…visit a business within a day"   ·   28%  "…end in a purchase"
-        Both trace to a Google/Ipsos study from 2016 — a decade old. No live
-        page carrying them could be found, and thinkwithgoogle.com cannot be
-        used to check: it answers 200 for any path and returns the same shell
-        for all of them, byte-identical across two different URLs. They are
-        left unlinked deliberately; a citation nobody can follow is worse
-        than none.
+   One caveat that survives the repair: this panel is 1,002 **US** adults,
+   and we sell to a shop owner in Thane. The numbers are honest about
+   behaviour we cannot cite locally, which is why the note below says whose
+   consumers they are instead of implying they are ours. If an Indian
+   equivalent is ever found, prefer it over all four of these.
 
-   One more thing worth weighing before these are repaired rather than
-   dropped: BrightLocal's panel is 1,002 **US** consumers. This page sells to
-   a shop owner in Thane. US review behaviour is not evidence about the
-   customer walking into their salon, whatever the number says.
-
-   Current, checkable figures from the same survey, if this section is kept:
-   97% read reviews · 41% "always" read them when browsing, up from 29% ·
-   47% won't use a business with under 20 reviews · 74% only count reviews
-   from the last three months.
-
-   Add `href` to a stat once its figure is confirmed and it renders as a
-   link automatically. */
+   A stat renders its source as a link when it has an `href`, and as plain
+   text when it does not — so an unverifiable figure cannot quietly acquire
+   the appearance of a citation. Don't add an href you haven't opened. */
 
 export const WHY = {
   heading: "Why your Google listing matters",
@@ -385,29 +377,31 @@ export const WHY = {
   sub: "आस-पास जब किसी को वही चाहिए जो आप बेचते हैं, वो सबसे पहले Google पर ढूँढता है — और फ़ैसला मिनटों में कर लेता है। उसे जो दिखता है, वो आपकी लिस्टिंग है।",
   stats: [
     {
-      value: "76%",
-      label: "of people who search for something nearby on their phone visit a business within a day",
-      source: "Google",
-    },
-    {
-      value: "28%",
-      label: "of those nearby searches end in a purchase",
-      source: "Google",
-    },
-    {
-      value: "87%",
-      label: "of consumers used Google to check out a local business in the last year",
-      source: "BrightLocal",
+      value: "97%",
+      label: "of consumers read reviews for local businesses",
+      source: "BrightLocal 2026",
       href: "https://www.brightlocal.com/research/local-consumer-review-survey/",
     },
     {
-      value: "98%",
-      label: "read online reviews before choosing a local business",
-      source: "BrightLocal",
+      value: "47%",
+      label: "won’t use a business that has fewer than 20 reviews",
+      source: "BrightLocal 2026",
+      href: "https://www.brightlocal.com/research/local-consumer-review-survey/",
+    },
+    {
+      value: "74%",
+      label: "only care about reviews written in the last three months",
+      source: "BrightLocal 2026",
+      href: "https://www.brightlocal.com/research/local-consumer-review-survey/",
+    },
+    {
+      value: "41%",
+      label: "now “always” read reviews when browsing — up from 29% last year",
+      source: "BrightLocal 2026",
       href: "https://www.brightlocal.com/research/local-consumer-review-survey/",
     },
   ],
-  note: "Sources: Google consumer research on “near me” searches; BrightLocal Local Consumer Review Survey.",
+  note: "Source: BrightLocal Local Consumer Review Survey 2026, a panel of 1,002 US consumers.",
 };
 
 export const VISION = {

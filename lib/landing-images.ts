@@ -62,24 +62,25 @@ export const SHOTS = {
     width: 1600,
     height: 1194,
     alt: "A salon owner at her counter, checking her phone between customers",
-    role: "'Why we built this' section. The only documentary photograph on the page — it should feel like a real customer, not stock.",
+    role: "UNUSED since post-photo and owner-wrong-screen were installed. Kept because it is good art and the file is already committed: it shows the *solved* state — an owner relaxed at her counter beside a 'Rate us on Google' standee — which makes it a candidate for a future testimonial or after-state section. It is the wrong photo for anything describing the problem.",
     prompt:
       "Documentary-style editorial photograph, natural light, 35mm, shallow depth of field. A confident Indian woman in her late thirties, owner of a small unisex salon, standing at her reception counter looking at her phone with a slight smile. Behind her, slightly out of focus: a salon chair, a mirror with warm bulbs, a shelf of products, a small idol and a flower garland. On the counter in front of her: a small acrylic standee with a QR code and the words 'Rate us on Google'. Real, unposed, warm skin tones, no text overlays, no logos, no heavy retouching. Horizontal, 4:3.",
   },
 
-  /* ⬜ TO GENERATE. Both slots below exist because the same photograph —
-     owner-portrait — was being used in two places it does not fit.
+  /* ✅ INSTALLED. Both slots below exist because the same photograph —
+     owner-portrait — was being used in two places it does not fit: a woman
+     at a reception counter sat under a headline selling a beard trim, and a
+     cheerful owner illustrated a paragraph about neglect.
 
-     Nothing is wired to them yet, on purpose: pointing a live slot at a
-     missing file would swap a good photo for a dashed placeholder on a page
-     that is currently being reviewed. Generate the art, drop the file in,
-     then make the one-line swap noted in each `role` below. */
+     Each is now its own photograph. The prompts are kept verbatim because
+     they encode constraints a replacement must also satisfy — read the
+     `role` before regenerating either one. */
 
   "post-photo": {
     width: 1600,
     height: 900,
     alt: "A barber shaping a customer's beard, the kind of photo a shop puts on its own Google post",
-    role: "The photo inside the post-draft card in components/landing/app-mock.tsx, which currently borrows owner-portrait.webp. That photo shows a woman at a reception counter while the post over it advertises 'haircut + beard shape ₹299' — the picture and the offer are selling different things. Swap: in app-mock.tsx change src to '/marketing/post-photo.webp'.",
+    role: "The photo inside the post-draft card in components/landing/app-mock.tsx. In use. The card composites a dark gradient and a white headline over the bottom of this image and crops it to a wide strip (h-40 object-cover), so a replacement must keep faces and detail out of the lower third or the headline becomes unreadable.",
     prompt:
       "A photograph taken by a small-shop owner on their own phone and posted to their Google Business Profile — competent but not professional, and it should read that way. A neighbourhood Indian unisex salon in daylight. A barber in his thirties, in a simple dark apron, leaning in to shape the edge of a seated male customer's beard with a trimmer, both concentrating, the customer's face calm and half-lit by daylight from the shopfront. Around them the ordinary truth of the shop: a mirror with warm bulbs, a comb and scissors on the ledge, a towel over the chair back, bottles on a shelf. Warm natural light, mild phone-camera imperfection — slight grain, a little highlight bloom from the window, no studio lighting, no glossy retouching, shallow but imperfect focus. CRITICAL: keep the lower third of the frame visually quiet — a dark gradient and a white headline are composited over it in the product, so nothing important, no faces and no busy detail may sit there. Absolutely no text, no signage, no logos, no watermarks anywhere in the image. Horizontal 16:9, and keep the subject near the centre because the frame is cropped to a wide strip.",
   },
@@ -88,7 +89,7 @@ export const SHOTS = {
     width: 1600,
     height: 1194,
     alt: "A shop owner looking at a social media feed on his phone while his shop sits empty behind him",
-    role: "'Why we built this' / 'The money is going to the wrong screen'. That section argues the owner is paying ₹8,000–15,000 a month to get likes while the listing that actually brings people in has rotted. The photo currently there — a cheerful owner beside a 'Rate us on Google' standee — is the solved state, so it argues against the paragraph next to it. Swap: in components/landing/vision.tsx change the Shot name to 'owner-wrong-screen'.",
+    role: "'Why we built this' / 'The money is going to the wrong screen', in components/landing/vision.tsx. In use. The section argues the owner is paying ₹8,000–15,000 a month for likes while the listing that actually brings people in has rotted, so the photo has to show the unsolved state. Anything cheerful here — an owner beside a 'Rate us on Google' standee, say — argues against the paragraph beside it.",
     prompt:
       "Documentary-style editorial photograph, natural light, 35mm, shallow depth of field, muted and quiet in mood. Mid-afternoon in a small Indian shop — a unisex salon or a modest clothing shop — in the dead hour when nobody is coming in. The owner, an Indian man in his late thirties in a plain shirt, sits sideways on his own customer chair, elbows on his knees, absorbed in his phone. On the phone screen, just legible and out of focus, a generic social-media grid of square photos with small heart icons — INVENTED interface only, no recognisable app, no real logos, no readable words. Behind him the shop is tidy, lit and completely empty: two vacant chairs, a mirror, a folded towel, the shutter half up, an empty street visible beyond the doorway. His expression is patient and a little resigned, NOT defeated, NOT comic, NOT humiliating — this is the customer, photographed with respect. Warm skin tones, honest light, no styling, no props arranged for the camera, no text overlays, no signage, no brand marks, no heavy retouching. Horizontal, 4:3.",
   },

@@ -42,7 +42,15 @@ const DAY = 24 * 60 * 60 * 1000;
 
 export type OfferStatus =
   | { live: false }
-  | { live: true; days: number; urgent: boolean; label: string; deadline: string };
+  | {
+      live: true;
+      days: number;
+      urgent: boolean;
+      label: string;
+      deadline: string;
+      /** The exact end, spelled out — shown on hover behind the short label. */
+      exact: string;
+    };
 
 /** The civil date in India at an instant, as YYYY-MM-DD. */
 function istDate(ms: number): string {
@@ -75,15 +83,40 @@ export function offerDeadlineLabel(lastDay: number = LAST_DAY): string {
 }
 
 /**
+ * The full deadline, for the hover title: "Ends 31 December 2026 at
+ * 11:59 pm IST".
+ *
+ * Built from LAST_DAY and a literal end-of-day time rather than from the
+ * end instant, for the same reason the short label is: formatting the
+ * end instant gives "1 January, 12:00 am", which is technically true and
+ * reads as the offer running a day longer than it does.
+ */
+export function offerExactLabel(lastDay: number = LAST_DAY): string {
+  const day = new Intl.DateTimeFormat("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  }).format(new Date(lastDay));
+  return `Ends ${day} at 11:59 pm IST`;
+}
+
+/**
  * How the deadline should read at a given moment.
  *
- * Always a countdown — "Offer ends in 35 days" — because a number that
- * shrinks every time you come back is the thing that creates urgency; a
- * fixed date just sits there. The last two days are special-cased only
- * because "in 1 days" is broken English and "in 0 days" is nonsense.
+ * The unit gets finer as the deadline gets closer, so the line always
+ * carries roughly the same amount of pressure:
  *
- * `urgent` turns on inside the final month, which is what drives the
- * amber styling. The wording does not change, only the emphasis.
+ *   > 30 days   "Offer till 31 December"   — a date; no hurry to imply
+ *   10–30 days  "Offer ends in 3 weeks"    — softer than 22, still moving
+ *   1–9 days    "Offer ends in 6 days"     — a number that visibly drops
+ *   final day   "Offer ends in 5 hours"    — the last push
+ *
+ * The exact end is always available on hover (see `exact`), so a reader
+ * who wants the real date never has to work it out from "3 weeks".
+ *
+ * `urgent` — the amber styling — turns on at 10 days, where the wording
+ * switches to a daily countdown.
  *
  * `now` is always passed in, never read here — see the note at the top
  * about static prerendering.
@@ -96,9 +129,27 @@ export function offerStatus(now: number, endsAt: number = LAUNCH_OFFER_ENDS): Of
   /* Deliberately not offerDeadlineLabel(endsAt): endsAt is midnight, which
      spells as the following day. See the note beside LAST_DAY. */
   const deadline = offerDeadlineLabel();
-  const urgent = days <= 30;
+  const exact = offerExactLabel();
+  const urgent = days < 10;
+  const base = { live: true, days, urgent, deadline, exact } as const;
 
-  if (days > 1) return { live: true, days, urgent, label: `Offer ends in ${days} days`, deadline };
-  if (days === 1) return { live: true, days, urgent, label: "Offer ends tomorrow", deadline };
-  return { live: true, days, urgent, label: "Offer ends today", deadline };
+  if (days > 30) return { ...base, label: `Offer till ${deadline}` };
+
+  if (days >= 10) {
+    // Rounded, not floored: at 20 days "2 weeks" would understate the time
+    // left by nearly a week, and a deadline must never sound tighter than
+    // it is. 10-13 days rounds to 1, so the singular is handled.
+    const weeks = Math.round(days / 7);
+    return { ...base, label: `Offer ends in ${weeks} ${weeks === 1 ? "week" : "weeks"}` };
+  }
+
+  if (days > 1) return { ...base, label: `Offer ends in ${days} days` };
+  if (days === 1) return { ...base, label: "Offer ends tomorrow" };
+
+  /* The final day. Hours here, not calendar days — this is the one place
+     where elapsed time is what a reader means. Rounded UP, so the last
+     stretch reads "in 1 hour" rather than "in 0 hours" and never claims
+     less time than really remains. */
+  const hours = Math.ceil(ms / (60 * 60 * 1000));
+  return { ...base, label: `Offer ends in ${hours} ${hours === 1 ? "hour" : "hours"}` };
 }

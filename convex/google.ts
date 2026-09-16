@@ -266,9 +266,9 @@ export const exchangeCode = action({
       }),
     });
 
-    const payload = await res.json();
-    if (!res.ok) {
-      console.error("[google] token exchange failed", payload);
+    const payload = await tokenPayload(res);
+    if (!res.ok || !payload.access_token) {
+      console.error("[google] token exchange failed", res.status, payload);
       throw new ConvexError(
         `Google rejected the sign-in: ${payload.error_description ?? payload.error ?? res.status}`,
       );
@@ -315,9 +315,9 @@ async function freshAccessToken(
     }),
   });
 
-  const payload = await res.json();
-  if (!res.ok) {
-    console.error("[google] refresh failed", payload);
+  const payload = await tokenPayload(res);
+  if (!res.ok || !payload.access_token) {
+    console.error("[google] refresh failed", res.status, payload);
     throw new ConvexError("Could not refresh Google access. Reconnect your profile.");
   }
 
@@ -327,7 +327,34 @@ async function freshAccessToken(
     expiresAt: Date.now() + (payload.expires_in ?? 3600) * 1000,
   });
 
-  return payload.access_token as string;
+  return payload.access_token;
+}
+
+/**
+ * Reads a token-endpoint response without letting an empty or non-JSON
+ * body (a proxy error page, a misconfigured mock) surface as a bare
+ * SyntaxError that names no cause.
+ */
+async function tokenPayload(res: Response): Promise<{
+  access_token?: string;
+  refresh_token?: string;
+  scope?: string;
+  expires_in?: number;
+  error?: string;
+  error_description?: string;
+}> {
+  const raw = await res.text();
+  if (!raw.trim()) return {};
+  try {
+    return JSON.parse(raw);
+  } catch {
+    console.error(
+      "[google] token endpoint returned non-JSON",
+      res.status,
+      raw.slice(0, 400),
+    );
+    return {};
+  }
 }
 
 async function googleGet(url: string, token: string) {
@@ -621,11 +648,17 @@ export const completeLink = internalAction({
     // two halves of the switch disagree, and Google's "Malformed auth code"
     // would tell the owner nothing.
     if (code === MOCK_AUTH_CODE && !googleMocked()) {
+      // Suggest the mock URL this deployment can actually reach: the
+      // frontend that handed out the mock code also serves the mock.
+      // 127.0.0.1 is only right when the backend itself runs locally.
+      const site = (process.env.SITE_URL ?? "http://127.0.0.1:3000").replace(
+        /\/+$/,
+        "",
+      );
       return {
         ok: false,
         returnTo: link.returnTo,
-        error:
-          "The fake Google is on in .env.local but not on the backend. Run: npx convex env set GOOGLE_API_MOCK_URL http://127.0.0.1:3000/api/mock/google",
+        error: `The fake Google is on in the frontend but not on the backend. Run: npx convex env set GOOGLE_API_MOCK_URL ${site}/api/mock/google`,
       };
     }
 

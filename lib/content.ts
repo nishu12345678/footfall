@@ -17,7 +17,9 @@ import { COMPANY } from "./company";
 export const BRAND = {
   name: "footfall",
   tagline: "The AI that runs your Google listing, so people nearby walk in.",
-  city: "Muzaffarnagar",
+  /* Shown in the footer's "Built in …" line. The registered-office city
+     stays in lib/company.ts for the legal pages. */
+  city: "India",
 };
 
 /** The number people can just message. Same one as the footer. */
@@ -28,11 +30,16 @@ const WHATSAPP = `https://wa.me/${COMPANY.phoneHref.replace(
   "Hi, I want to know how footfall can get me more customers from Google.",
 )}`;
 
+/** The address people write to from the landing page. The legal pages
+    keep COMPANY.email — Google's OAuth review checks that one. */
+export const CONTACT_EMAIL = "contact@footfall.zone";
+
 export const LINKS = {
   cta: "/app",
+  login: "/app/login",
   secondary: "#how",
   whatsapp: WHATSAPP,
-  support: `mailto:${COMPANY.email}`,
+  support: `mailto:${CONTACT_EMAIL}`,
 };
 
 export const NAV = [
@@ -43,10 +50,22 @@ export const NAV = [
   { label: "FAQ", href: "#faq" },
 ];
 
+/** The two buttons in the header and the sticky bar on a phone. */
+export const NAV_CTA = {
+  primary: "Get my free report",
+  login: "Login",
+};
+
 export const HERO = {
-  chip: "Built for Indian shops, clinics and salons",
-  headline: "Get more customers from Google, without doing it yourself",
-  sub: "footfall is an AI that runs your Google Business Profile — posting every week, replying to every review, and answering enquiries on WhatsApp while you run the shop.",
+  chip: "For local businesses across India",
+  /* The Hinglish promise IS the headline. Roman script on purpose —
+     it needs no extra font and reads naturally to the audience. */
+  headline: "Aap dukaan chalaiye, Google hum sambhal lenge.",
+  /* The word that gets the Google letter colours, in both lines. */
+  highlight: "Google",
+  /* The English value prop, as the deck right under the headline. */
+  tagline: "Get more customers from Google, without doing it yourself.",
+  sub: "footfall is an AI that runs your Google Business Profile — posting every week, replying to every review, and keeping your photos, hours and services fresh while you run the shop.",
   ctaPrimary: "Get my free report",
   ctaWhatsapp: "Talk on WhatsApp",
   support:
@@ -54,33 +73,6 @@ export const HERO = {
   /* Small reassurances that sit under the buttons. These matter more
      than another paragraph to someone deciding whether to trust this. */
   trust: ["No agency retainer", "Setup takes 40 seconds", "Cancel any time"],
-};
-
-/* the three cards around the hero.
-   each one is a real artifact from a Google Business Profile. */
-export const HERO_WINDOWS = {
-  post: {
-    title: "Google post · published 9:14 AM",
-    business: "Sharma Hair Studio",
-    body: "Monsoon rate — haircut + beard shape ₹299, weekdays before 2 PM. Walk in, no appointment needed.",
-    meta: "Written and posted by footfall",
-  },
-  review: {
-    title: "Review · replied in 4 minutes",
-    author: "Priya K.",
-    stars: 5,
-    text: "Went in on a Sunday without booking and still got done in 20 minutes. Good with kids also.",
-    reply:
-      "Thank you Priya! On Sundays we keep two chairs free for walk-ins. See you next time 🙏",
-    meta: "Reply drafted and published by footfall",
-  },
-  chat: {
-    title: "WhatsApp · 11:42 PM",
-    incoming: "Bhaiya kal subah 10 baje slot milega? Rate kya hai beard ka",
-    outgoing:
-      "Yes, 10 AM is open tomorrow. Beard shape ₹120, with haircut ₹299. Shall I hold the slot for you?",
-    meta: "Answered while the shop was closed",
-  },
 };
 
 /* the signature element: the local map pack, before and after.
@@ -119,6 +111,67 @@ export const MAP_PACK = {
   note: "An illustration of the outcome we work toward, not a guaranteed result. Ranking moves over weeks.",
 };
 
+/* ------------------------------ app mockups ------------------------------
+   The product screens on the landing page — the approve card, the review
+   inbox and the performance screen — rebuilt in HTML instead of
+   screenshots, so they stay sharp, anonymised and in step with the app.
+   All of it is sample data and the page says so. The screens mirror
+   /app/posts, /app/reviews and /app/performance faithfully: posts are
+   drafts until approved, happy reviews auto-reply, complaints wait. */
+export const APP_MOCK = {
+  business: { initial: "S", name: "Sharma Hair Studio", meta: "Thane West" },
+  tabs: ["Home", "Performance", "Posts", "Photos", "Reviews"],
+  post: {
+    label: "This week's post",
+    status: "draft",
+    headline: "Monsoon rate — haircut + beard shape ₹299",
+    photoNote: "Your own photo from the listing, with the headline over it",
+    body: "Monsoon rate — haircut + beard shape ₹299, weekdays before 2 PM. Walk in, no appointment needed.",
+    approve: "approve",
+    edit: "edit",
+    remove: "delete",
+    footer: "Approved posts take the next free Mon, Wed or Fri morning slot.",
+  },
+  reviews: {
+    title: "Reviews",
+    pill: "1 waiting for you",
+    replied: {
+      initial: "P",
+      color: "#db2777",
+      name: "Priya K.",
+      stars: 5,
+      when: "2 days ago",
+      text: "Went in on a Sunday without booking and still got done in 20 minutes. Good with kids also.",
+      replyLabel: "Your reply · 2 days ago",
+      reply:
+        "Thank you Priya! On Sundays we keep two chairs free for walk-ins. See you next time.",
+    },
+    held: {
+      initial: "A",
+      color: "#ea580c",
+      name: "Amit R.",
+      stars: 2,
+      when: "3 hours ago",
+      text: "Waited 40 min on a Saturday, nobody told me how long it would be.",
+      replyLabel: "Drafted · waiting for your approval",
+      reply:
+        "Sorry Amit, Saturdays after 5 get crowded and we should have told you. Come by any weekday before 2 and we'll take you straight in.",
+    },
+  },
+  performance: {
+    ranges: ["7 days", "30 days", "90 days"],
+    stats: [
+      { label: "Views", value: "350" },
+      { label: "Calls", value: "4" },
+      { label: "Directions", value: "9" },
+    ],
+    chartLabel: "Views per day",
+    bars: [64, 112, 38, 96, 22, 48, 71, 26],
+    axis: ["7 Sept", "peak 112", "14 Sept"],
+    footer: "Synced nightly from Google's own numbers.",
+  },
+};
+
 /* ------------------------------ who it's for -----------------------------
    The single most important section for this audience. A salon owner
    does not read "local businesses" and think "that's me" — they read
@@ -137,7 +190,7 @@ export const TRADES = {
     {
       icon: "🦷",
       name: "Clinics & dentists",
-      line: "“Dentist near me”, treatment pages, appointment enquiries.",
+      line: "“Dentist near me”, treatment posts, careful review replies.",
     },
     {
       icon: "🥻",
@@ -167,7 +220,7 @@ export const TRADES = {
     {
       icon: "🧱",
       name: "Tiles, marble & hardware",
-      line: "Service pages per locality, so contractors find you first.",
+      line: "Photos of fresh stock, so contractors find you first.",
     },
     {
       icon: "📚",
@@ -179,6 +232,31 @@ export const TRADES = {
       name: "Repairs & services",
       line: "“Near me” searches at the moment something has broken.",
     },
+    {
+      icon: "🍬",
+      name: "Sweet shops & bakeries",
+      line: "Festival counters, bulk order enquiries, photos of fresh trays.",
+    },
+    {
+      icon: "📱",
+      name: "Mobile & electronics",
+      line: "New launches, exchange offers, repair enquiries answered.",
+    },
+    {
+      icon: "💍",
+      name: "Jewellers",
+      line: "Wedding season collections, and reviews that build trust.",
+    },
+    {
+      icon: "💊",
+      name: "Chemists & pharmacies",
+      line: "Correct timings and “open now”, when it matters most.",
+    },
+    {
+      icon: "✂️",
+      name: "Boutiques & tailors",
+      line: "Festival rush, stitching timelines, photos of finished work.",
+    },
   ],
   note: "And any other shop people find by searching your trade and your area.",
 };
@@ -187,7 +265,7 @@ export const TRADES = {
     isn't true of the product today. */
 export const TRUST = [
   "Works with your existing Google Business Profile",
-  "You approve posts on WhatsApp before they go live",
+  "Every post is a draft until you approve it",
   "We never ask for your Google password",
   "English, Hindi or a mix — however your customers write",
 ];
@@ -246,12 +324,45 @@ export const REPORT = {
   note: "About 40 seconds. Nothing is published and nothing on your listing changes.",
 };
 
+/* ------------------------------ why google -------------------------------
+   Four numbers, the way a SaaS page shows why its channel matters. Each
+   one is a published figure — check them against the source before
+   changing the wording, and keep the source line on the page. */
+
+export const WHY = {
+  heading: "Why your Google listing matters",
+  sub: "When someone nearby needs what you sell, they search Google first — and they decide fast. Your listing is what they see.",
+  stats: [
+    {
+      value: "76%",
+      label: "of people who search for something nearby on their phone visit a business within a day",
+      source: "Google",
+    },
+    {
+      value: "28%",
+      label: "of those nearby searches end in a purchase",
+      source: "Google",
+    },
+    {
+      value: "87%",
+      label: "of consumers used Google to check out a local business in the last year",
+      source: "BrightLocal",
+    },
+    {
+      value: "98%",
+      label: "read online reviews before choosing a local business",
+      source: "BrightLocal",
+    },
+  ],
+  note: "Sources: Google consumer research on “near me” searches; BrightLocal Local Consumer Review Survey.",
+};
+
 export const VISION = {
   eyebrow: "Why we built this",
   heading: "The money is going to the wrong screen",
   body: [
     "Every local business owner we spoke to is already paying someone ₹8,000 to ₹15,000 a month for “marketing”. What they get back is a screenshot of an Instagram post and a number called reach. What they wanted was somebody walking through the door.",
-    "Meanwhile the screen that decides whether anyone walks in — their Google listing — hasn't been touched in eight months. No posts. Reviews from 2024 sitting unanswered. Wrong closing time. The enquiry that came at 11 PM went cold because they were working.",
+    "Meanwhile the screen that decides whether anyone walks in — their Google listing — hasn't been touched in eight months. No posts. Reviews from 2024 sitting unanswered. Wrong closing time. The last photo, from the day the shop opened.",
     "That gap is the whole business. Google is where somebody nearby, right now, with money in their pocket, is choosing between you and the shop two streets over. We point an AI at that screen and nothing else.",
   ],
   kicker:
@@ -268,6 +379,11 @@ export const FOUNDER = {
   initial: "G",
 };
 
+export const HOW = {
+  heading: "Connect once. It runs every week.",
+  sub: "Nothing to install and nothing to learn. footfall drafts the work, and you approve it from your phone in one tap.",
+};
+
 export const STEPS = [
   {
     n: "1",
@@ -279,7 +395,7 @@ export const STEPS = [
     n: "2",
     title: "We run it",
     time: "Every week, without you",
-    body: "Posts go up with the words people actually search. Every review gets a reply. Every customer gets asked for one. Enquiries get answered at 11 PM with your real prices.",
+    body: "Three posts a week go up with the words people actually search. New reviews are picked up every four hours and answered in your voice. Photos publish in a steady drip, four a week.",
   },
   {
     n: "3",
@@ -303,25 +419,25 @@ export const DOES = {
     {
       tag: "Posts",
       title: "It posts in your voice, every week",
-      body: "Google quietly rewards a listing that is alive. We write and publish posts about your real services and real prices — offers, timings, new services, festival hours. You approve on WhatsApp, or let it run.",
-      detail: "Every week, on both plans",
+      body: "Google quietly rewards a listing that is alive. We write posts about your real services and real prices — offers, timings, new services, festival hours. Every post is a draft until you tap approve; nothing publishes on its own.",
+      detail: "Three a week · Mon, Wed, Fri mornings",
     },
     {
       tag: "Reviews",
       title: "It replies to every review, fast",
-      body: "An unanswered one-star does more damage than the review itself. We draft a reply in your tone within minutes — apologise where it is fair, invite them back, and never sound like a robot.",
-      detail: "You can require your approval before anything is published",
+      body: "An unanswered one-star does more damage than the review itself. New reviews are picked up every four hours and answered in your tone — praise gets a warm, specific thank-you on its own, and anything three stars or below is held for you to read first.",
+      detail: "Checked every 4 hours · Complaints never auto-publish",
     },
     {
-      tag: "Review collection",
-      title: "It asks your customers for reviews so you don't have to",
-      body: "A link and a QR code for your counter. The customer pays, taps, and leaves a review before they have reached their scooter. Their number stays with you — which is how you get a customer list you never had.",
-      detail: "Counter card · WhatsApp link · Post-visit follow-up",
+      tag: "Photos",
+      title: "It keeps your photo gallery alive",
+      body: "A listing whose newest photo is a year old reads as a shop that might be shut. Send a batch from your phone whenever the shop looks good; footfall spreads them out and publishes four a week, so there is always something recent.",
+      detail: "Four a week · Mon, Wed, Fri, Sat",
     },
     {
-      tag: "Service pages",
-      title: "It builds a page for each service you sell",
-      body: "One page per service, per locality — “Hair spa in Thane West” — with your prices, your photos and your hours. These are the pages that catch searches your listing alone cannot reach.",
+      tag: "Website",
+      title: "It builds you a one-page website from your listing",
+      body: "Half the shops we meet have no website at all. footfall builds one straight from your Google listing — name, hours, phone and services matching Google exactly, which is one of the few ranking levers a small shop fully controls.",
       detail: "Hosted for you, nothing to maintain",
     },
   ],
@@ -329,13 +445,30 @@ export const DOES = {
 
 export const PROOF = {
   eyebrow: "Proof",
+  heading: "What owners tell us",
   /* ⚠ REPLACE. this must be a number you can screenshot. */
   stat: {
     value: "3",
     label: "local shops running on footfall this week",
     placeholder: true,
   },
-  note: "We're onboarding shops one at a time and sitting with each owner while they use it.",
+  note: "We set up every shop ourselves and stay with the owner until it works. These are the problems owners come to us with.",
+  /* The app itself, rebuilt in HTML with sample data — no screenshots
+     to capture or anonymise, and it never drifts from the design. The
+     note under the grid says the data is sample data. */
+  evidence: [
+    {
+      id: "reviews",
+      caption:
+        "The review inbox — praise answered on its own within hours; anything three stars or below drafted and held for you.",
+    },
+    {
+      id: "performance",
+      caption:
+        "Performance — views, calls and direction requests, pulled nightly from Google's own numbers.",
+    },
+  ],
+  evidenceNote: "Product shown with sample data.",
   /* ⚠ PLACEHOLDERS. do not ship invented praise.
      paste what people actually said and set placeholder: false.
      anything still marked placeholder renders a visible "Sample" tag
@@ -373,7 +506,7 @@ export const PRICING = {
   heading: "One plan. Two ways to pay.",
   sub: "The report is free for everyone. A plan is what makes footfall actually do the work.",
   anchor:
-    "The freelancer posting on your Instagram charges ₹8,000–15,000 a month. This is the same work, done on the screen your customers actually search, for a fraction of it.",
+    "An agency or freelancer charges ₹8,000–15,000 a month for marketing. footfall does the Google side of that work — the screen people search when they are ready to buy — for a fraction of it.",
   launchNote:
     "Launch pricing. It goes up once the first shops are running — whatever you start on is what you keep paying.",
   free: {
@@ -419,14 +552,14 @@ export const PRICING = {
   ],
   /* The same list on both plans, because it is the same product. */
   features: [
-    "Google posts written and published every week",
+    "Three Google posts a week, written and published",
     "Every review answered, in your voice",
-    "Review collection link and counter QR code",
-    "WhatsApp enquiry replies, day and night",
+    "Complaints held for your approval, never auto-sent",
+    "Photos published four a week, from your camera roll",
     "Your local keywords, refreshed every month",
-    "A service page for each thing you sell",
-    "Calls, direction requests and walk-ins, tracked",
-    "Approve on WhatsApp, or let it run by itself",
+    "A one-page website built from your listing",
+    "Calls, direction requests and rankings, tracked",
+    "Every post approved by you before it goes live",
   ],
   offer: {
     heading: "First five shops",
@@ -443,7 +576,7 @@ export const FAQ = {
   items: [
     {
       q: "Will this work if I'm not good with computers?",
-      a: "Yes. If you can use WhatsApp, you can use footfall. You sign in with Google once, and after that everything reaches you as a WhatsApp message you either approve or ignore. There is nothing to install and nothing to learn.",
+      a: "Yes. If you can use WhatsApp, you can use footfall. You sign in with Google once, and after that footfall shows you each post before it goes out — one tap to approve, one tap to edit. The whole app is a handful of simple screens, built for a phone. Nothing to install, nothing to learn.",
     },
     {
       q: "What do I get without paying?",
@@ -451,11 +584,11 @@ export const FAQ = {
     },
     {
       q: "What is footfall?",
-      a: "It's an AI that runs your Google Business Profile — the listing that shows up when someone nearby searches for what you sell. It posts every week, replies to your reviews, asks your customers for new ones, and answers enquiries when you're busy working. You connect it once and then you mostly forget about it.",
+      a: "It's an AI that runs your Google Business Profile — the listing that shows up when someone nearby searches for what you sell. It posts every week, replies to your reviews, keeps your photos flowing, and tracks whether the calls and direction requests are actually going up. You connect it once and check in for two minutes a week.",
     },
     {
-      q: "Why Google and not Instagram?",
-      a: "Instagram is where people scroll. Google is where people decide. Somebody typing “salon near me” is two streets away and ready to spend money in the next hour, and that person never sees your Instagram post. This isn't an argument against Instagram — it's an argument for fixing the thing that is actually connected to your door.",
+      q: "I already do Instagram. Do I still need this?",
+      a: "Yes, and keep doing Instagram — it builds your brand and keeps your regulars close. Google does a different job: it catches the person nearby who needs you right now and has never heard of you. Somebody typing “salon near me” is ready to spend money within the hour, and your Google listing decides whether they call you or the shop two streets over. The two work together — footfall simply takes the Google half off your plate.",
     },
     {
       q: "Do I have to give you my Google password?",
@@ -467,7 +600,7 @@ export const FAQ = {
     },
     {
       q: "Will it post something embarrassing?",
-      a: "You decide. You can leave approvals on, and every post and review reply comes to you on WhatsApp before it goes live — one tap to approve, one tap to edit. Once you trust it, turn approvals off.",
+      a: "You decide what goes out. Every post is a draft until you approve it — nothing publishes on its own. Review replies are split by stakes: a happy review gets a warm reply within hours, because speed is the point, and anything three stars or below is always held for you to read, edit and approve.",
     },
     {
       q: "How soon will I see more customers?",
@@ -475,11 +608,11 @@ export const FAQ = {
     },
     {
       q: "What does it need from me?",
-      a: "About 40 seconds to connect, and your real prices. That's it. If you want to approve posts before they publish, that's roughly two minutes a week on WhatsApp.",
+      a: "About 40 seconds to connect, and your real prices. After that, roughly two minutes a week on your phone to approve posts, and a batch of photos whenever the shop is looking good.",
     },
     {
       q: "Do you write fake reviews?",
-      a: "No, and we never will. We ask your real customers, right after they've been served, when they actually feel like saying something nice. Fake reviews get listings suspended, and your listing is not worth risking.",
+      a: "No, and we never will. Fake reviews get listings suspended, and your listing is not worth risking. footfall replies to the reviews your real customers leave — getting more of them stays the honest way: good service, and asking.",
     },
     {
       q: "Does it work for my kind of business?",
@@ -494,6 +627,13 @@ export const FAQ = {
       a: "Yes. Nothing auto-debits — you pay for a period and that period is what you get. If you don't pay again it simply stops, your report stays free, and everything we published stays up on your listing.",
     },
   ],
+};
+
+/** The last thing on the page before the footer. */
+export const START = {
+  heading: "Let’s look at your listing together",
+  sub: "Send us your business name and area. We’ll pull up your Google listing, tell you exactly what’s broken on it, and fix the first three things with you — today, while you watch.",
+  note: "No card. No call booking. No 40-minute demo.",
 };
 
 export const FOOTER = {
@@ -520,12 +660,12 @@ export const FOOTER = {
       title: "Contact",
       links: [
         { label: "WhatsApp", href: WHATSAPP },
-        { label: COMPANY.email, href: `mailto:${COMPANY.email}` },
+        { label: CONTACT_EMAIL, href: `mailto:${CONTACT_EMAIL}` },
         { label: COMPANY.phone, href: `tel:${COMPANY.phoneHref}` },
         { label: "LinkedIn", href: COMPANY.founder.linkedin },
       ],
     },
   ],
-  legal: `A product of ${COMPANY.legalName}. footfall is an independent product — it is not affiliated with, endorsed by, or a product of Google.`,
+  legal: `footfall is a product of “${COMPANY.legalName}”. Google, Google Maps and Google Business Profile are trademarks of Google LLC. footfall is an independent service that helps you manage your own Business Profile — it is not affiliated with, sponsored by, or endorsed by Google. Search rankings depend on many factors and improve over weeks; no specific position or result is ever guaranteed.`,
   copyright: `© ${BRAND.name}, 2026 · Built in ${BRAND.city}`,
 };

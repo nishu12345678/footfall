@@ -8,6 +8,7 @@ import { internalMutation, internalQuery } from "./_generated/server";
  */
 
 const APP_TABLES = [
+  "businessSelections",
   "sites",
   "offerings",
   "specialties",
@@ -72,6 +73,7 @@ export const wipe = internalMutation({
     for (const table of tables) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rows = (await ctx.db.query(table as any).collect()) as {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         _id: any;
       }[];
       for (const row of rows) await ctx.db.delete(row._id);
@@ -141,6 +143,7 @@ const BUSINESS_TABLES = [
   "competitors",
   "rankGrid",
   "agentActions",
+  "websiteChecks",
 ] as const;
 
 /** Our own file-storage URLs look like .../api/storage/<id>. Google-hosted
@@ -473,6 +476,17 @@ export const eraseUser = internalMutation({
           .query("postGenerations")
           .withIndex("by_business", (q) => q.eq("businessId", business._id))
           .collect(),
+      );
+      // Review invites to customers are keyed to the business with no
+      // userId, so the by_user sweep below would leave them behind.
+      await zap(
+        "messages",
+        (
+          await ctx.db
+            .query("messages")
+            .withIndex("by_business", (q) => q.eq("businessId", business._id))
+            .collect()
+        ).filter((m) => m.userId !== uid),
       );
       const logo = ourStorageId(business.logoUrl);
       if (logo) storageIds.add(logo);

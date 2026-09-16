@@ -9,7 +9,9 @@ import {
 } from "@/components/site-chrome";
 import { enquiryMessage, loadSite, whatsappLink } from "@/lib/site-data";
 import { breadcrumbs } from "@/lib/site-schema";
-import { shopUrl, shopPath } from "@/lib/site-host";
+import Link from "next/link";
+import { headers } from "next/headers";
+import { shopUrl, shopBase } from "@/lib/site-host";
 
 export async function generateMetadata({
   params,
@@ -42,7 +44,7 @@ export default async function ServicesPage({
   if (!data) notFound();
 
   const { site, business, areas } = data;
-  const base = shopPath(site.slug);
+  const base = shopBase(site.slug, (await headers()).get("host"));
 
   return (
     <>
@@ -63,9 +65,9 @@ export default async function ServicesPage({
 
       <main className="mx-auto max-w-[1280px] px-6 pt-16 pb-16 sm:px-10 sm:pt-24 sm:pb-24 lg:px-14">
         <nav aria-label="Breadcrumb" className="text-[12px] text-muted">
-          <a href={base} className="hover:text-pin">
+          <Link href={base || "/"} className="hover:text-pin">
             Home
-          </a>
+          </Link>
           <span aria-hidden> / </span>
           <span>Services</span>
         </nav>

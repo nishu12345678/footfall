@@ -15,7 +15,9 @@ import {
   whatsappLink,
 } from "@/lib/site-data";
 import { buildJsonLd } from "@/lib/site-schema";
-import { shopUrl, shopPath } from "@/lib/site-host";
+import Link from "next/link";
+import { headers } from "next/headers";
+import { shopUrl, shopBase } from "@/lib/site-host";
 
 export async function generateMetadata({
   params,
@@ -54,7 +56,7 @@ export default async function SiteHome({
 
   const { site, business, hours, areas, reviews, photos, rating, reviewCount } =
     data;
-  const base = shopPath(site.slug);
+  const base = shopBase(site.slug, (await headers()).get("host"));
   const wa = whatsappLink(
     data.whatsapp,
     `Hi ${business.orgName}, I found you on your website and I'd like to know more.`,
@@ -112,9 +114,9 @@ export default async function SiteHome({
                     Message on WhatsApp
                   </a>
                 ) : null}
-                <a href={`${base}/services`} className="btn btn-ghost">
+                <Link href={`${base}/services`} className="btn btn-ghost">
                   What we offer
-                </a>
+                </Link>
               </div>
 
               {rating !== null ? (

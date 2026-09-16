@@ -35,7 +35,7 @@ export default function HomePage() {
   if (data === null) return <NeedsConnect />;
   if (unfinished) return <Loading />;
 
-  const { business, reviews, posts, photos, actions, metrics } = data;
+  const { business, site, reviews, posts, photos, actions, metrics } = data;
 
   async function refreshListing() {
     setBusy(true);
@@ -225,11 +225,15 @@ export default function HomePage() {
           />
           <Counter
             href="/app/website"
-            label={business.website ? "Your website" : "Free website"}
+            label={site || business.website ? "Your website" : "Free website"}
             detail={
-              business.website
-                ? "a page that matches your listing exactly"
-                : "you don't have one — we can build it from your listing"
+              site
+                ? site.published
+                  ? `live at /s/${site.slug}`
+                  : "built and ready — tap to make it live"
+                : business.website
+                  ? "a page that matches your listing exactly"
+                  : "you don't have one — we can build it from your listing"
             }
           />
           <Counter

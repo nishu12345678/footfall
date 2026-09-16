@@ -151,7 +151,7 @@ export default function LoginPage() {
             alt=""
             width={48}
             height={48}
-            className="mx-auto h-12 w-12 rounded-[16px] shadow-lift"
+            className="mx-auto h-12 w-12"
           />
           <h1 className="mt-5 text-[2.4rem] font-bold tracking-tight">
             {BRAND.name}

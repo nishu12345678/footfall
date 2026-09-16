@@ -1,10 +1,18 @@
+import Link from "next/link";
+import { headers } from "next/headers";
 import {
   DAYS,
   directionsLink,
   whatsappLink,
   type SiteData,
 } from "@/lib/site-data";
-import { shopPath } from "@/lib/site-host";
+import { shopBase } from "@/lib/site-host";
+
+/** Path-form link base for the host serving this request, so internal
+    links stay client-side navigations instead of full page loads. */
+async function requestBase(slug: string) {
+  return shopBase(slug, (await headers()).get("host"));
+}
 
 function WhatsAppIcon() {
   return (
@@ -52,16 +60,16 @@ export function UtilityBar({ data }: { data: SiteData }) {
   );
 }
 
-export function SiteNav({ data }: { data: SiteData }) {
+export async function SiteNav({ data }: { data: SiteData }) {
   const { site, business, whatsapp } = data;
-  const base = shopPath(site.slug);
+  const base = await requestBase(site.slug);
   const wa = whatsappLink(
     whatsapp,
     `Hi ${business.orgName}, I found you on your website and I'd like to know more.`,
   );
 
   const links = [
-    { href: base, label: "Home" },
+    { href: base || "/", label: "Home" },
     { href: `${base}/services`, label: "Services" },
     { href: `${base}/about`, label: "About" },
     { href: `${base}/contact`, label: "Contact" },
@@ -70,7 +78,7 @@ export function SiteNav({ data }: { data: SiteData }) {
   return (
     <header className="material hairline-b sticky top-0 z-40">
       <nav className="mx-auto flex max-w-[1280px] items-center gap-4 px-6 py-4 sm:px-10 lg:px-14">
-        <a href={base} className="flex min-w-0 items-center gap-2.5">
+        <Link href={base || "/"} className="flex min-w-0 items-center gap-2.5">
           {business.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -84,17 +92,17 @@ export function SiteNav({ data }: { data: SiteData }) {
           <span className="truncate text-[17px] font-semibold leading-tight tracking-[-0.01em]">
             {business.orgName}
           </span>
-        </a>
+        </Link>
 
         <ul className="ml-auto hidden items-center gap-6 md:flex">
           {links.map((link) => (
             <li key={link.href}>
-              <a
+              <Link
                 href={link.href}
                 className="text-[14px] font-medium text-ink-soft transition-colors hover:text-ink"
               >
                 {link.label}
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
@@ -115,9 +123,9 @@ export function SiteNav({ data }: { data: SiteData }) {
   );
 }
 
-export function SiteFooter({ data }: { data: SiteData }) {
+export async function SiteFooter({ data }: { data: SiteData }) {
   const { site, business, whatsapp, tel, areas } = data;
-  const base = shopPath(site.slug);
+  const base = await requestBase(site.slug);
   const directions = directionsLink(business);
 
   return (
@@ -139,24 +147,24 @@ export function SiteFooter({ data }: { data: SiteData }) {
           </p>
           <ul className="mt-4 space-y-2.5 text-[13px]">
             <li>
-              <a href={base} className="text-white/60 transition-colors hover:text-white">
+              <Link href={base || "/"} className="text-white/60 transition-colors hover:text-white">
                 Home
-              </a>
+              </Link>
             </li>
             <li>
-              <a href={`${base}/services`} className="text-white/60 transition-colors hover:text-white">
+              <Link href={`${base}/services`} className="text-white/60 transition-colors hover:text-white">
                 Services
-              </a>
+              </Link>
             </li>
             <li>
-              <a href={`${base}/about`} className="text-white/60 transition-colors hover:text-white">
+              <Link href={`${base}/about`} className="text-white/60 transition-colors hover:text-white">
                 About
-              </a>
+              </Link>
             </li>
             <li>
-              <a href={`${base}/contact`} className="text-white/60 transition-colors hover:text-white">
+              <Link href={`${base}/contact`} className="text-white/60 transition-colors hover:text-white">
                 Contact
-              </a>
+              </Link>
             </li>
           </ul>
         </div>

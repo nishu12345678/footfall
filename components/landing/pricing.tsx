@@ -1,5 +1,6 @@
 import { LINKS, PRICING } from "@/lib/content";
 import { Icon } from "./icons";
+import { OfferDeadline } from "./offer-deadline";
 import { Heading, Section, Tick } from "./ui";
 import { WhatsAppCta } from "./whatsapp-cta";
 
@@ -65,6 +66,9 @@ export function Pricing() {
                 <span className="l-pill bg-[#e6f7ec] px-2.5 py-0.5 text-[12px] text-[#15803d]">
                   Launch offer · save {inr(saved)}
                 </span>
+                {/* Disappears by itself once the date passes — see
+                    lib/launch-offer.ts. */}
+                <OfferDeadline />
               </p>
               {plan.period === "year" ? (
                 <p className="mt-2 text-[14px] text-[var(--l-muted)]">

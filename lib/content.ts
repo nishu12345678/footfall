@@ -1,4 +1,5 @@
 import { COMPANY } from "./company";
+import { offerDeadlineLabel } from "./launch-offer";
 /* ---------------------------------------------------------------------------
    footfall — every word on the landing page lives here.
    edit copy in this file. don't edit copy inside components.
@@ -541,8 +542,18 @@ export const PRICING = {
   sub: "The report is free for everyone. A plan is what makes footfall actually do the work.",
   anchor:
     "An agency or freelancer charges ₹8,000–15,000 a month for marketing. footfall does the Google side of that work — the screen people search when they are ready to buy — for a fraction of it.",
-  launchNote:
-    "Launch pricing. It goes up once the first shops are running — whatever you start on is what you keep paying.",
+  /* Two claims, and they have to stay compatible: a deadline to join, and
+     a promise about what happens after. The deadline creates the reason to
+     act now; the lock-in removes the fear of acting now. Dropping either
+     one weakens the other.
+
+     The sentence is written to survive the offer ending: once the date
+     passes the deadline pill hides itself (lib/launch-offer.ts), and this
+     line still reads correctly without it.
+
+     The date is interpolated, not typed, so it cannot drift from the one
+     in lib/launch-offer.ts. Change the date there and this follows. */
+  launchNote: `Launch pricing, open until ${offerDeadlineLabel()}. It goes up once the first shops are running — but whatever price you start on is the price you keep, for as long as you stay.`,
   free: {
     name: "Free",
     line: "The report on your listing. No payment, no expiry.",

@@ -664,10 +664,24 @@ export const FAQ = {
 };
 
 /** The last thing on the page before the footer. */
+/* The last thing on the page before the footer. It has one job: make the
+   next step feel small.
+
+   Two traps this copy is written to avoid:
+
+   1. It must describe the step the button actually performs. The button
+      goes to /app, which is a Google sign-in — so "send us your business
+      name and area" was describing a flow that does not exist, and made a
+      40-second sign-in sound like a conversation with a salesperson.
+
+   2. It should not stack negatives. "No payment. No call booking. No
+      40-minute demo." answers three objections the reader may not have had
+      yet, and a row of No's reads as defensive at the exact moment we want
+      to sound easy. One reassurance, stated positively, does more. */
 export const START = {
   heading: "Let’s look at your listing together",
-  sub: "Send us your business name and area. We’ll pull up your Google listing, tell you exactly what’s broken on it, and fix the first three things with you — today, while you watch.",
-  note: "No payment. No call booking. No 40-minute demo.",
+  sub: "Sign in with Google and we’ll show you your listing the way a customer nearby sees it — what’s missing, what’s costing you walk-ins, and the first three things to fix.",
+  note: "Takes about 40 seconds. Free, and nothing on your listing changes.",
 };
 
 export const FOOTER = {

@@ -12,7 +12,9 @@ placeholders. The source of truth for slots is `lib/landing-images.ts`.
 | `report-composite` | `report-composite.webp` | ✅ Done |
 | `feature-posts` | `feature-posts.webp` | ✅ Done |
 | `feature-reviews` | `feature-reviews.webp` | ✅ Done |
-| `owner-portrait` | `owner-portrait.webp` | ✅ Done |
+| `owner-portrait` | `owner-portrait.webp` | ✅ Done — but used in two slots it doesn't fit, see below |
+| `post-photo` | — | ⬜ **To generate** |
+| `owner-wrong-screen` | — | ⬜ **To generate** |
 
 The app screens ("how it works" and "proof") are **not image slots**:
 they're rebuilt in HTML with sample data in
@@ -57,6 +59,93 @@ photoreal person, sharp legible card text, 16:9.
 
 Save as `public/marketing/hero-composite.webp` (or hand me the jpeg —
 I'll convert). Keep the 16:9-ish landscape shape.
+
+## 2 · Two photos that argue with the words next to them
+
+One photograph, `owner-portrait.webp`, is currently doing three jobs. In
+two of them the picture contradicts the copy sitting on top of it.
+
+Neither slot is wired up yet, deliberately: pointing a live slot at a
+file that does not exist would replace a good photo with a dashed
+placeholder on a page being reviewed right now. Generate the art, drop
+the file in, then make the one-line swap noted under each.
+
+### 2a · `post-photo` — the photo inside the post draft
+
+Where: the post-draft card in `components/landing/app-mock.tsx`.
+
+The problem: the card shows a Google post whose headline reads
+**"Monsoon rate — haircut + beard shape ₹299"**, and the photo under it
+is a woman standing at a reception counter. The picture and the offer
+are selling different things, and the caption beneath even says *"your
+own photo from the listing"* — so it should look like a photo the shop
+took, not a portrait of the owner.
+
+Two things the prompt is built around: it has to look phone-shot rather
+than studio-lit, and **the bottom third has to stay empty**, because the
+product composites a dark gradient and a white headline over it.
+
+```
+A photograph taken by a small-shop owner on their own phone and posted
+to their Google Business Profile — competent but not professional, and
+it should read that way. A neighbourhood Indian unisex salon in
+daylight. A barber in his thirties, in a simple dark apron, leaning in
+to shape the edge of a seated male customer's beard with a trimmer,
+both concentrating, the customer's face calm and half-lit by daylight
+from the shopfront. Around them the ordinary truth of the shop: a
+mirror with warm bulbs, a comb and scissors on the ledge, a towel over
+the chair back, bottles on a shelf. Warm natural light, mild
+phone-camera imperfection — slight grain, a little highlight bloom from
+the window, no studio lighting, no glossy retouching, shallow but
+imperfect focus. CRITICAL: keep the lower third of the frame visually
+quiet — a dark gradient and a white headline are composited over it in
+the product, so nothing important, no faces and no busy detail may sit
+there. Absolutely no text, no signage, no logos, no watermarks anywhere
+in the image. Horizontal 16:9, and keep the subject near the centre
+because the frame is cropped to a wide strip.
+```
+
+Save as `public/marketing/post-photo.webp` (1600×900). Then in
+`app-mock.tsx` change the `src` to `/marketing/post-photo.webp`.
+
+### 2b · `owner-wrong-screen` — "the money is going to the wrong screen"
+
+Where: the `Vision` section, `components/landing/vision.tsx`.
+
+The problem: that section argues the owner is paying ₹8,000–15,000 a
+month for likes while the listing that actually brings people in has sat
+untouched for eight months. The photo beside it is a cheerful owner next
+to a *"Rate us on Google"* standee — the solved state. The picture
+argues against the paragraph.
+
+The replacement has to show the *problem*: attention on the wrong
+screen, an empty shop behind it. The one hard rule is tone — this person
+is the customer, so the photo has to be respectful, not comic and not
+pitying.
+
+```
+Documentary-style editorial photograph, natural light, 35mm, shallow
+depth of field, muted and quiet in mood. Mid-afternoon in a small Indian
+shop — a unisex salon or a modest clothing shop — in the dead hour when
+nobody is coming in. The owner, an Indian man in his late thirties in a
+plain shirt, sits sideways on his own customer chair, elbows on his
+knees, absorbed in his phone. On the phone screen, just legible and out
+of focus, a generic social-media grid of square photos with small heart
+icons — INVENTED interface only, no recognisable app, no real logos, no
+readable words. Behind him the shop is tidy, lit and completely empty:
+two vacant chairs, a mirror, a folded towel, the shutter half up, an
+empty street visible beyond the doorway. His expression is patient and a
+little resigned, NOT defeated, NOT comic, NOT humiliating — this is the
+customer, photographed with respect. Warm skin tones, honest light, no
+styling, no props arranged for the camera, no text overlays, no signage,
+no brand marks, no heavy retouching. Horizontal, 4:3.
+```
+
+Save as `public/marketing/owner-wrong-screen.webp` (1600×1194). Then in
+`vision.tsx` change the `Shot` name to `owner-wrong-screen`.
+
+Once both are in, `owner-portrait.webp` is still used by nothing on the
+page — keep it around as a spare or delete it.
 
 ## Retired
 

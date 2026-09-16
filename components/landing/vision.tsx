@@ -12,6 +12,11 @@ export function Vision() {
     <Section id="why-we-built-this" wash>
       <div className="grid items-center gap-12 md:grid-cols-2 md:gap-16">
         <div className="overflow-hidden rounded-3xl border border-[var(--l-line)]">
+          {/* ⬜ This photo is the solved state — a cheerful owner beside a
+              'Rate us on Google' standee — while the paragraph beside it
+              argues the listing has rotted and the money is going to the
+              wrong screen. Swap to name="owner-wrong-screen" once that slot
+              is generated; see lib/landing-images.ts. */}
           <Shot name="owner-portrait" plain />
         </div>
 

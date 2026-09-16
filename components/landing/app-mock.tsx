@@ -83,6 +83,13 @@ export function AppPostsMock() {
         </div>
 
         <div className="relative mt-3 overflow-hidden rounded-xl">
+          {/* ⬜ Borrowed art: this is owner-portrait, a woman at a reception
+              counter, sitting under a headline selling 'haircut + beard
+              shape'. The picture and the offer are selling different
+              things. Swap to '/marketing/post-photo.webp' once that slot is
+              generated — see lib/landing-images.ts. Left as-is until the
+              file exists, because this is a raw <Image>: a missing src here
+              would render broken, not a placeholder. */}
           <Image
             src="/marketing/owner-portrait.webp"
             alt=""

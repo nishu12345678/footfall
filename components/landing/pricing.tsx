@@ -42,7 +42,7 @@ export function Pricing() {
           const featured = plan.featured;
           const saved = plan.listPrice - plan.price;
           /* Only the yearly plan can be compared to paying monthly. */
-          const vsMonthly = plan.period === "year" ? PRICING.yearlySaving() : 0;
+          const vsMonthly = plan.period === "year" ? PRICING.yearlySaving() : null;
           return (
             <article
               key={plan.id}
@@ -50,9 +50,15 @@ export function Pricing() {
                 featured ? "border-[var(--l-ink)]" : "border-[var(--l-line)]"
               }`}
             >
-              {vsMonthly > 0 ? (
-                <span className="absolute -top-3 left-8 rounded-full bg-[var(--l-ink)] px-3 py-1 text-[12px] font-semibold text-white md:left-10">
-                  Save {inr(vsMonthly)} vs paying monthly
+              {vsMonthly && vsMonthly.amount > 0 ? (
+                /* The badge rounds, and sits next to a different saving,
+                   so hovering shows the actual sum — same pattern as the
+                   deadline pill. */
+                <span
+                  title={vsMonthly.working}
+                  className="absolute -top-3 left-8 cursor-help rounded-full bg-[var(--l-ink)] px-3 py-1 text-[12px] font-semibold text-white md:left-10"
+                >
+                  Save {inr(vsMonthly.amount)} vs paying monthly
                 </span>
               ) : null}
 

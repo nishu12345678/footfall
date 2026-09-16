@@ -535,7 +535,7 @@ export default function BillingPage() {
                from the prices so it cannot drift. Hidden during a
                ₹1 test, where the real prices are not being charged. */
             const vsMonthly =
-              p.period === "year" && !oneRupeeTest ? PRICING.yearlySaving() : 0;
+              p.period === "year" && !oneRupeeTest ? PRICING.yearlySaving() : null;
             return (
               <section
                 key={p.id}
@@ -545,9 +545,12 @@ export default function BillingPage() {
               >
                 <div className="flex items-baseline justify-between gap-3">
                   <h2 className="text-[1.4rem]">{p.name}</h2>
-                  {vsMonthly > 0 ? (
-                    <span className="rounded-full bg-pin-soft px-2.5 py-1 text-[12px] font-semibold text-pin">
-                      Save {inr(vsMonthly)} vs monthly
+                  {vsMonthly && vsMonthly.amount > 0 ? (
+                    <span
+                      title={vsMonthly.working}
+                      className="cursor-help rounded-full bg-pin-soft px-2.5 py-1 text-[12px] font-semibold text-pin"
+                    >
+                      Save {inr(vsMonthly.amount)} vs monthly
                     </span>
                   ) : null}
                 </div>

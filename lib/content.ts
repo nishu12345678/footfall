@@ -609,8 +609,14 @@ export const PRICING = {
     },
   ],
   /**
-   * What the yearly plan saves against paying monthly for a year — both
-   * at today's offer prices. ₹1,999 × 12 = ₹23,988, minus ₹9,999.
+   * What the yearly plan saves against paying monthly for a year.
+   *
+   * Both sides are OFFER prices — ₹1,999 × 12 against ₹9,999 — not list
+   * prices. That is the comparison the reader can actually act on: the
+   * monthly card beside it shows ₹1,999, and ₹1,999 is what they would
+   * really pay. Comparing against the ₹2,499 list price would inflate
+   * the saving to ₹19,900 by crediting us for a discount nobody is being
+   * charged, which is the sort of number that reads as a trick.
    *
    * A function of the prices above, never a typed string, because the
    * yearly card shows a SECOND saving right beneath it (offer vs list)
@@ -619,15 +625,26 @@ export const PRICING = {
    * editing copy — which is exactly how "Save ₹14,000" ended up sitting
    * unlabelled next to "save ₹10,000".
    *
-   * Rounded DOWN to a whole ₹100: it reads as a claim rather than a
-   * suspiciously precise ₹13,989, and it can only ever understate what
-   * the buyer really saves.
+   * `amount` is rounded DOWN to a whole ₹100: it reads as a claim rather
+   * than a suspiciously precise ₹13,989, and it can only ever understate
+   * what the buyer really saves. `working` shows the unrounded sum, so
+   * hovering explains the badge instead of contradicting it.
    */
-  yearlySaving(): number {
+  yearlySaving(): { amount: number; working: string } {
     const m = PRICING.plans.find((p) => p.period === "month");
     const y = PRICING.plans.find((p) => p.period === "year");
-    if (!m || !y) return 0;
-    return Math.floor((m.price * 12 - y.price) / 100) * 100;
+    if (!m || !y) return { amount: 0, working: "" };
+
+    const twelve = m.price * 12;
+    const exact = twelve - y.price;
+    const rupees = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+
+    return {
+      amount: Math.floor(exact / 100) * 100,
+      working: `${rupees(m.price)} a month for a year is ${rupees(
+        twelve,
+      )}. The yearly plan is ${rupees(y.price)} — you keep ${rupees(exact)}.`,
+    };
   },
   /* The same list on both plans, because it is the same product. */
   features: [

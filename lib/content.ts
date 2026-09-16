@@ -338,8 +338,9 @@ export const REPORT = {
 };
 
 /* ------------------------------ why google -------------------------------
-   ⚠ ALL FOUR NUMBERS ARE UNVERIFIED. Run `python3 scripts/verify-stats.py`
-   — it currently reports 4 of 4 failing. What that check found:
+   ⚠ NONE OF THESE FOUR SENTENCES IS SUPPORTED AS WRITTEN. Verbatim quotes
+   and URLs are in docs/stats-evidence.md; re-check with
+   `python3 scripts/verify-stats.py`. In short:
 
    87%  "used Google to check out a local business in the last year"
         Not in BrightLocal's current survey at all. It is a figure from an

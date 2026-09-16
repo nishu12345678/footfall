@@ -568,12 +568,25 @@ export const PRICING = {
   },
   /* Prices are shown here and enforced in convex/billing.ts. If you change
      one, change the other — the server never trusts an amount from the
-     browser. */
+     browser.
+
+     Two different savings are shown on the yearly card, and they are not
+     the same number, so both have to name what they are measured against:
+
+       badge  yearly vs. twelve months of monthly — both at today's offer
+              prices. ₹1,999 × 12 = ₹23,988, minus ₹9,999 = ₹13,989.
+       pill   yearly offer vs. yearly list price (₹19,999 − ₹9,999).
+
+     The badge used to read a bare "Save ₹14,000" next to a pill reading
+     "save ₹10,000", with nothing to say why the same card claimed two
+     amounts. It is now computed in components/landing/pricing.tsx from
+     the prices below, so it cannot drift when a price changes, and it
+     says "vs paying monthly" so the reader knows which is which. */
   plans: [
     {
       id: "monthly",
       name: "Monthly",
-      badge: "",
+      featured: false,
       price: 1999,
       listPrice: 2499,
       period: "month",
@@ -585,7 +598,7 @@ export const PRICING = {
     {
       id: "yearly",
       name: "Yearly",
-      badge: "Save ₹14,000",
+      featured: true,
       price: 9999,
       listPrice: 19999,
       period: "year",
@@ -595,6 +608,27 @@ export const PRICING = {
       cta: "Start yearly",
     },
   ],
+  /**
+   * What the yearly plan saves against paying monthly for a year — both
+   * at today's offer prices. ₹1,999 × 12 = ₹23,988, minus ₹9,999.
+   *
+   * A function of the prices above, never a typed string, because the
+   * yearly card shows a SECOND saving right beneath it (offer vs list)
+   * and the two are different numbers. A hardcoded badge becomes a lie
+   * the first time a price moves, and nobody redoes the arithmetic while
+   * editing copy — which is exactly how "Save ₹14,000" ended up sitting
+   * unlabelled next to "save ₹10,000".
+   *
+   * Rounded DOWN to a whole ₹100: it reads as a claim rather than a
+   * suspiciously precise ₹13,989, and it can only ever understate what
+   * the buyer really saves.
+   */
+  yearlySaving(): number {
+    const m = PRICING.plans.find((p) => p.period === "month");
+    const y = PRICING.plans.find((p) => p.period === "year");
+    if (!m || !y) return 0;
+    return Math.floor((m.price * 12 - y.price) / 100) * 100;
+  },
   /* The same list on both plans, because it is the same product. */
   features: [
     "Three Google posts a week, written and published",

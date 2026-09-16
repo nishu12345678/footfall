@@ -39,8 +39,10 @@ export function Pricing() {
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         {PRICING.plans.map((plan) => {
-          const featured = Boolean(plan.badge);
+          const featured = plan.featured;
           const saved = plan.listPrice - plan.price;
+          /* Only the yearly plan can be compared to paying monthly. */
+          const vsMonthly = plan.period === "year" ? PRICING.yearlySaving() : 0;
           return (
             <article
               key={plan.id}
@@ -48,9 +50,9 @@ export function Pricing() {
                 featured ? "border-[var(--l-ink)]" : "border-[var(--l-line)]"
               }`}
             >
-              {plan.badge ? (
+              {vsMonthly > 0 ? (
                 <span className="absolute -top-3 left-8 rounded-full bg-[var(--l-ink)] px-3 py-1 text-[12px] font-semibold text-white md:left-10">
-                  {plan.badge}
+                  Save {inr(vsMonthly)} vs paying monthly
                 </span>
               ) : null}
 

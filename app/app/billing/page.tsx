@@ -528,8 +528,14 @@ export default function BillingPage() {
           ) : null}
 
           {PRICING.plans.map((p) => {
-            const featured = Boolean(p.badge);
+            const featured = p.featured;
             const ready = scriptState === "ready";
+            /* Same rule as the landing page: the comparison is only
+               meaningful on the yearly plan, and the number is computed
+               from the prices so it cannot drift. Hidden during a
+               ₹1 test, where the real prices are not being charged. */
+            const vsMonthly =
+              p.period === "year" && !oneRupeeTest ? PRICING.yearlySaving() : 0;
             return (
               <section
                 key={p.id}
@@ -539,9 +545,9 @@ export default function BillingPage() {
               >
                 <div className="flex items-baseline justify-between gap-3">
                   <h2 className="text-[1.4rem]">{p.name}</h2>
-                  {p.badge ? (
+                  {vsMonthly > 0 ? (
                     <span className="rounded-full bg-pin-soft px-2.5 py-1 text-[12px] font-semibold text-pin">
-                      {p.badge}
+                      Save {inr(vsMonthly)} vs monthly
                     </span>
                   ) : null}
                 </div>

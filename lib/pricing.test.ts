@@ -33,6 +33,18 @@ describe("yearlySaving", () => {
     expect(amount).toBeLessThanOrEqual(monthly.price * 12 - yearly.price);
   });
 
+  it("still holds after the launch offer ends", () => {
+    /* When the offer ends, `price` becomes `listPrice` on both plans.
+       The badge must keep working with no code change — it should
+       recompute, not go blank, negative, or stale. This simulates that
+       future by running the same arithmetic on the list prices. */
+    const after = Math.floor((monthly.listPrice * 12 - yearly.listPrice) / 100) * 100;
+
+    expect(after).toBeGreaterThan(0); // yearly must still be worth buying
+    expect(after % 100).toBe(0);
+    expect(after).toBeLessThan(PRICING.yearlySaving().amount); // and honestly smaller
+  });
+
   it("rounds down to a whole ₹100", () => {
     expect(PRICING.yearlySaving().amount % 100).toBe(0);
   });

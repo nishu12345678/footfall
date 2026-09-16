@@ -51,14 +51,19 @@ export function Pricing() {
               }`}
             >
               {vsMonthly && vsMonthly.amount > 0 ? (
-                /* The badge rounds, and sits next to a different saving,
-                   so hovering shows the actual sum — same pattern as the
-                   deadline pill. */
+                /* Just the number. The badge is a headline, not a
+                   footnote — the full sum, including which prices it
+                   compares, is one hover away.
+
+                   Nothing here needs changing when the launch offer
+                   ends: the amount is computed from whatever prices are
+                   live, so raising them to list price recomputes this to
+                   ₹9,900 by itself. */
                 <span
                   title={vsMonthly.working}
                   className="absolute -top-3 left-8 cursor-help rounded-full bg-[var(--l-ink)] px-3 py-1 text-[12px] font-semibold text-white md:left-10"
                 >
-                  Save {inr(vsMonthly.amount)} vs paying monthly
+                  Save {inr(vsMonthly.amount)}
                 </span>
               ) : null}
 

@@ -611,12 +611,16 @@ export const PRICING = {
   /**
    * What the yearly plan saves against paying monthly for a year.
    *
-   * Both sides are OFFER prices — ₹1,999 × 12 against ₹9,999 — not list
-   * prices. That is the comparison the reader can actually act on: the
-   * monthly card beside it shows ₹1,999, and ₹1,999 is what they would
-   * really pay. Comparing against the ₹2,499 list price would inflate
-   * the saving to ₹19,900 by crediting us for a discount nobody is being
-   * charged, which is the sort of number that reads as a trick.
+   * Both sides are whatever price is LIVE — today that is the offer on
+   * both, ₹1,999 × 12 against ₹9,999. Always comparing like with like is
+   * what lets the badge survive the launch offer ending: raise `price`
+   * to `listPrice` on both plans and this recomputes to ₹9,900 on its
+   * own, with no copy to edit and no stale number left behind.
+   *
+   * Never mix the two — monthly LIST against yearly OFFER would inflate
+   * the badge to ₹19,900 by crediting us for a discount nobody is being
+   * charged, which is the sort of number that reads as a trick once
+   * somebody checks it.
    *
    * A function of the prices above, never a typed string, because the
    * yearly card shows a SECOND saving right beneath it (offer vs list)

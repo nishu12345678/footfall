@@ -550,7 +550,7 @@ export default function BillingPage() {
                       title={vsMonthly.working}
                       className="cursor-help rounded-full bg-pin-soft px-2.5 py-1 text-[12px] font-semibold text-pin"
                     >
-                      Save {inr(vsMonthly.amount)} vs monthly
+                      Save {inr(vsMonthly.amount)}
                     </span>
                   ) : null}
                 </div>

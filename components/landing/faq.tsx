@@ -45,7 +45,7 @@ export function Faq() {
             onClick={() => setAll((v) => !v)}
             className="lb h-9 border-[#e5e7eb] bg-white px-3 text-sm font-medium shadow-[inset_0_1px_0_0_rgba(255,255,255,1),0_1px_3px_0_rgba(15,23,42,0.06)] hover:bg-[var(--l-wash)]"
           >
-            {all ? "Show fewer" : `Show all ${FAQ.items.length} questions`}
+            {all ? "Show fewer questions" : "Show more questions"}
           </button>
         </div>
       ) : null}

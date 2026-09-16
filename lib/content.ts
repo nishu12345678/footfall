@@ -61,15 +61,13 @@ export const HERO = {
   /* The Hinglish promise IS the headline. Roman script on purpose —
      it needs no extra font and reads naturally to the audience. */
   headline: "Aap dukaan chalaiye, Google hum sambhal lenge.",
-  /* The word that gets the Google letter colours, in both lines. */
-  highlight: "Google",
   /* The English value prop, as the deck right under the headline. */
   tagline: "Get more customers from Google, without doing it yourself.",
   sub: "footfall is an AI that runs your Google Business Profile — posting every week, replying to every review, and keeping your photos, hours and services fresh while you run the shop.",
   ctaPrimary: "Get my free report",
   ctaWhatsapp: "Talk on WhatsApp",
   support:
-    "Free report first · No card needed · Works with your existing Google profile",
+    "Free report first · No payment needed · Works with your existing Google profile",
   /* Small reassurances that sit under the buttons. These matter more
      than another paragraph to someone deciding whether to trust this. */
   trust: ["No agency retainer", "Setup takes 40 seconds", "Cancel any time"],
@@ -340,13 +338,37 @@ export const REPORT = {
 };
 
 /* ------------------------------ why google -------------------------------
-   Four numbers, the way a SaaS page shows why its channel matters. Each
-   one is a published figure — check them against the source before
-   changing the wording, and keep the source line on the page. */
+   Four numbers, the way a SaaS page shows why its channel matters.
+
+   ⚠ UNVERIFIED — do not treat these as checked.
+
+   An attempt was made to trace all four to a live primary source and it
+   failed on every one:
+
+     · The two Google figures are the much-repeated "near me" numbers from a
+       2016 Google/Ipsos study. Every thinkwithgoogle.com path tried returns
+       HTTP 200 from a single-page-app catch-all that serves the same shell
+       for any URL, so a 200 there proves nothing and no live page carrying
+       these numbers could be found. They have no `href` below for exactly
+       that reason — a citation nobody can follow is worse than none.
+
+     · BrightLocal's Local Consumer Review Survey is real and is linked, but
+       it is re-run every year and the percentages move between editions.
+       The hub is linked rather than a year, so the link cannot rot; the
+       figures themselves still need checking against the current edition.
+
+   Before this page goes in front of anyone: confirm each number, or drop it.
+   A wrong statistic on a page selling trust is an expensive thing to be
+   caught out on. Add `href` once a figure is confirmed and it renders as a
+   link automatically. */
 
 export const WHY = {
   heading: "Why your Google listing matters",
-  sub: "When someone nearby needs what you sell, they search Google first — and they decide fast. Your listing is what they see.",
+  /* This one line is in Hindi on purpose. It is the moment the page stops
+     arguing and starts describing the reader's own street, and it lands
+     harder in the language they think in. Devanagari resolves through the
+     Noto fallback in the .landing font stack — see app/page.tsx. */
+  sub: "आस-पास जब किसी को वही चाहिए जो आप बेचते हैं, वो सबसे पहले Google पर ढूँढता है — और फ़ैसला मिनटों में कर लेता है। उसे जो दिखता है, वो आपकी लिस्टिंग है।",
   stats: [
     {
       value: "76%",
@@ -362,11 +384,13 @@ export const WHY = {
       value: "87%",
       label: "of consumers used Google to check out a local business in the last year",
       source: "BrightLocal",
+      href: "https://www.brightlocal.com/research/local-consumer-review-survey/",
     },
     {
       value: "98%",
       label: "read online reviews before choosing a local business",
       source: "BrightLocal",
+      href: "https://www.brightlocal.com/research/local-consumer-review-survey/",
     },
   ],
   note: "Sources: Google consumer research on “near me” searches; BrightLocal Local Consumer Review Survey.",
@@ -377,7 +401,7 @@ export const VISION = {
   heading: "The money is going to the wrong screen",
   body: [
     "Every local business owner we spoke to is already paying someone ₹8,000 to ₹15,000 a month for “marketing”. What they get back is a screenshot of an Instagram post and a number called reach. What they wanted was somebody walking through the door.",
-    "Meanwhile the screen that decides whether anyone walks in — their Google listing — hasn't been touched in eight months. No posts. Reviews from 2024 sitting unanswered. Wrong closing time. The last photo, from the day the shop opened.",
+    "Meanwhile the screen that decides whether anyone walks in — their Google listing — hasn't been touched in eight months. No posts. Reviews from two years ago sitting unanswered. Wrong closing time. The last photo, from the day the shop opened.",
     "That gap is the whole business. Google is where somebody nearby, right now, with money in their pocket, is choosing between you and the shop two streets over. We point an AI at that screen and nothing else.",
   ],
   kicker:
@@ -526,7 +550,7 @@ export const PRICING = {
     "Launch pricing. It goes up once the first shops are running — whatever you start on is what you keep paying.",
   free: {
     name: "Free",
-    line: "The report on your listing. No card, no expiry.",
+    line: "The report on your listing. No payment, no expiry.",
     cta: "Get my free report",
     features: [
       "Full Google listing health check",
@@ -648,7 +672,7 @@ export const FAQ = {
 export const START = {
   heading: "Let’s look at your listing together",
   sub: "Send us your business name and area. We’ll pull up your Google listing, tell you exactly what’s broken on it, and fix the first three things with you — today, while you watch.",
-  note: "No card. No call booking. No 40-minute demo.",
+  note: "No payment. No call booking. No 40-minute demo.",
 };
 
 export const FOOTER = {

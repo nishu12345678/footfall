@@ -1,0 +1,15 @@
+# Dev-only image for `next dev`. Convex itself is not containerized here —
+# run `npx convex dev` on the host (see README/setup docs); it needs an
+# interactive browser login on first run.
+FROM node:24-slim
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]

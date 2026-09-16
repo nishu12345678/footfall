@@ -1,6 +1,7 @@
 import { HERO, LINKS, START } from "@/lib/content";
-import { Icon, WhatsAppIcon } from "./icons";
+import { Icon } from "./icons";
 import { Section } from "./ui";
+import { WhatsAppCta } from "./whatsapp-cta";
 
 /** Final call: two doors, sign in or message a person. */
 export function Start() {
@@ -16,15 +17,7 @@ export function Start() {
             {HERO.ctaPrimary}
             <Icon name="arrow-right" />
           </a>
-          <a
-            href={LINKS.whatsapp}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="lb lb-whatsapp lb-lg w-full sm:w-auto"
-          >
-            <WhatsAppIcon size={18} />
-            {HERO.ctaWhatsapp}
-          </a>
+          <WhatsAppCta label={HERO.ctaWhatsapp} className="lb-lg w-full sm:w-auto" />
         </div>
         <p className="mt-5 text-[14px] text-[var(--l-muted)]">{START.note}</p>
       </div>

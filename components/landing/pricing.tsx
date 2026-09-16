@@ -1,6 +1,7 @@
 import { LINKS, PRICING } from "@/lib/content";
-import { Icon, WhatsAppIcon } from "./icons";
+import { Icon } from "./icons";
 import { Heading, Section, Tick } from "./ui";
+import { WhatsAppCta } from "./whatsapp-cta";
 
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
@@ -107,15 +108,11 @@ export function Pricing() {
             </p>
             <p className="mt-3 text-[14px] text-white/50">{PRICING.offer.note}</p>
           </div>
-          <a
-            href={LINKS.whatsapp}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="lb lb-white h-12 flex-none px-6 text-base"
-          >
-            <WhatsAppIcon size={18} style={{ color: "#25d366" }} />
-            {PRICING.offer.cta}
-          </a>
+          <WhatsAppCta
+            label={PRICING.offer.cta}
+            tone="dark"
+            className="h-12 flex-none px-6 text-base"
+          />
         </div>
       </div>
     </Section>

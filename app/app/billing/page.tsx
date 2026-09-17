@@ -8,6 +8,7 @@ import { api } from "@/convex/_generated/api";
 import { PRICING } from "@/lib/content";
 import { resumeHref } from "@/lib/onboarding";
 import { BackButton } from "@/components/back-button";
+import { OfferDeadline } from "@/components/offer-deadline";
 import { describePaymentFailure } from "@/convex/paymentText";
 import { friendlyError } from "@/lib/errors";
 
@@ -143,7 +144,7 @@ export default function BillingPage() {
   const phaseRef = useRef(phase);
   useEffect(() => {
     phaseRef.current = phase;
-    // A settled order releases the "one at a time" latch too.
+    // A settled order releases the "One at a time" latch too.
     if (livePhase === "idle") inFlight.current = false;
   }, [phase, livePhase]);
 
@@ -528,8 +529,14 @@ export default function BillingPage() {
           ) : null}
 
           {PRICING.plans.map((p) => {
-            const featured = Boolean(p.badge);
+            const featured = p.featured;
             const ready = scriptState === "ready";
+            /* Both figures are suppressed during a ₹1 test, where the real
+               prices are not what is being charged and a discount claim
+               would be meaningless. */
+            const saved = p.listPrice - p.price;
+            const vsMonthly =
+              p.period === "year" && !oneRupeeTest ? PRICING.yearlySaving() : null;
             return (
               <section
                 key={p.id}
@@ -539,9 +546,15 @@ export default function BillingPage() {
               >
                 <div className="flex items-baseline justify-between gap-3">
                   <h2 className="text-[1.4rem]">{p.name}</h2>
-                  {p.badge ? (
-                    <span className="rounded-full bg-pin-soft px-2.5 py-1 text-[12px] font-semibold text-pin">
-                      {p.badge}
+                  {vsMonthly && vsMonthly.amount > 0 ? (
+                    /* Computed, not typed: it cannot drift when a price
+                       moves, and it recomputes by itself once the launch
+                       offer ends. Hover shows the full sum. */
+                    <span
+                      title={vsMonthly.working}
+                      className="cursor-help rounded-full bg-pin-soft px-2.5 py-1 text-[12px] font-semibold text-pin"
+                    >
+                      Save {inr(vsMonthly.amount)}
                     </span>
                   ) : null}
                 </div>
@@ -555,6 +568,23 @@ export default function BillingPage() {
                     {inr(oneRupeeTest ? p.price : p.listPrice)}
                   </span>
                 </p>
+
+                {/* The same two pills the public pricing section shows. A
+                    discount that is visible before signing in and absent
+                    afterwards reads as a bait-and-switch, so both
+                    surfaces state the offer and when it ends. */}
+                {!oneRupeeTest && saved > 0 ? (
+                  <p className="mt-2.5 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-[#e6f7ec] px-2.5 py-0.5 text-[12px] font-medium text-[#15803d]">
+                      Launch offer · save {inr(saved)}
+                    </span>
+                    <OfferDeadline
+                      className="rounded-full px-2.5 py-0.5 text-[12px]"
+                      urgentClassName="bg-[#fef3c7] font-semibold text-[#b45309]"
+                      calmClassName="bg-paper-2 text-ink-soft"
+                    />
+                  </p>
+                ) : null}
 
                 {p.period === "year" && !oneRupeeTest ? (
                   <p className="mt-2 text-[15px] text-ink-soft">
@@ -585,6 +615,17 @@ export default function BillingPage() {
               </section>
             );
           })}
+
+          {/* The price-lock promise. It is on the public page, and it
+              matters more here than there: this is the screen where
+              somebody decides whether to commit, and "the price you start
+              on is the price you keep" is the line that answers "what
+              happens when launch pricing ends?". */}
+          {!oneRupeeTest ? (
+            <p className="text-[15px] leading-relaxed text-ink-soft">
+              {PRICING.launchNote}
+            </p>
+          ) : null}
 
           <p className="text-center text-[15px] leading-relaxed text-muted">
             Paid securely through Razorpay. UPI, card, netbanking or wallet.

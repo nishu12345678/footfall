@@ -1,4 +1,5 @@
 import { COMPANY } from "./company";
+import { offerDeadlineLabel } from "./launch-offer";
 /* ---------------------------------------------------------------------------
    footfall — every word on the landing page lives here.
    edit copy in this file. don't edit copy inside components.
@@ -507,8 +508,16 @@ export const PRICING = {
   sub: "The report is free for everyone. A plan is what makes footfall actually do the work.",
   anchor:
     "An agency or freelancer charges ₹8,000–15,000 a month for marketing. footfall does the Google side of that work — the screen people search when they are ready to buy — for a fraction of it.",
-  launchNote:
-    "Launch pricing. It goes up once the first shops are running — whatever you start on is what you keep paying.",
+  /* Two claims, and they have to stay compatible: a deadline to join, and
+     a promise about what happens after. The deadline creates the reason to
+     act now; the lock-in removes the fear of acting now. Dropping either
+     one weakens the other.
+
+     The date is interpolated, not typed, so it cannot drift from the one
+     in lib/launch-offer.ts. Change the date there and this follows. The
+     sentence still reads correctly once the offer ends and the deadline
+     pills hide themselves. */
+  launchNote: `Launch pricing, open until ${offerDeadlineLabel()}. It goes up once the first shops are running — but whatever price you start on is the price you keep, for as long as you stay.`,
   free: {
     name: "Free",
     line: "The report on your listing. No card, no expiry.",
@@ -523,12 +532,23 @@ export const PRICING = {
   },
   /* Prices are shown here and enforced in convex/billing.ts. If you change
      one, change the other — the server never trusts an amount from the
-     browser. */
+     browser.
+
+     These plans are rendered by TWO surfaces — the public pricing section
+     and "Choose your plan" in app/app/billing — so anything written here
+     must make sense signed-out and signed-in. A discount that appears on
+     the landing page and quietly vanishes after login reads as a trick.
+
+     `featured` replaces what used to be a `badge` string. Both surfaces
+     had been inferring "which card is highlighted" from whether that
+     string was non-empty, so the visual hierarchy silently depended on
+     marketing copy: delete the badge text and the yearly plan stopped
+     being featured. */
   plans: [
     {
       id: "monthly",
       name: "Monthly",
-      badge: "",
+      featured: false,
       price: 1999,
       listPrice: 2499,
       period: "month",
@@ -540,7 +560,7 @@ export const PRICING = {
     {
       id: "yearly",
       name: "Yearly",
-      badge: "Save ₹14,000",
+      featured: true,
       price: 9999,
       listPrice: 19999,
       period: "year",
@@ -550,6 +570,48 @@ export const PRICING = {
       cta: "Start yearly",
     },
   ],
+  /**
+   * What the yearly plan saves against paying monthly for a year.
+   *
+   * Both sides are whatever price is LIVE — today that is the offer on
+   * both, ₹1,999 × 12 against ₹9,999. Always comparing like with like is
+   * what lets this survive the launch offer ending: raise `price` to
+   * `listPrice` on both plans and it recomputes to ₹9,900 on its own,
+   * with no copy to edit and no stale number left behind.
+   *
+   * Never mix the two — monthly LIST against yearly OFFER would inflate
+   * the figure to ₹19,900 by crediting us for a discount nobody is being
+   * charged, which is the sort of number that reads as a trick once
+   * somebody checks it.
+   *
+   * A function of the prices above, never a typed string, because the
+   * yearly card shows a SECOND saving right beneath it (offer vs list)
+   * and the two are different numbers. A hardcoded badge becomes a lie
+   * the first time a price moves, and nobody redoes the arithmetic while
+   * editing copy — which is exactly how "Save ₹14,000" came to sit
+   * unlabelled next to "save ₹10,000".
+   *
+   * `amount` is rounded DOWN to a whole ₹100: it reads as a claim rather
+   * than a suspiciously precise ₹13,989, and it can only ever understate
+   * what the buyer really saves. `working` shows the unrounded sum, so
+   * hovering explains the number instead of contradicting it.
+   */
+  yearlySaving(): { amount: number; working: string } {
+    const m = PRICING.plans.find((p) => p.period === "month");
+    const y = PRICING.plans.find((p) => p.period === "year");
+    if (!m || !y) return { amount: 0, working: "" };
+
+    const twelve = m.price * 12;
+    const exact = twelve - y.price;
+    const rupees = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+
+    return {
+      amount: Math.floor(exact / 100) * 100,
+      working: `${rupees(m.price)} a month for a year is ${rupees(
+        twelve,
+      )}. The yearly plan is ${rupees(y.price)} — you keep ${rupees(exact)}.`,
+    };
+  },
   /* The same list on both plans, because it is the same product. */
   features: [
     "Three Google posts a week, written and published",

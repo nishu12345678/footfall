@@ -274,4 +274,39 @@ test("revoked: calls get 401 and refresh fails like invalid_grant", async () => 
   await expect(
     t.action(internal.google.accessTokenFor, { userId }),
   ).rejects.toThrow(/reconnect/i);
+
+  // invalid_grant is final, so the refresh behaves like Disconnect: tokens
+  // gone, listing unlinked, agent paused, owner emailed once. The next
+  // cron pass then skips this shop instead of failing on it again.
+  const account = await t.run(async (ctx) =>
+    ctx.db
+      .query("googleAccounts")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first(),
+  );
+  expect(account).toBeNull();
+  const b = await business();
+  expect(b?.gbpLocationName).toBeUndefined();
+  expect(b?.lastGbpLocationName).toBe(MOCK_LOCATION);
+  expect(b?.agentActive).toBe(false);
+
+  await t.finishAllScheduledFunctions(() => {});
+  const emails = await t.run(async (ctx) =>
+    (await ctx.db.query("emails").collect()).filter(
+      (e) => e.purpose === "google_access_lost",
+    ),
+  );
+  expect(emails).toHaveLength(1);
+
+  // Once is enough: a second failed refresh finds nothing to forget.
+  await expect(
+    t.action(internal.google.accessTokenFor, { userId }),
+  ).rejects.toThrow(/connect/i);
+  await t.finishAllScheduledFunctions(() => {});
+  const again = await t.run(async (ctx) =>
+    (await ctx.db.query("emails").collect()).filter(
+      (e) => e.purpose === "google_access_lost",
+    ),
+  );
+  expect(again).toHaveLength(1);
 });

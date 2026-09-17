@@ -165,7 +165,7 @@ export default function HomePage() {
           disabled={busy}
           className="mt-5 text-[13px] font-medium text-pin hover:opacity-80"
         >
-          refresh listing from google
+          Refresh listing from Google
         </button>
       ) : null}
 
@@ -202,7 +202,7 @@ export default function HomePage() {
             detail={
               posts.scheduled
                 ? `${posts.scheduled} scheduled`
-                : "nothing scheduled yet"
+                : "Nothing scheduled yet"
             }
           />
           <Counter
@@ -211,7 +211,7 @@ export default function HomePage() {
             detail={
               photos.inBucket
                 ? `${photos.inBucket} waiting in your photo bucket`
-                : "no photos uploaded yet"
+                : "No photos uploaded yet"
             }
           />
           <Counter
@@ -219,7 +219,7 @@ export default function HomePage() {
             label={`${reviews.total} reviews`}
             detail={
               reviews.total === 0
-                ? "none pulled from Google yet"
+                ? "None pulled from Google yet"
                 : `${reviews.repliedPercent}% replied · ${reviews.awaitingReply} waiting`
             }
           />
@@ -242,7 +242,7 @@ export default function HomePage() {
             detail={
               metrics
                 ? `${metrics.views} views in the last ${metrics.days} days`
-                : "no data pulled from Google yet"
+                : "No data pulled from Google yet"
             }
           />
         </ul>

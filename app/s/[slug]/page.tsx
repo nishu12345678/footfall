@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
   ContactBand,
+  PinIcon,
   SiteFooter,
   SiteNav,
   UtilityBar,
@@ -114,6 +115,21 @@ export default async function SiteHome({
                     Message on WhatsApp
                   </a>
                 ) : null}
+                {/* Getting there is the other thing a visitor wants, and it
+                    was only a small grey pill in the footer. This link
+                    starts navigation rather than opening a map to look at
+                    — see directionsLink. */}
+                {directions ? (
+                  <a
+                    href={directions}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-ghost"
+                  >
+                    <PinIcon />
+                    Get directions
+                  </a>
+                ) : null}
                 <Link href={`${base}/services`} className="btn btn-ghost">
                   What we offer
                 </Link>
@@ -137,6 +153,13 @@ export default async function SiteHome({
               <img
                 src={photos[0].url}
                 alt={`${business.orgName}`}
+                /* Google's photo CDN rate-limits by referrer: sending one
+                   it does not recognise gets HTTP 429 and an HTML error
+                   body, which the browser then blocks as ORB, so the
+                   photo silently fails to appear. Withholding the referrer
+                   returns the image every time. See the note in
+                   lib/site-data.ts. */
+                referrerPolicy="no-referrer"
                 className="aspect-[4/3] w-full rounded-[24px] object-cover shadow-lift"
               />
             ) : null}
@@ -196,6 +219,7 @@ export default async function SiteHome({
                       src={photo.url}
                       alt={photo.caption ?? `${business.orgName} photo ${i + 1}`}
                       loading="lazy"
+                      referrerPolicy="no-referrer"
                       className="aspect-square w-full rounded-[18px] object-cover shadow-card"
                     />
                   </li>

@@ -181,6 +181,44 @@ export const syncForUser = internalAction({
   },
 });
 
+/**
+ * Mirrors every connected shop's gallery overnight.
+ *
+ * Until this existed, photos only came down from Google when somebody
+ * opened /app/photos or refreshed the free report — neither of which an
+ * owner does often. A photo deleted on Google stayed on the shop's public
+ * site until one of those happened, which in practice could be never: a
+ * cafe was showing a photo of a dental surgery.
+ *
+ * That is what makes it worth a nightly job rather than leaving it to the
+ * UI. The owner cannot see the problem — their Google gallery looks
+ * correct — so they have no reason to go and fix it.
+ *
+ * Reviews sync every four hours because a reply is time-sensitive. A
+ * gallery only has to be right by morning.
+ */
+export const syncAllPhotos = internalAction({
+  args: {},
+  handler: async (ctx): Promise<{ businesses: number; added: number }> => {
+    const businesses: { userId: Id<"users">; name: string }[] =
+      await ctx.runQuery(internal.performance.connectedBusinesses, {});
+
+    let added = 0;
+    for (const b of businesses) {
+      try {
+        const r = await ctx.runAction(internal.photos.syncForUser, {
+          userId: b.userId,
+        });
+        added += r.added;
+      } catch (error) {
+        // One shop's expired token must not stop the rest of the run.
+        console.error(`[agent] photo sync failed for ${b.name}`, error);
+      }
+    }
+    return { businesses: businesses.length, added };
+  },
+});
+
 /* ------------------------------- upload up ------------------------------ */
 
 export const generateUploadUrl = paidMutation({

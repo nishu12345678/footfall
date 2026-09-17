@@ -40,7 +40,7 @@ export default function WebsitePage() {
       location={business.locationName ?? business.city}
       logoUrl={business.logoUrl}
     >
-      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">your website</h1>
+      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">Your website</h1>
       <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
         A page built from your Google listing, so your name, address, phone and
         hours match Google exactly. That consistency is one of the few local SEO
@@ -92,7 +92,7 @@ export default function WebsitePage() {
                 rel="noreferrer"
                 className="btn btn-primary btn-sm"
               >
-                open my website
+                Open my website
               </a>
               <button
                 type="button"
@@ -110,7 +110,7 @@ export default function WebsitePage() {
                 }
                 className="ml-auto text-[13px] font-medium text-pin hover:opacity-80"
               >
-                {site.published ? "hide it" : "make it live"}
+                {site.published ? "hide it" : "Make it live"}
               </button>
             </div>
           </div>
@@ -137,7 +137,7 @@ export default function WebsitePage() {
             disabled={busy}
             className="btn btn-ghost mt-5 w-full disabled:opacity-40"
           >
-            {busy ? "rewriting…" : "rewrite the copy"}
+            {busy ? "rewriting…" : "Rewrite the copy"}
           </button>
         </>
       ) : (
@@ -166,7 +166,7 @@ export default function WebsitePage() {
             className="btn btn-primary mt-6 w-full disabled:opacity-40"
           >
             <span aria-hidden>✦</span>
-            {busy ? "building…" : "create my website"}
+            {busy ? "building…" : "Create my website"}
           </button>
         </div>
       )}

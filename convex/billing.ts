@@ -797,6 +797,30 @@ export const createOrder = action({
       businessId: business._id,
     });
     if (open) {
+      // Our row can lag Razorpay's truth: the browser's success handler can
+      // miss (a reload mid-3DS redirect) and a dev deployment has no
+      // webhook. Handing Checkout an order Razorpay already considers paid
+      // shows their dead-end "Something went wrong" screen, so ask Razorpay
+      // first and only reuse an order that is genuinely still payable.
+      const settled = await reconcileOne(ctx, open.razorpayOrderId, "createOrder");
+      if (settled.state === "paid") {
+        console.log(
+          `[billing] open order ${open.razorpayOrderId} was already paid at Razorpay; settled it instead of reusing`,
+        );
+        throw new ConvexError(
+          "Good news — your earlier payment already went through, so your plan is now active. You haven't been charged again.",
+        );
+      }
+      if (settled.state === "authorized") {
+        throw new ConvexError(
+          "Your earlier payment is still being confirmed with Razorpay. This usually settles within minutes — the page updates by itself.",
+        );
+      }
+      if (settled.state === "mismatch") {
+        throw new ConvexError(
+          `A payment on your earlier order needs a manual look. Please contact support with order ${open.razorpayOrderId}.`,
+        );
+      }
       console.log(`[billing] reusing open order ${open.razorpayOrderId} for ${userId}`);
       return {
         orderId: open.razorpayOrderId,

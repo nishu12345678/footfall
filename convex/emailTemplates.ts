@@ -221,6 +221,19 @@ const TEMPLATES: Record<string, Template> = {
     cta: { label: "Reconnect", href: `${SITE()}/app/connect` },
   }),
 
+  google_access_lost: (p) => ({
+    subject: "Google has withdrawn footfall's access",
+    text: [
+      greet(p),
+      "",
+      `Google has stopped footfall from reading or changing your Business Profile${p.orgName ? ` for ${p.orgName}` : ""}, so the agent is paused. This happens when footfall is removed from your Google account, when the Google password changes, or when the permission lapses.`,
+      "",
+      "Nothing is lost. Reconnect and the agent picks up where it left off:",
+      `${SITE()}/app/connect`,
+    ].join("\n"),
+    cta: { label: "Reconnect", href: `${SITE()}/app/connect` },
+  }),
+
   signed_out_everywhere: (p) => ({
     subject: "You were signed out on every device",
     text: [

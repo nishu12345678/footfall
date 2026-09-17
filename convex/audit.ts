@@ -51,8 +51,16 @@ export const report = query({
     if (!business) return { connected: false as const };
 
     const id = business._id;
-    const [posts, photos, reviews, keywords, hours, offerings, siteCheck] =
-      await Promise.all([
+    const [
+      posts,
+      photos,
+      reviews,
+      keywords,
+      hours,
+      offerings,
+      siteCheck,
+      builtSite,
+    ] = await Promise.all([
         ctx.db
           .query("posts")
           .withIndex("by_business", (q) => q.eq("businessId", id))
@@ -81,6 +89,14 @@ export const report = query({
           .query("websiteChecks")
           .withIndex("by_business", (q) => q.eq("businessId", id))
           .order("desc")
+          .first(),
+        /* The footfall site we may have built for this shop. Without it
+           the report could only know about a website listed on Google, so
+           a site built here vanished from the page on the next refresh —
+           the owner was invited to build a second one. */
+        ctx.db
+          .query("sites")
+          .withIndex("by_business", (q) => q.eq("businessId", id))
           .first(),
       ]);
 
@@ -340,6 +356,10 @@ export const report = query({
           100,
       ),
       websiteCheckedAt: siteCheck?.checkedAt ?? null,
+      /* The slug of the site footfall built, so the report can say "your
+         site is up" on every visit rather than only in the seconds after
+         the button was pressed. */
+      builtSiteSlug: builtSite?.slug ?? null,
       /* Null means we have never read the listing from Google. The UI must
          fetch before it shows any of this, or it will tell a shop with two
          hundred posts that it has never posted. */

@@ -36,6 +36,21 @@ crons.daily(
   internal.posts.publishDue,
 );
 
+// Reads the gallery back FROM Google. Without this, a photo the owner
+// deleted on Google stayed on their public site until somebody happened to
+// open /app/photos — a cafe was showing a photo of a dental surgery. The
+// owner cannot spot it, because their Google gallery looks correct.
+//
+// Runs before the upload job below so the mirror is current when we decide
+// what to publish next.
+// 02:30 rather than 02:00: the weekly rank check runs at 02:00 on Mondays,
+// and both are network-heavy loops over every shop.
+crons.daily(
+  "sync gbp photos",
+  { hourUTC: 2, minuteUTC: 30 }, // 08:00 IST
+  internal.photos.syncAllPhotos,
+);
+
 // Four photos a week reads like a shop someone is running. Thirty at once
 // reads like a one-off, and Google can stop accepting uploads for a
 // fortnight over it. The run is daily; the action itself keeps to Mon,

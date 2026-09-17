@@ -69,9 +69,9 @@ export default function AboutPage() {
   if (data === null) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
-        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
+        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">Connect Google first</h1>
         <Link href="/app/connect" className="btn btn-primary mt-8 w-full">
-          connect google
+          Connect Google
         </Link>
       </main>
     );
@@ -165,7 +165,7 @@ export default function AboutPage() {
             disabled={!draft.trim()}
             className="btn btn-primary btn-sm flex-none disabled:opacity-40"
           >
-            add
+            Add
           </button>
         </form>
 
@@ -262,7 +262,7 @@ export default function AboutPage() {
         disabled={chosen.length === 0}
         className="btn btn-primary mt-10 w-full disabled:cursor-not-allowed disabled:opacity-40"
       >
-        {tab === "offerings" ? "save info & next" : edit ? "save changes" : "save & next"}
+        {tab === "offerings" ? "Save info & next" : edit ? "save changes" : "Save & next"}
       </button>
     </main>
   );

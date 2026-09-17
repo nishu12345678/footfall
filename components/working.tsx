@@ -8,7 +8,7 @@
  */
 export function Working({
   label,
-  hint = "this takes a few seconds",
+  hint = "This takes a few seconds",
 }: {
   label: string;
   hint?: string | null;

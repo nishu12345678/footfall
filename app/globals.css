@@ -35,6 +35,13 @@
   --color-star: #e8a33d;
   --color-chat: #1da750;
 
+  /* Needs attention. Deliberately not --color-star, which is the amber of
+     a review rating: a status chip and a star rating can sit on the same
+     screen, and they should not read as the same thing. Dark enough to
+     clear contrast on its own tint. */
+  --color-alert: #c2410c;
+  --color-alert-soft: #fdeee5;
+
   --font-display: var(--font-manrope), -apple-system, BlinkMacSystemFont,
     system-ui, "Segoe UI", Roboto, sans-serif;
   --font-body: var(--font-manrope), -apple-system, BlinkMacSystemFont,
@@ -764,5 +771,34 @@ a.link:hover {
     animation: none;
     width: 100%;
     opacity: 0.5;
+  }
+}
+
+/* ------------------------------ confetti ---------------------------------
+   One short burst when a shop's website goes live. Kept in CSS rather than
+   a canvas library: eighteen squares falling once do not justify a
+   dependency. Pieces fade out before they land so there is no hard stop.  */
+@keyframes ff-confetti-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0) rotate(0deg);
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--ff-drift, 0), 130px, 0) rotate(420deg);
+  }
+}
+
+.ff-confetti {
+  animation: ff-confetti-fall 2.2s cubic-bezier(0.25, 0.6, 0.4, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ff-confetti {
+    animation: none;
+    display: none;
   }
 }

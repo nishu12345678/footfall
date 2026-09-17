@@ -118,7 +118,7 @@ export default function SettingsPage() {
       logoUrl={b?.logoUrl ?? undefined}
     >
       <BackButton fallback="/app" className="-ml-2 mb-4" />
-      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">settings</h1>
+      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">Settings</h1>
 
       {note ? (
         <p className="mt-5 rounded-[12px] bg-open-soft px-4 py-3 text-[13px] leading-snug">
@@ -157,7 +157,7 @@ export default function SettingsPage() {
           />
           <Row
             label="Plan"
-            value={me.paid ? "active" : "none"}
+            value={me.paid ? "Active" : "None"}
             href="/app/billing"
           />
         </ul>
@@ -183,7 +183,7 @@ export default function SettingsPage() {
                       {biz.orgName}
                       {biz.selected ? (
                         <span className="ml-2 rounded-full bg-open-soft px-2 py-0.5 text-[11px] font-medium text-open-deep">
-                          selected
+                          Selected
                         </span>
                       ) : null}
                     </span>
@@ -269,7 +269,7 @@ export default function SettingsPage() {
                   disabled={busy !== null}
                   className="btn btn-ghost btn-sm mt-4 w-full"
                 >
-                  disconnect google business profile
+                  Disconnect Google Business Profile
                 </button>
               )}
             </>
@@ -279,7 +279,7 @@ export default function SettingsPage() {
                 Everything in the app comes from your Google listing.
               </p>
               <Link href="/app/connect" className="btn btn-primary btn-sm mt-4 w-full">
-                connect google business profile
+                Connect Google Business Profile
               </Link>
             </>
           )}
@@ -303,7 +303,7 @@ export default function SettingsPage() {
                 key={s.step}
                 label={`${s.step}. ${s.label}`}
                 value={
-                  s.step < b.onboardingStep || b.onboardingComplete ? "edit" : "not done yet"
+                  s.step < b.onboardingStep || b.onboardingComplete ? "Edit" : "Not done yet"
                 }
                 href={
                   s.step <= b.onboardingStep || b.onboardingComplete
@@ -324,7 +324,7 @@ export default function SettingsPage() {
           disabled={busy !== null}
           className="btn btn-primary w-full disabled:opacity-50"
         >
-          {busy === "signout" ? "signing out…" : "sign out"}
+          {busy === "signout" ? "Signing out…" : "Sign out"}
         </button>
 
         {confirming === "everywhere" ? (
@@ -340,7 +340,7 @@ export default function SettingsPage() {
                 disabled={busy !== null}
                 className="btn btn-ghost btn-sm"
               >
-                cancel
+                Cancel
               </button>
               <button
                 type="button"
@@ -348,7 +348,7 @@ export default function SettingsPage() {
                 disabled={busy !== null}
                 className="btn btn-primary btn-sm disabled:opacity-50"
               >
-                {busy === "everywhere" ? "signing out…" : "sign out everywhere"}
+                {busy === "everywhere" ? "Signing out…" : "Sign out everywhere"}
               </button>
             </div>
           </div>
@@ -359,7 +359,7 @@ export default function SettingsPage() {
             disabled={busy !== null}
             className="btn btn-ghost w-full disabled:opacity-50"
           >
-            sign out of all devices
+            Sign out of all devices
           </button>
         )}
       </section>

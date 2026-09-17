@@ -289,7 +289,7 @@ export const exchangeCode = action({
 /* ---------------------------- access token ------------------------------ */
 
 async function freshAccessToken(
-  ctx: { runQuery: any; runMutation: any },
+  ctx: ActionCtx,
   userId: Id<"users">,
 ): Promise<string> {
   const account = await ctx.runQuery(internal.google.accountForUser, {
@@ -318,6 +318,12 @@ async function freshAccessToken(
   const payload = await tokenPayload(res);
   if (!res.ok || !payload.access_token) {
     console.error("[google] refresh failed", res.status, payload);
+    if (payload.error === "invalid_grant") {
+      await accessLost(ctx, userId);
+      throw new ConvexError(
+        "Google has withdrawn our access. Reconnect your profile from Settings.",
+      );
+    }
     throw new ConvexError("Could not refresh Google access. Reconnect your profile.");
   }
 
@@ -328,6 +334,31 @@ async function freshAccessToken(
   });
 
   return payload.access_token;
+}
+
+/**
+ * invalid_grant is Google's final word on a refresh token: the owner
+ * removed footfall from their Google account, changed their password, or
+ * the grant lapsed. No retry will ever succeed, so it gets the same
+ * treatment as the Disconnect button — tokens forgotten, listing unlinked,
+ * agent paused, owner told — instead of every cron failing four-hourly
+ * from now on while the dashboard still says the agent is running.
+ *
+ * Two crons can hit this at once. forgetAccount is a transaction and only
+ * the first caller sees hadAccount, so the owner hears about it once.
+ */
+async function accessLost(ctx: ActionCtx, userId: Id<"users">) {
+  const result: { hadAccount: boolean } = await ctx.runMutation(
+    internal.google.forgetAccount,
+    { userId },
+  );
+  if (!result.hadAccount) return;
+  console.error(`[google] grant revoked at Google; disconnected user ${userId}`);
+  await ctx.scheduler.runAfter(0, internal.email.sendToUser, {
+    userId,
+    template: "google_access_lost",
+    dedupeKey: `google_access_lost:${userId}:${Date.now()}`,
+  });
 }
 
 /**

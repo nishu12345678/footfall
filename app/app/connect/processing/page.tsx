@@ -93,10 +93,10 @@ export default function ProcessingPage() {
               aria-hidden
               className="mx-auto block h-9 w-9 animate-spin rounded-full border-2 border-rule border-t-pin"
             />
-            <h1 className="mt-6 text-[clamp(1.9rem,5vw,2.2rem)]">processing</h1>
+            <h1 className="mt-6 text-[clamp(1.9rem,5vw,2.2rem)]">Processing</h1>
             <p className="mt-3 text-[15px] text-ink-soft">{message}</p>
             <p className="mt-1 text-[13px] text-muted">
-              please don&rsquo;t close or refresh this window
+              Please don&rsquo;t close or refresh this window
             </p>
           </div>
         ) : null}
@@ -104,7 +104,7 @@ export default function ProcessingPage() {
         {phase === "choose" ? (
           <div>
             <h1 className="text-[clamp(1.9rem,5vw,2.2rem)]">
-              which one is yours?
+              Which one is yours?
             </h1>
             <p className="mt-3 text-[15px] text-ink-soft">
               This Google account manages {locations.length} listings. Pick the
@@ -147,7 +147,7 @@ export default function ProcessingPage() {
               ✓
             </span>
             <h1 className="mt-6 text-[clamp(2rem,5vw,2.3rem)]">
-              linked successfully
+              Linked successfully
             </h1>
             <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               <strong>{linked?.title}</strong> is connected. We can now improve
@@ -157,7 +157,7 @@ export default function ProcessingPage() {
               href="/app/onboarding/location"
               className="btn btn-primary mt-10 w-full"
             >
-              continue setup
+              Continue setup
             </Link>
           </div>
         ) : null}
@@ -165,7 +165,7 @@ export default function ProcessingPage() {
         {phase === "empty" ? (
           <div>
             <h1 className="text-[clamp(1.9rem,5vw,2.2rem)]">
-              no listings on that account
+              No listings on that account
             </h1>
             <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               That Google account doesn&rsquo;t manage any business profiles.
@@ -174,7 +174,7 @@ export default function ProcessingPage() {
               account.
             </p>
             <Link href="/app/connect" className="btn btn-ghost mt-9 w-full">
-              try another google account
+              Try another Google account
             </Link>
           </div>
         ) : null}
@@ -182,13 +182,13 @@ export default function ProcessingPage() {
         {phase === "error" ? (
           <div>
             <h1 className="text-[clamp(1.9rem,5vw,2.2rem)]">
-              that didn&rsquo;t work
+              That didn&rsquo;t work
             </h1>
             <p className="mt-4 rounded-[12px] bg-pin-soft px-4 py-3 text-[13px] leading-relaxed break-words">
               {error}
             </p>
             <Link href="/app/connect" className="btn btn-primary mt-9 w-full">
-              try again
+              Try again
             </Link>
           </div>
         ) : null}

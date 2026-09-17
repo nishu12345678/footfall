@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAction, useMutation } from "convex/react";
 import { useQuery } from "convex-helpers/react/cache";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { OnboardingTop, nextHref, useEditMode } from "@/components/onboarding-frame";
 import { Working } from "@/components/working";
@@ -43,12 +43,103 @@ const DAYS = [
 
 type HourRow = { day: number; open?: string; close?: string; closed: boolean };
 
+/** One place the map knows about near the shop. */
+type AreaIdea = {
+  name: string;
+  km: number;
+  kind: string;
+  lat: number;
+  lng: number;
+};
+
 const DEFAULT_HOURS: HourRow[] = DAYS.map((_, day) => ({
   day,
   open: "10:00",
   close: "20:00",
   closed: false,
 }));
+
+/** One phrase the research came back with. */
+type Researched = {
+  term: string;
+  score: number;
+  why: string;
+  demand: number;
+  source: string;
+  reviews?: number;
+  volume?: number | null;
+  competition?: string | null;
+  measured: string;
+};
+
+/**
+ * Turn the raw score into something a shop owner can act on.
+ *
+ * "4 pts" told the owner nothing, and quietly misled: most of those four
+ * points are the flat +4 every "near me" phrase receives in
+ * convex/keywords.ts, not measured demand. Two phrases scoring 4 and 0.5
+ * can differ only in whether they contain the words "near me" — a fact
+ * about the phrasing, not about how many people search it.
+ *
+ * Thresholds are read off that scoring, not guessed:
+ *
+ *   0.5   names the city, nothing measurable   ("cafe in agra")
+ *   4.0   says "near me", nothing measurable   (the bonus alone)
+ *   5.5+  names the city AND has real demand
+ *   9.0+  says "near me" AND has real demand
+ *
+ * So 5 is the first score that cannot be reached by phrasing alone, and
+ * is the honest floor for calling something strong.
+ *
+ * The bottom tier says "Still worth it" rather than "Long shot": a phrase
+ * with no national search volume is normal for one shop in one city, not
+ * a bad bet — and in testing every suggestion landed there, so a
+ * discouraging word would have been the only thing the owner saw.
+ */
+function pickLabel(score: number): { label: string; tone: string } {
+  if (score >= 9) return { label: "Best pick", tone: "bg-open-soft text-open-deep" };
+  if (score >= 5) return { label: "Strong pick", tone: "bg-open-soft text-open-deep" };
+  if (score >= 3.5) return { label: "Ready to buy", tone: "bg-pin-soft text-pin" };
+  return { label: "Still worth it", tone: "bg-paper-3 text-ink-soft" };
+}
+
+/**
+ * The research explains itself in its own vocabulary — "is too niche for
+ * Trends to measure", "scores 34 on Trends". That is the tool's language,
+ * not the owner's. Rewrite the common cases; anything unrecognised falls
+ * through unchanged rather than being hidden.
+ */
+function plainWhy(r: Researched, city?: string | null): string {
+  const where = city ?? "your area";
+  if (r.measured === "volume" && r.volume) {
+    return `About ${r.volume.toLocaleString("en-IN")} searches a month in ${where}.`;
+  }
+  const nearMe = /near me|nearby/.test(r.term);
+  if (/too niche for Trends/i.test(r.why)) {
+    /* What actually happened: Google Trends was asked about the product
+       word — "smoothies", not "smoothies in agra" — across the whole
+       state, and returned zero. Trends only reports terms with enough
+       nationwide volume to chart, so zero means "below its threshold",
+       NOT "nobody searches this".
+
+       So the honest line is that we could not measure it, and why that
+       is unsurprising for one shop's phrase. An earlier draft said
+       "people here do search it" — that was an invention: we have no
+       evidence either way, which is the whole point. */
+    return nearMe
+      ? "We can't measure this one — Google only reports busier searches. Worth tracking: it's how people nearby look for a shop like yours."
+      : "We can't measure this one — Google only reports busier searches. Track it and we'll show you where you rank.";
+  }
+  if (/scores \d/i.test(r.why)) {
+    /* Trends gives relative interest, not a count, so it cannot be
+       reported as "N searches". "Steady interest" is the strongest claim
+       the number supports. */
+    return nearMe
+      ? `People in ${where} search this, and it's typed by someone ready to walk in.`
+      : `People in ${where} search this.`;
+  }
+  return r.why;
+}
 
 export default function GbpPage() {
   const data = useQuery(api.gbp.list);
@@ -69,30 +160,33 @@ export default function GbpPage() {
 
   const [tab, setTab] = useState<Tab>("areas");
   const [draft, setDraft] = useState("");
-  const [researched, setResearched] = useState<
-    {
-      term: string;
-      score: number;
-      why: string;
-      demand: number;
-      source: string;
-      reviews?: number;
-      volume?: number | null;
-      competition?: string | null;
-      measured: string;
-    }[]
-  >([]);
+  const [researched, setResearched] = useState<Researched[]>([]);
+  /* Terms the owner has just tapped. Convex round-trips in a moment, but
+     a suggestion that sits inert until it does feels broken — and with a
+     list this long the owner loses their place. Marking it instantly and
+     letting the real data confirm keeps the tap responsive. */
+  const [justAdded, setJustAdded] = useState<Record<string, boolean>>({});
   const [thinking, setThinking] = useState(false);
   const [hours, setLocalHours] = useState<HourRow[]>(DEFAULT_HOURS);
   const [hoursLoaded, setHoursLoaded] = useState(false);
-  const [areaIdeas, setAreaIdeas] = useState<
-    { name: string; km: number; kind: string; lat: number; lng: number }[]
-  >([]);
+  /* Results keyed by radius, so going 20 → 10 → 20 does not re-fetch what
+     has already been fetched. The map lookup is a network round trip to
+     Overpass measured at several seconds; without this, every visit to a
+     radius already looked at costs that again. */
+  const [areasByRadius, setAreasByRadius] = useState<Record<number, AreaIdea[]>>(
+    {},
+  );
   const [radiusKm, setRadiusKm] = useState(20);
   const [autoRan, setAutoRan] = useState<Record<string, boolean>>({});
   const [seen, setSeen] = useState<Record<string, boolean>>({ areas: true });
   const [areasSeeded, setAreasSeeded] = useState(false);
   const [findingAreas, setFindingAreas] = useState(false);
+  /* Which radius the owner is actually looking at. A lookup that finishes
+     after the owner has moved on must not paint its results. */
+  const latestRadius = useRef(20);
+  /* Radii whose lookup failed, so an empty list is not mistaken for an
+     empty map. Cleared on retry. */
+  const [failedRadii, setFailedRadii] = useState<Record<number, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -146,9 +240,9 @@ export default function GbpPage() {
   if (data === null) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
-        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
+        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">Connect Google first</h1>
         <Link href="/app/connect" className="btn btn-primary mt-8 w-full">
-          connect google
+          Connect Google
         </Link>
       </main>
     );
@@ -158,9 +252,45 @@ export default function GbpPage() {
     data.attributes.filter((a) => a.enabled).map((a) => a.key),
   );
 
-  // The near-me phrases put themselves on the list, so the research panel
-  // has to show what is already tracked rather than only what to add.
+  /* What to draw right now. If this radius has not loaded yet, keep showing
+     the closest radius that HAS loaded rather than emptying the list: the
+     places within 10km are all within 20km too, so the carried-over chips
+     are never wrong, just incomplete — and the section keeps its height
+     instead of collapsing and reflowing the page under the owner's thumb. */
+  const loadedRadii = Object.keys(areasByRadius).map(Number);
+  const fallbackRadius = loadedRadii.length
+    ? loadedRadii.reduce((best, r) =>
+        Math.abs(r - radiusKm) < Math.abs(best - radiusKm) ? r : best,
+      )
+    : null;
+  const areaIdeas: AreaIdea[] =
+    areasByRadius[radiusKm] ??
+    (fallbackRadius !== null ? areasByRadius[fallbackRadius] : []) ??
+    [];
+  /* Only a radius with nothing to show at all gets the spinner. */
+  const showAreaSpinner = findingAreas && areaIdeas.length === 0;
+  /* "The map has nothing here" and "we could not read the map" look
+     identical from an empty list, and telling an owner in a real town
+     that there is nothing near them is worse than saying we failed. Only
+     claim emptiness when the lookup actually succeeded. */
+  const areaLookupFailed = failedRadii[radiusKm] === true;
+
   const tracked = new Set(data.keywords.map((k) => k.term.toLowerCase()));
+
+  /* What is actually on offer: research results minus anything already
+     tracked, best first.
+
+     The old panel listed everything the research returned, tracked or
+     not — in testing, four of eight rows were already-added phrases the
+     owner could do nothing with, each still taking a full card. Since
+     several near-me phrases add themselves during setup, that is the
+     normal case rather than an edge one.
+
+     `justAdded` is included so a tapped phrase leaves the list at once,
+     without waiting for the Convex round trip to remove it. */
+  const suggestions = researched
+    .filter((r) => !tracked.has(r.term.toLowerCase()) && !justAdded[r.term])
+    .sort((a, b) => b.score - a.score);
 
   function patchHour(day: number, patch: Partial<HourRow>) {
     setLocalHours((rows) =>
@@ -168,16 +298,61 @@ export default function GbpPage() {
     );
   }
 
+  /**
+   * Look up the places within `km` of the shop.
+   *
+   * Three things keep this from feeling janky, all of which matter
+   * because the lookup is a multi-second network call:
+   *
+   *  · A radius already fetched returns instantly from cache, so moving
+   *    between 10 / 20 / 30 is free after the first visit to each.
+   *  · Results are stored per radius, so the chips and map pins for the
+   *    old radius stay on screen while the new one loads instead of the
+   *    list emptying and the section collapsing.
+   *  · A request is only allowed to write its result if it is still the
+   *    radius the owner is looking at. Without that, clicking 30 then
+   *    quickly 10 could leave 30's slower answer on screen under a "10km"
+   *    label.
+   */
   async function findAreas(km: number) {
+    if (areasByRadius[km]) return; // already known — nothing to wait for
+    latestRadius.current = km;
     setFindingAreas(true);
     setError(null);
+    setFailedRadii((prev) => ({ ...prev, [km]: false }));
     try {
-      setAreaIdeas(await nearbyAreas({ radiusKm: km }));
-    } catch (e) {
-      setError(friendlyError(e));
+      const found = await nearbyAreas({ radiusKm: km });
+      if (latestRadius.current !== km) return; // a newer click won
+      setAreasByRadius((prev) => ({ ...prev, [km]: found }));
+    } catch {
+      if (latestRadius.current !== km) return;
+      /* Remember the failure so the empty list can say "we couldn't read
+         the map" rather than "there is nothing near you", which is a
+         different and much more discouraging claim.
+
+         Deliberately NOT setError: that banner renders at the bottom of
+         the step, far from the area list, and would repeat what the
+         inline message already says — the owner would read the same
+         failure twice and still have to scroll back up to retry. The
+         shared banner stays for the other tabs, which have nowhere
+         better to put it. */
+      setFailedRadii((prev) => ({ ...prev, [km]: true }));
     } finally {
-      setFindingAreas(false);
+      if (latestRadius.current === km) setFindingAreas(false);
     }
+  }
+
+  /** Track a suggested phrase, marking it added before the server replies. */
+  function trackTerm(term: string) {
+    setJustAdded((prev) => ({ ...prev, [term]: true }));
+    void addKeyword({ term }).catch((e) => {
+      setJustAdded((prev) => {
+        const next = { ...prev };
+        delete next[term];
+        return next;
+      });
+      setError(friendlyError(e));
+    });
   }
 
   async function runResearch(deep: boolean) {
@@ -249,7 +424,7 @@ export default function GbpPage() {
         {tab === "areas" ? (
           <>
             <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
-              where do your customers come from?
+              Where do your customers come from?
             </h1>
             <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               How far people travel to you. We measure your &ldquo;near
@@ -296,7 +471,7 @@ export default function GbpPage() {
                 disabled={!draft.trim()}
                 className="btn btn-primary btn-sm flex-none disabled:opacity-40"
               >
-                add
+                Add
               </button>
             </form>
 
@@ -311,7 +486,12 @@ export default function GbpPage() {
                       key={km}
                       type="button"
                       onClick={() => {
+                        if (km === radiusKm) return;
+                        /* Set before the await so an in-flight lookup for
+                           the old radius knows it has been superseded. */
+                        latestRadius.current = km;
                         setRadiusKm(km);
+                        setError(null);
                         void setServiceRadius({ radiusKm: km });
                         void findAreas(km);
                       }}
@@ -319,7 +499,7 @@ export default function GbpPage() {
                       className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
                         radiusKm === km
                           ? "bg-white text-ink shadow-card"
-                          : "text-muted"
+                          : "text-muted hover:text-ink"
                       }`}
                     >
                       {km}km
@@ -327,12 +507,20 @@ export default function GbpPage() {
                   ))}
                 </div>
               </div>
-              {findingAreas ? (
+              {showAreaSpinner ? (
                 <div className="mt-3">
                   <Working label={`Reading the map ${radiusKm}km around you`} />
                 </div>
               ) : areaIdeas.length ? (
-                <ul className="mt-3 flex flex-wrap gap-2">
+                /* Dimmed rather than replaced while a new radius loads, so
+                   the list keeps its place on the page and the owner can
+                   still read it. Pointer events go off so a chip cannot be
+                   tapped while it is about to be replaced. */
+                <ul
+                  className={`mt-3 flex flex-wrap gap-2 transition-opacity duration-200 ${
+                    findingAreas ? "pointer-events-none opacity-50" : ""
+                  }`}
+                >
                   {areaIdeas.map((area) => {
                     const added = data.serviceAreas.some(
                       (s) => s.name.toLowerCase() === area.name.toLowerCase(),
@@ -343,16 +531,18 @@ export default function GbpPage() {
                           type="button"
                           disabled={added}
                           onClick={() => void addArea({ name: area.name })}
+                          aria-label={
+                            added
+                              ? `${area.name}, already added`
+                              : `add ${area.name}, ${area.km}km away`
+                          }
                           className={`pressable inline-flex items-center gap-1.5 rounded-full py-1.5 pl-2.5 pr-3 text-[13px] transition-colors ${
                             added
                               ? "bg-pin-soft text-pin"
                               : "bg-paper-2 hover:bg-paper-3"
                           }`}
                         >
-                          <span
-                            aria-hidden
-                            className={added ? "text-pin" : "text-pin"}
-                          >
+                          <span aria-hidden className="text-pin">
                             {added ? "✓" : "+"}
                           </span>
                           {area.name}
@@ -364,6 +554,22 @@ export default function GbpPage() {
                     );
                   })}
                 </ul>
+              ) : areaLookupFailed ? (
+                /* Not the same as an empty map — say so, and offer the one
+                   action that might work, since the failure is usually a
+                   busy map server rather than anything about this shop. */
+                <p className="mt-2 text-[12px] leading-relaxed text-muted">
+                  Couldn&rsquo;t read the map just now — this usually clears in
+                  a moment.{" "}
+                  <button
+                    type="button"
+                    onClick={() => void findAreas(radiusKm)}
+                    className="font-semibold text-pin underline underline-offset-2"
+                  >
+                    Try again
+                  </button>
+                  , or type an area name above.
+                </p>
               ) : (
                 <p className="mt-2 text-[12px] leading-relaxed text-muted">
                   No towns or neighbourhoods on the map within {radiusKm}km. Try
@@ -410,7 +616,7 @@ export default function GbpPage() {
         {tab === "keywords" ? (
           <>
             <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
-              what do people search?
+              What do people search?
             </h1>
             <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               We track your position for each of these every week, so you can
@@ -437,107 +643,140 @@ export default function GbpPage() {
                 disabled={!draft.trim()}
                 className="btn btn-primary btn-sm flex-none disabled:opacity-40"
               >
-                add
+                Add
               </button>
             </form>
 
-            <ul className="mt-6 space-y-2.5">
-              {data.keywords.map((kw) => (
-                <li
-                  key={kw._id}
-                  className="flex items-center justify-between gap-3 rounded-[12px] bg-paper-2 px-4 py-3"
-                >
-                  <span className="min-w-0 truncate text-[14px]">
-                    {kw.term}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => void removeKeyword({ id: kw._id })}
-                    aria-label={`remove ${kw.term}`}
-                    className="flex-none text-[13px] text-muted hover:text-pin"
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
+            {/* Chips, not full-width rows. Ten keywords used ten stacked
+                bars and pushed the suggestions — the part that needs a
+                decision — about a thousand pixels down the page. Wrapped
+                chips show the same list in a few lines, so what is already
+                tracked and what is on offer are visible together. */}
+            {data.keywords.length ? (
+              <>
+                <div className="mt-7 flex items-baseline justify-between gap-3">
+                  <p className="text-[15px] font-semibold text-ink">
+                    Tracking {data.keywords.length}
+                  </p>
+                </div>
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {data.keywords.map((kw) => (
+                    <li key={kw._id}>
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-pin-soft py-1.5 pl-3 pr-1.5 text-[13px] font-medium text-pin">
+                        {kw.term}
+                        <button
+                          type="button"
+                          onClick={() => void removeKeyword({ id: kw._id })}
+                          aria-label={`Remove ${kw.term}`}
+                          className="grid h-4 w-4 place-items-center rounded-full text-pin hover:bg-pin hover:text-white"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
 
             <div className="mt-8 border-t border-rule-soft pt-6">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <p className="text-[15px] font-semibold text-ink">
-                  Researched from Google
+                  Suggestions for you
                 </p>
-                <button
-                  type="button"
-                  onClick={() => void runResearch(true)}
-                  disabled={thinking}
-                  className="flex-none text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
-                >
-                  check competition
-                </button>
+                {suggestions.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => suggestions.forEach((r) => trackTerm(r.term))}
+                    className="flex-none text-[13px] font-medium text-pin hover:opacity-80"
+                  >
+                    Add all {suggestions.length}
+                  </button>
+                ) : null}
               </div>
+              <p className="mt-1 text-[12px] leading-relaxed text-muted">
+                What people near you type when they want what you sell. Tap one
+                to start tracking your position for it.
+              </p>
 
               {thinking ? (
                 <div className="mt-3">
                   <Working label="Finding what your customers search for" />
                 </div>
-              ) : researched.length ? (
-                <ul className="mt-4 space-y-2.5">
-                  {researched.map((r) => (
-                    <li
-                      key={r.term}
-                      className="rounded-[12px] bg-paper-2 p-3.5"
-                    >
-                      <div className="flex items-center gap-2">
+              ) : suggestions.length ? (
+                /* One tappable row per phrase. The whole row is the target
+                   rather than a 28px circle beside it — this is a phone
+                   screen and the old hit area was the smallest thing on
+                   the page. Already-tracked phrases are filtered out
+                   entirely: half of the eight results were rows the owner
+                   could do nothing with. */
+                <ul className="mt-4 space-y-2">
+                  {suggestions.map((r) => {
+                    const pick = pickLabel(r.score);
+                    return (
+                      <li key={r.term}>
                         <button
                           type="button"
-                          aria-label={
-                            tracked.has(r.term)
-                              ? `${r.term} is tracked`
-                              : `add ${r.term}`
-                          }
-                          disabled={tracked.has(r.term)}
-                          onClick={() => void addKeyword({ term: r.term })}
-                          className={`pressable grid h-7 w-7 flex-none place-items-center rounded-full text-[15px] leading-none ${
-                            tracked.has(r.term)
-                              ? "bg-paper-3 text-pin"
-                              : "bg-pin text-white"
-                          }`}
+                          onClick={() => trackTerm(r.term)}
+                          aria-label={`Track ${r.term}`}
+                          className="pressable flex w-full items-start gap-3 rounded-[12px] bg-paper-2 p-3.5 text-left transition-colors hover:bg-paper-3"
                         >
-                          {tracked.has(r.term) ? "✓" : "+"}
-                        </button>
-                        <span className="min-w-0 flex-1 text-[13px]">
-                          {r.term}
-                        </span>
-                        {r.measured === "volume" && r.volume ? (
-                          <span className="flex-none rounded-full bg-open-soft px-2 py-0.5 text-[11px] font-medium text-open-deep">
-                            {r.volume.toLocaleString("en-IN")}/mo
+                          <span
+                            aria-hidden
+                            className="mt-0.5 grid h-6 w-6 flex-none place-items-center rounded-full bg-pin text-[15px] leading-none text-white"
+                          >
+                            +
                           </span>
-                        ) : null}
-                        <span
-                          className={`flex-none rounded-full bg-paper-3 px-2 py-0.5 text-[11px] font-medium ${
-                            r.demand > 0 ? "text-ink-soft" : "text-muted"
-                          }`}
-                          title="How worth chasing this search is for you: how many people type it, weighed against how hard the competition is to beat. Higher is better."
-                        >
-                          {r.score} pts
-                        </span>
-                      </div>
-                      <p className="mt-1 text-[11px] leading-snug text-muted">
-                        {r.why}
-                      </p>
-                    </li>
-                  ))}
+                          <span className="min-w-0 flex-1">
+                            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <span className="text-[14px] font-medium text-ink">
+                                {r.term}
+                              </span>
+                              <span
+                                className={`flex-none rounded-full px-2 py-0.5 text-[11px] font-medium ${pick.tone}`}
+                              >
+                                {pick.label}
+                              </span>
+                            </span>
+                            <span className="mt-1 block text-[12px] leading-snug text-muted">
+                              {plainWhy(r, data.business.city)}
+                            </span>
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
+              ) : researched.length ? (
+                /* Every suggestion has been taken. Saying so beats an
+                   empty space that looks like a failed load. */
+                <p className="mt-3 rounded-[12px] bg-paper-2 px-4 py-3 text-[13px] leading-relaxed text-ink-soft">
+                  You&rsquo;re tracking every phrase we found. Add your own
+                  above, or check the competition for tougher ones.
+                </p>
               ) : (
-                <p className="mt-2 text-[12px] leading-relaxed text-muted">
-                  Finds what people near you actually search for what you sell,
-                  ranked by real monthly search volume where Google Ads measures
-                  it, and Google Trends demand where it doesn&rsquo;t. &ldquo;+
-                  competition&rdquo; also reads the map results to see how
-                  strong the current top 3 are — slower, more credits.
+                <p className="mt-3 text-[12px] leading-relaxed text-muted">
+                  Nothing came back. Add a phrase above, or try the deeper
+                  check below.
                 </p>
               )}
+
+              {/* Moved below the list and given its consequence. As a bare
+                  "check competition" link in the header it sat beside the
+                  heading like a tab, gave no hint that it costs time, and
+                  competed for attention with the phrases themselves. */}
+              {!thinking ? (
+                <button
+                  type="button"
+                  onClick={() => void runResearch(true)}
+                  className="mt-4 w-full rounded-[12px] border border-rule px-4 py-3 text-[13px] font-medium text-ink-soft transition-colors hover:border-pin hover:text-pin"
+                >
+                  Check how strong the competition is
+                  <span className="mt-0.5 block text-[11px] font-normal text-muted">
+                    Reads the top 3 on the map for each phrase. Takes longer.
+                  </span>
+                </button>
+              ) : null}
             </div>
           </>
         ) : null}
@@ -545,7 +784,7 @@ export default function GbpPage() {
         {tab === "hours" ? (
           <>
             <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
-              when are you open?
+              When are you open?
             </h1>
             <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               Wrong hours are the fastest way to lose a walk-in. Check every
@@ -606,7 +845,7 @@ export default function GbpPage() {
         {tab === "attributes" ? (
           <>
             <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
-              what else should people know?
+              What else should people know?
             </h1>
             <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               Small things that decide between you and the shop down the road.
@@ -672,21 +911,21 @@ export default function GbpPage() {
         className="btn btn-primary mt-3 w-full disabled:opacity-40"
       >
         {tab === "hours"
-          ? "save hours & next"
+          ? "Save hours & next"
           : tab === "attributes"
             ? busy
               ? "saving…"
               : edit
                 ? "save changes"
-                : "save & make my website"
-            : "save & next"}
+                : "Save & make my website"
+            : "Save & next"}
       </button>
 
       <Link
         href={edit ? "/app/settings" : ONBOARDING_STEPS[4].href}
         className="mt-4 block text-center text-[13px] font-medium text-pin hover:opacity-80"
       >
-        {edit ? "back to settings without saving the rest" : "skip the rest of this step"}
+        {edit ? "Back to settings without saving the rest" : "Skip the rest of this step"}
       </Link>
     </main>
   );

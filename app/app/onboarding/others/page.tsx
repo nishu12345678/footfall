@@ -40,9 +40,9 @@ export default function OthersPage() {
   if (data === null) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
-        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
+        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">Connect Google first</h1>
         <Link href="/app/connect" className="btn btn-primary mt-8 w-full">
-          connect google
+          Connect Google
         </Link>
       </main>
     );
@@ -122,7 +122,7 @@ export default function OthersPage() {
       <OnboardingTop step={6} edit={edit} />
 
       <div className="mt-9 flex-1">
-        <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">your logo</h1>
+        <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">Your logo</h1>
         <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
           We put this on every image we post to your listing, so your posts
           look like yours.
@@ -146,7 +146,7 @@ export default function OthersPage() {
                 <span aria-hidden className="text-pin">
                   ✦
                 </span>
-                find it from my website
+                Find it from my website
               </p>
               <button
                 type="button"
@@ -154,7 +154,7 @@ export default function OthersPage() {
                 disabled={finding || uploading}
                 className="text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
               >
-                {finding ? "looking…" : candidates ? "look again" : "find my logo"}
+                {finding ? "looking…" : candidates ? "look again" : "Find my logo"}
               </button>
             </div>
 
@@ -297,7 +297,7 @@ export default function OthersPage() {
               ⬆
             </span>
             <span className="text-[15px] font-semibold">
-              {uploading ? "uploading…" : "upload your logo"}
+              {uploading ? "uploading…" : "Upload your logo"}
             </span>
             <span className="text-[12px] text-muted">
               png or jpg · square works best
@@ -330,7 +330,7 @@ export default function OthersPage() {
           disabled={busy}
           className="btn btn-primary disabled:opacity-40"
         >
-          {busy ? (edit ? "saving…" : "finishing…") : edit ? "save changes" : "save & finish"}
+          {busy ? (edit ? "saving…" : "finishing…") : edit ? "save changes" : "Save & finish"}
         </button>
       </div>
     </main>

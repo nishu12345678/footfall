@@ -74,13 +74,13 @@ export default function LocationPage() {
   if (business === null) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
-        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
+        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">Connect Google first</h1>
         <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">
           We fill this step in from your Google listing, so it has to be
           connected before there&rsquo;s anything to confirm.
         </p>
         <Link href="/app/connect" className="btn btn-primary mt-8 w-full">
-          connect google
+          Connect Google
         </Link>
       </main>
     );
@@ -122,7 +122,7 @@ export default function LocationPage() {
         }}
       >
         <h1 className="text-[clamp(1.9rem,5vw,2.2rem)]">
-          location information
+          Location information
         </h1>
         <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
           Straight from your Google listing. Fix anything that&rsquo;s wrong —

@@ -240,7 +240,7 @@ export default function PostsPage() {
     return (
       <div className="mt-3 flex flex-wrap items-end gap-2 rounded-[12px] bg-paper-2 p-3">
         <label className="min-w-0 flex-1">
-          <span className="eyebrow">pick a time</span>
+          <span className="eyebrow">Pick a time</span>
           <input
             type="datetime-local"
             value={pickAt}
@@ -277,7 +277,7 @@ export default function PostsPage() {
       location={business.locationName ?? business.city}
       logoUrl={business.logoUrl}
     >
-      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">posts</h1>
+      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">Posts</h1>
       <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
         We write, you approve. Generate a fortnight of posts, read them,
         approve the ones you like, and give each a slot — or post it right
@@ -335,7 +335,7 @@ export default function PostsPage() {
               disabled={starting}
               className="btn btn-primary w-full disabled:opacity-40"
             >
-              {starting ? "starting…" : "generate the next two weeks of posts"}
+              {starting ? "starting…" : "Generate the next two weeks of posts"}
             </button>
             <p className="mt-2 text-center text-[12px] text-muted">
               Six posts, each on a different topic, written as drafts for you to approve.
@@ -343,7 +343,7 @@ export default function PostsPage() {
 
             <div className="mt-6">
               <label htmlFor="brief" className="eyebrow">
-                want something specific posted?
+                Want something specific posted?
               </label>
               <input
                 id="brief"
@@ -358,7 +358,7 @@ export default function PostsPage() {
                 disabled={starting}
                 className="btn btn-ghost btn-sm mt-3 w-full disabled:opacity-40"
               >
-                {starting ? "starting…" : "write one now"}
+                {starting ? "starting…" : "Write one now"}
               </button>
             </div>
           </>
@@ -404,7 +404,7 @@ export default function PostsPage() {
                         : "bg-paper-3 text-ink-soft"
                     }`}
                   >
-                    {post.status === "failed" ? "google refused it" : "draft"}
+                    {post.status === "failed" ? "Google refused it" : "draft"}
                   </span>
                   {post.title ? (
                     <span className="min-w-0 truncate text-[12px] text-muted">{post.title}</span>
@@ -492,7 +492,7 @@ export default function PostsPage() {
                         }
                         className="btn btn-primary btn-sm disabled:opacity-40"
                       >
-                        {acting === post._id ? "…" : "schedule next slot"}
+                        {acting === post._id ? "…" : "Schedule next slot"}
                       </button>
                       <button
                         type="button"
@@ -503,7 +503,7 @@ export default function PostsPage() {
                         }}
                         className="btn btn-ghost btn-sm disabled:opacity-40"
                       >
-                        pick a time
+                        Pick a time
                       </button>
                       <button
                         type="button"
@@ -517,7 +517,7 @@ export default function PostsPage() {
                         }
                         className="btn btn-ghost btn-sm disabled:opacity-40"
                       >
-                        {acting === post._id ? "publishing…" : "post it now"}
+                        {acting === post._id ? "publishing…" : "Post it now"}
                       </button>
                     </>
                   ) : null}
@@ -533,7 +533,7 @@ export default function PostsPage() {
                       }
                       className="ml-auto text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-40"
                     >
-                      back to drafts
+                      Back to drafts
                     </button>
                   ) : null}
                 </div>
@@ -585,7 +585,7 @@ export default function PostsPage() {
                         }
                         className="btn btn-ghost btn-sm disabled:opacity-40"
                       >
-                        {acting === post._id ? "publishing…" : "post it now"}
+                        {acting === post._id ? "publishing…" : "Post it now"}
                       </button>
                       <button
                         type="button"
@@ -662,7 +662,7 @@ export default function PostsPage() {
                     rel="noreferrer"
                     className="mt-3 inline-block text-[13px] font-medium text-pin hover:opacity-80"
                   >
-                    see it on your listing →
+                    See it on your listing →
                   </a>
                 ) : null}
               </li>

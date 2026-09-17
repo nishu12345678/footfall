@@ -504,8 +504,10 @@ a.link:hover {
 
   background: #ffffff;
   color: var(--l-ink);
-  font-family: var(--font-dm-sans), -apple-system, BlinkMacSystemFont,
-    system-ui, "Segoe UI", Roboto, sans-serif;
+  /* Per-character fallback: Latin resolves to DM Sans, Devanagari has no
+     match there and lands on Noto. One stack, no wrapper class needed. */
+  font-family: var(--font-dm-sans), var(--font-devanagari), -apple-system,
+    BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, sans-serif;
   font-size: 16px;
   line-height: 1.5;
 }

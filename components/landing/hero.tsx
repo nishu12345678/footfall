@@ -1,64 +1,45 @@
 import { HERO, LINKS, TRUST } from "@/lib/content";
-import { Icon, WhatsAppIcon } from "./icons";
+import { ColorGoogle } from "./google-word";
+import { Icon } from "./icons";
 import { Shot } from "./shot";
-
-/** Google's own letter colours: blue, red, yellow, blue, green, red. */
-const GOOGLE_COLORS = [
-  "#4285F4",
-  "#EA4335",
-  "#FBBC05",
-  "#4285F4",
-  "#34A853",
-  "#EA4335",
-];
-
-/** "Google", letter by letter in the brand palette. */
-function GoogleWord({ word }: { word: string }) {
-  return (
-    <span className="whitespace-nowrap">
-      {word.split("").map((ch, i) => (
-        <span key={i} style={{ color: GOOGLE_COLORS[i % GOOGLE_COLORS.length] }}>
-          {ch}
-        </span>
-      ))}
-    </span>
-  );
-}
-
-/** Colours one word of the text; everything else stays ink. */
-function Headline({ text, word }: { text: string; word: string }) {
-  const i = text.indexOf(word);
-  if (i < 0) return <>{text}</>;
-  return (
-    <>
-      {text.slice(0, i)}
-      <GoogleWord word={word} />
-      {text.slice(i + word.length)}
-    </>
-  );
-}
+import { WhatsAppCta } from "./whatsapp-cta";
 
 /**
- * Centered hero: badge, headline with one coloured word, one-line sub,
- * a black button and a text link, then the product — big.
+ * Centered hero: badge, headline with "Google" in its own colours, a plain
+ * deck, one-line sub, a black button and the WhatsApp link, then the
+ * product — big.
+ *
+ * The three copy lines can be overridden so the design-review harness can
+ * flip between headline candidates without touching lib/content.ts. With no
+ * props it renders exactly what content.ts says.
  */
-export function Hero() {
+export function Hero({
+  headline = HERO.headline,
+  tagline = HERO.tagline,
+  sub = HERO.sub,
+}: {
+  headline?: string;
+  tagline?: string;
+  sub?: string;
+} = {}) {
   return (
     <section id="top" className="w-full px-6 pb-6 pt-10 md:pb-10 md:pt-16">
       <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
         <p className="l-pill bg-[#f3e9fc] text-[#7c3aed]">{HERO.chip}</p>
 
         <h1 className="mt-5 max-w-4xl text-[2.5rem] leading-[1.12] md:mt-7 md:text-6xl md:leading-[1.05]">
-          <Headline text={HERO.headline} word={HERO.highlight} />
+          <ColorGoogle text={headline} />
         </h1>
 
-        {/* The English value prop, right under the Hinglish headline. */}
+        {/* The English value prop, right under the Hinglish headline. Plain
+            ink on purpose — colouring "Google" a second time here made the
+            deck read as another headline and fought the h1 above it. */}
         <p className="mt-4 text-lg font-medium text-[var(--l-ink)] md:mt-5 md:text-2xl">
-          <Headline text={HERO.tagline} word={HERO.highlight} />
+          {tagline}
         </p>
 
         <p className="mx-auto mt-3 max-w-2xl text-base text-[var(--l-muted)] md:mt-4 md:text-lg">
-          {HERO.sub}
+          {sub}
         </p>
 
         <div className="mt-6 flex w-full flex-col items-center gap-2 sm:w-auto sm:flex-row md:mt-9 md:gap-3">
@@ -66,15 +47,7 @@ export function Hero() {
             {HERO.ctaPrimary}
             <Icon name="arrow-right" />
           </a>
-          <a
-            href={LINKS.whatsapp}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="lb lb-link lb-lg"
-          >
-            <WhatsAppIcon size={18} style={{ color: "#25d366" }} />
-            {HERO.ctaWhatsapp}
-          </a>
+          <WhatsAppCta label={HERO.ctaWhatsapp} className="lb-lg w-full sm:w-auto" />
         </div>
 
         <p className="mt-4 text-[14px] text-[var(--l-muted)]">{HERO.support}</p>

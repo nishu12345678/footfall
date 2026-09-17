@@ -11,8 +11,7 @@ import { offerDeadlineLabel } from "./launch-offer";
 
    things to change before you send this to anyone:
      1. BRAND.name          — if "footfall" isn't the name you want
-     2. FOUNDER             — your name, your photo, your handle
-     3. PROOF.stat + quotes — replace the placeholders with real ones
+     2. PROOF.stat + quotes — replace the placeholders with real ones
 --------------------------------------------------------------------------- */
 
 export const BRAND = {
@@ -59,18 +58,30 @@ export const NAV_CTA = {
 
 export const HERO = {
   chip: "For local businesses across India",
-  /* The Hinglish promise IS the headline. Roman script on purpose —
-     it needs no extra font and reads naturally to the audience. */
-  headline: "Aap dukaan chalaiye, Google hum sambhal lenge.",
-  /* The word that gets the Google letter colours, in both lines. */
-  highlight: "Google",
+  /* The promise IS the headline, in Devanagari.
+     "We'll bring customers from Google — you look after the shop."
+
+     Chosen from the twelve candidates reviewed on design/landing-variants
+     (the one labelled "8 · देवनागरी · same rhythm"). It keeps the two-part
+     rhythm of the old Hinglish line but leads with the outcome — customers
+     — instead of the chore. The earlier line described a division of
+     labour, which told an owner nothing about what they get.
+
+     "Google" stays in Latin: <ColorGoogle> paints it letter by letter in
+     Google's own palette, and गूगल would throw away both that and the
+     brand recognition. Devanagari resolves through the Noto fallback in
+     the .landing font stack — see app/page.tsx.
+
+     The three lines each say something different: headline is the promise,
+     tagline is who does the work, sub is how. */
+  headline: "हम Google से ग्राहक लाएँगे, आप दुकान सँभालिए।",
   /* The English value prop, as the deck right under the headline. */
-  tagline: "Get more customers from Google, without doing it yourself.",
-  sub: "footfall is an AI that runs your Google Business Profile — posting every week, replying to every review, and keeping your photos, hours and services fresh while you run the shop.",
+  tagline: "You run the shop. footfall runs your Google listing.",
+  sub: "footfall posts for you every week, replies to every review, and keeps your photos, hours and services correct — so when someone nearby searches your trade, your shop is the one they find.",
   ctaPrimary: "Get my free report",
   ctaWhatsapp: "Talk on WhatsApp",
   support:
-    "Free report first · No card needed · Works with your existing Google profile",
+    "Free report first · No payment needed · Works with your existing Google profile",
   /* Small reassurances that sit under the buttons. These matter more
      than another paragraph to someone deciding whether to trust this. */
   trust: ["No agency retainer", "Setup takes 40 seconds", "Cancel any time"],
@@ -184,83 +195,98 @@ export const TRADES = {
   sub: "You look after the customers in front of you. footfall looks after the ones searching for you on Google.",
   items: [
     {
-      icon: "💇",
+      icon: "scissors",
+      tone: "rose",
       name: "Salons & parlours",
       line: "“Ladies parlour near me”, bridal packages, walk-in rates.",
     },
     {
-      icon: "🦷",
+      icon: "tooth",
+      tone: "blue",
       name: "Clinics & dentists",
       line: "“Dentist near me”, treatment posts, careful review replies.",
     },
     {
-      icon: "🥻",
+      icon: "hanger",
+      tone: "violet",
       name: "Sari & clothing shops",
       line: "New arrivals, wedding season collections, festival timings.",
     },
     {
-      icon: "🛍️",
+      icon: "shirt",
+      tone: "orange",
       name: "Style & fashion stores",
       line: "Fresh stock posts, offers, and photos that keep the listing alive.",
     },
     {
-      icon: "🛒",
+      icon: "basket",
+      tone: "green",
       name: "Kirana & grocery",
       line: "Correct timings, home delivery, “open now” when people search.",
     },
     {
-      icon: "🏋️",
+      icon: "dumbbell",
+      tone: "slate",
       name: "Gyms & fitness",
       line: "Membership offers, trial classes, reviews from real members.",
     },
     {
-      icon: "🍽️",
+      icon: "utensils",
+      tone: "amber",
       name: "Restaurants & cafés",
       line: "Today's menu, festival hours, replies to every food review.",
     },
     {
-      icon: "🧱",
+      icon: "tiles",
+      tone: "teal",
       name: "Tiles, marble & hardware",
       line: "Photos of fresh stock, so contractors find you first.",
     },
     {
-      icon: "📚",
+      icon: "cap",
+      tone: "blue",
       name: "Coaching & classes",
       line: "Batch timings, results, and parents' questions answered fast.",
     },
     {
-      icon: "🔧",
+      icon: "wrench",
+      tone: "orange",
       name: "Repairs & services",
       line: "“Near me” searches at the moment something has broken.",
     },
     {
-      icon: "🍬",
+      icon: "cake",
+      tone: "rose",
       name: "Sweet shops & bakeries",
       line: "Festival counters, bulk order enquiries, photos of fresh trays.",
     },
     {
-      icon: "📱",
+      icon: "phone",
+      tone: "slate",
       name: "Mobile & electronics",
       line: "New launches, exchange offers, repair enquiries answered.",
     },
     {
-      icon: "💍",
+      icon: "gem",
+      tone: "violet",
       name: "Jewellers",
       line: "Wedding season collections, and reviews that build trust.",
     },
     {
-      icon: "💊",
+      icon: "pill",
+      tone: "green",
       name: "Chemists & pharmacies",
       line: "Correct timings and “open now”, when it matters most.",
     },
     {
-      icon: "✂️",
+      icon: "spool",
+      tone: "teal",
       name: "Boutiques & tailors",
       line: "Festival rush, stitching timelines, photos of finished work.",
     },
   ],
   note: "And any other shop people find by searching your trade and your area.",
-};
+} as const;
 
 /** Plain reassurance strip under the hero. Nothing is claimed here that
     isn't true of the product today. */
@@ -326,36 +352,70 @@ export const REPORT = {
 };
 
 /* ------------------------------ why google -------------------------------
-   Four numbers, the way a SaaS page shows why its channel matters. Each
-   one is a published figure — check them against the source before
-   changing the wording, and keep the source line on the page. */
+   Every number here is a verbatim quote from one source — BrightLocal's
+   Local Consumer Review Survey 2026 — and every one links to the page it
+   came from. Quotes and retrieval date: docs/stats-evidence.md. Re-check
+   any time with `python3 scripts/verify-stats.py`.
+
+   Four earlier figures were removed rather than reworded, because each was
+   wrong in a way the reader could not have caught:
+
+   87%  "used Google to check out a local business" — not in the survey at
+        all, and it inverted the trend: the 2026 edition's own heading is
+        "Google is Losing Traction", with Google's share of reviews falling
+        83% → 71%.
+   98%  "read reviews before choosing" — the published figure is 97%, and it
+        supports a weaker claim: "at least *occasionally* read". Occasional
+        reading is not reading before choosing.
+   76% / 28%  — a Google/Ipsos study from 2016, a decade old, with no live
+        page carrying it. thinkwithgoogle.com cannot confirm or deny it: it
+        answers 200 for any path with the same shell, byte-identical across
+        two different URLs, so a 200 there proves nothing.
+
+   One caveat that survives the repair: this panel is 1,002 **US** adults,
+   and we sell to a shop owner in Thane. The numbers are honest about
+   behaviour we cannot cite locally, which is why the note below says whose
+   consumers they are instead of implying they are ours. If an Indian
+   equivalent is ever found, prefer it over all four of these.
+
+   A stat renders its source as a link when it has an `href`, and as plain
+   text when it does not — so an unverifiable figure cannot quietly acquire
+   the appearance of a citation. Don't add an href you haven't opened. */
 
 export const WHY = {
   heading: "Why your Google listing matters",
-  sub: "When someone nearby needs what you sell, they search Google first — and they decide fast. Your listing is what they see.",
+  /* This one line is in Hindi on purpose. It is the moment the page stops
+     arguing and starts describing the reader's own street, and it lands
+     harder in the language they think in. Devanagari resolves through the
+     Noto fallback in the .landing font stack — see app/page.tsx. */
+  sub: "आस-पास जब किसी को वही चाहिए जो आप बेचते हैं, वो सबसे पहले Google पर ढूँढता है — और फ़ैसला मिनटों में कर लेता है। उसे जो दिखता है, वो आपकी लिस्टिंग है।",
   stats: [
     {
-      value: "76%",
-      label: "of people who search for something nearby on their phone visit a business within a day",
-      source: "Google",
+      value: "97%",
+      label: "of consumers read reviews for local businesses",
+      source: "BrightLocal 2026",
+      href: "https://www.brightlocal.com/research/local-consumer-review-survey/",
     },
     {
-      value: "28%",
-      label: "of those nearby searches end in a purchase",
-      source: "Google",
+      value: "47%",
+      label: "won’t use a business that has fewer than 20 reviews",
+      source: "BrightLocal 2026",
+      href: "https://www.brightlocal.com/research/local-consumer-review-survey/",
     },
     {
-      value: "87%",
-      label: "of consumers used Google to check out a local business in the last year",
-      source: "BrightLocal",
+      value: "74%",
+      label: "only care about reviews written in the last three months",
+      source: "BrightLocal 2026",
+      href: "https://www.brightlocal.com/research/local-consumer-review-survey/",
     },
     {
-      value: "98%",
-      label: "read online reviews before choosing a local business",
-      source: "BrightLocal",
+      value: "41%",
+      label: "now “always” read reviews when browsing — up from 29% last year",
+      source: "BrightLocal 2026",
+      href: "https://www.brightlocal.com/research/local-consumer-review-survey/",
     },
   ],
-  note: "Sources: Google consumer research on “near me” searches; BrightLocal Local Consumer Review Survey.",
+  note: "Source: BrightLocal Local Consumer Review Survey 2026, a panel of 1,002 US consumers.",
 };
 
 export const VISION = {
@@ -363,21 +423,9 @@ export const VISION = {
   heading: "The money is going to the wrong screen",
   body: [
     "Every local business owner we spoke to is already paying someone ₹8,000 to ₹15,000 a month for “marketing”. What they get back is a screenshot of an Instagram post and a number called reach. What they wanted was somebody walking through the door.",
-    "Meanwhile the screen that decides whether anyone walks in — their Google listing — hasn't been touched in eight months. No posts. Reviews from 2024 sitting unanswered. Wrong closing time. The last photo, from the day the shop opened.",
+    "Meanwhile the screen that decides whether anyone walks in — their Google listing — hasn't been touched in eight months. No posts. Reviews from two years ago sitting unanswered. Wrong closing time. The last photo, from the day the shop opened.",
     "That gap is the whole business. Google is where somebody nearby, right now, with money in their pocket, is choosing between you and the shop two streets over. We point an AI at that screen and nothing else.",
   ],
-  kicker:
-    "It's early. We're doing this by hand for the first few shops so we learn what actually moves the needle. Tell us what's broken.",
-};
-
-export const FOUNDER = {
-  name: "Gaurav",
-  role: "Founder",
-  handle: "@gaurav",
-  href: "#",
-  /* drop a square photo at /public/founder.jpg and set this to "/founder.jpg" */
-  photo: "",
-  initial: "G",
 };
 
 export const HOW = {
@@ -513,14 +561,16 @@ export const PRICING = {
      act now; the lock-in removes the fear of acting now. Dropping either
      one weakens the other.
 
+     The sentence is written to survive the offer ending: once the date
+     passes the deadline pill hides itself (lib/launch-offer.ts), and this
+     line still reads correctly without it.
+
      The date is interpolated, not typed, so it cannot drift from the one
-     in lib/launch-offer.ts. Change the date there and this follows. The
-     sentence still reads correctly once the offer ends and the deadline
-     pills hide themselves. */
+     in lib/launch-offer.ts. Change the date there and this follows. */
   launchNote: `Launch pricing, open until ${offerDeadlineLabel()}. It goes up once the first shops are running — but whatever price you start on is the price you keep, for as long as you stay.`,
   free: {
     name: "Free",
-    line: "The report on your listing. No card, no expiry.",
+    line: "The report on your listing. No payment, no expiry.",
     cta: "Get my free report",
     features: [
       "Full Google listing health check",
@@ -538,6 +588,13 @@ export const PRICING = {
      and "Choose your plan" in app/app/billing — so anything written here
      must make sense signed-out and signed-in. A discount that appears on
      the landing page and quietly vanishes after login reads as a trick.
+
+     Two different savings appear on the yearly card, and they are not the
+     same number:
+
+       badge  yearly vs. twelve months of monthly — both at today's offer
+              prices. ₹1,999 × 12 = ₹23,988, minus ₹9,999 = ₹13,989.
+       pill   yearly offer vs. yearly list price (₹19,999 − ₹9,999).
 
      `featured` replaces what used to be a `badge` string. Both surfaces
      had been inferring "which card is highlighted" from whether that
@@ -575,12 +632,12 @@ export const PRICING = {
    *
    * Both sides are whatever price is LIVE — today that is the offer on
    * both, ₹1,999 × 12 against ₹9,999. Always comparing like with like is
-   * what lets this survive the launch offer ending: raise `price` to
-   * `listPrice` on both plans and it recomputes to ₹9,900 on its own,
-   * with no copy to edit and no stale number left behind.
+   * what lets the badge survive the launch offer ending: raise `price`
+   * to `listPrice` on both plans and this recomputes to ₹9,900 on its
+   * own, with no copy to edit and no stale number left behind.
    *
    * Never mix the two — monthly LIST against yearly OFFER would inflate
-   * the figure to ₹19,900 by crediting us for a discount nobody is being
+   * the badge to ₹19,900 by crediting us for a discount nobody is being
    * charged, which is the sort of number that reads as a trick once
    * somebody checks it.
    *
@@ -588,13 +645,13 @@ export const PRICING = {
    * yearly card shows a SECOND saving right beneath it (offer vs list)
    * and the two are different numbers. A hardcoded badge becomes a lie
    * the first time a price moves, and nobody redoes the arithmetic while
-   * editing copy — which is exactly how "Save ₹14,000" came to sit
+   * editing copy — which is exactly how "Save ₹14,000" ended up sitting
    * unlabelled next to "save ₹10,000".
    *
    * `amount` is rounded DOWN to a whole ₹100: it reads as a claim rather
    * than a suspiciously precise ₹13,989, and it can only ever understate
    * what the buyer really saves. `working` shows the unrounded sum, so
-   * hovering explains the number instead of contradicting it.
+   * hovering explains the badge instead of contradicting it.
    */
   yearlySaving(): { amount: number; working: string } {
     const m = PRICING.plans.find((p) => p.period === "month");
@@ -692,10 +749,24 @@ export const FAQ = {
 };
 
 /** The last thing on the page before the footer. */
+/* The last thing on the page before the footer. It has one job: make the
+   next step feel small.
+
+   Two traps this copy is written to avoid:
+
+   1. It must describe the step the button actually performs. The button
+      goes to /app, which is a Google sign-in — so "send us your business
+      name and area" was describing a flow that does not exist, and made a
+      40-second sign-in sound like a conversation with a salesperson.
+
+   2. It should not stack negatives. "No payment. No call booking. No
+      40-minute demo." answers three objections the reader may not have had
+      yet, and a row of No's reads as defensive at the exact moment we want
+      to sound easy. One reassurance, stated positively, does more. */
 export const START = {
   heading: "Let’s look at your listing together",
-  sub: "Send us your business name and area. We’ll pull up your Google listing, tell you exactly what’s broken on it, and fix the first three things with you — today, while you watch.",
-  note: "No card. No call booking. No 40-minute demo.",
+  sub: "Sign in with Google and we’ll show you your listing the way a customer nearby sees it — what’s missing, what’s costing you walk-ins, and the first three things to fix.",
+  note: "Takes about 40 seconds. Free, and nothing on your listing changes.",
 };
 
 export const FOOTER = {

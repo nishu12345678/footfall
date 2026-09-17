@@ -83,11 +83,16 @@ export function AppPostsMock() {
         </div>
 
         <div className="relative mt-3 overflow-hidden rounded-xl">
+          {/* The photo has to agree with the offer composited over it: the
+              headline sells 'haircut + beard shape', so the picture shows a
+              beard being shaped. Its lower third is deliberately dark and
+              quiet — the gradient and white headline below sit there. See
+              the 'post-photo' slot in lib/landing-images.ts. */}
           <Image
-            src="/marketing/owner-portrait.webp"
+            src="/marketing/post-photo.webp"
             alt=""
-            width={800}
-            height={597}
+            width={1600}
+            height={900}
             className="h-40 w-full object-cover"
           />
           <div

@@ -1,4 +1,4 @@
-import { DM_Sans } from "next/font/google";
+import { DM_Sans, Noto_Sans_Devanagari } from "next/font/google";
 import { Does } from "@/components/landing/does";
 import { Faq } from "@/components/landing/faq";
 import { Footer } from "@/components/landing/footer";
@@ -25,9 +25,27 @@ const dmSans = DM_Sans({
   display: "swap",
 });
 
+/*
+ * DM Sans has no Devanagari glyphs at all, so the Hindi headline would drop
+ * to whatever the OS happens to have — a different face on every machine,
+ * and usually a much heavier one.
+ *
+ * This sits second in the font stack rather than behind a class. A browser
+ * picks a font per character, so Latin still gets DM Sans and only the
+ * Devanagari falls through to Noto. Mixed Hinglish in one sentence —
+ * "हम Google से ग्राहक लाएँगे" — comes out right with no markup.
+ */
+const devanagari = Noto_Sans_Devanagari({
+  variable: "--font-devanagari",
+  subsets: ["devanagari"],
+  display: "swap",
+});
+
 export default function Page() {
   return (
-    <div className={`landing ${dmSans.variable} min-h-dvh overflow-x-clip`}>
+    <div
+      className={`landing ${dmSans.variable} ${devanagari.variable} min-h-dvh overflow-x-clip`}
+    >
       <Nav />
       <main>
         <Hero />

@@ -17,9 +17,23 @@ export function Why() {
             <p className="mt-3 text-[15px] leading-relaxed text-[var(--l-muted)]">
               {s.label}
             </p>
-            <p className="mt-3 text-[12px] font-medium uppercase tracking-wide text-[#9ca3af]">
-              {s.source}
-            </p>
+            {/* A figure we could trace to a live page links to it; one we
+                could not stays plain text rather than pretending. See the
+                warning above WHY in lib/content.ts. */}
+            {"href" in s && s.href ? (
+              <a
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="mt-3 inline-block text-[12px] font-medium uppercase tracking-wide text-[#9ca3af] underline decoration-dotted underline-offset-4 transition-colors hover:text-[var(--l-ink-2)]"
+              >
+                {s.source}
+              </a>
+            ) : (
+              <p className="mt-3 text-[12px] font-medium uppercase tracking-wide text-[#9ca3af]">
+                {s.source}
+              </p>
+            )}
           </div>
         ))}
       </div>

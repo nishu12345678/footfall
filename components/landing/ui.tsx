@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ColorGoogle } from "./google-word";
 import { Icon, type IconName } from "./icons";
 
 /*
@@ -52,7 +53,7 @@ export function Heading({
             : "text-[2rem] md:text-[2.5rem] md:leading-[1.1]"
         }
       >
-        {title}
+        {typeof title === "string" ? <ColorGoogle text={title} /> : title}
       </h2>
       {sub ? (
         <p

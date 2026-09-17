@@ -2,7 +2,7 @@
 
 import { useAction, useMutation } from "convex/react";
 import { useQuery } from "convex-helpers/react/cache";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { AppScreen, Loading, NeedsConnect } from "@/components/app-shell";
 import { Working } from "@/components/working";
@@ -117,6 +117,27 @@ export default function PhotosPage() {
   const [showAll, setShowAll] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  /* Mirror the Google gallery. This both adds photos the owner uploaded
+     on Google and drops ones they deleted there, so it is the action
+     behind the button as well as the automatic run below. */
+  const resync = useCallback(async () => {
+    setSyncing(true);
+    setError(null);
+    setNote(null);
+    try {
+      const r = await syncFromGoogle({});
+      setNote(
+        r.added > 0
+          ? `Found ${r.added} new photo${r.added === 1 ? "" : "s"} on your listing.`
+          : "Your photos match your Google listing.",
+      );
+    } catch (e) {
+      setError(friendlyError(e));
+    } finally {
+      setSyncing(false);
+    }
+  }, [syncFromGoogle]);
 
   // Pull what's already on the listing so the owner sees everything at once.
   useEffect(() => {
@@ -355,19 +376,31 @@ export default function PhotosPage() {
           <h2 className="text-[15px] font-semibold text-ink">
             Your photos and videos
           </h2>
-          {live.length > 9 ? (
+          <div className="flex flex-none items-baseline gap-3">
+            {live.length > 9 ? (
+              <button
+                type="button"
+                onClick={() => setShowAll((s) => !s)}
+                className="text-[13px] font-medium text-pin hover:opacity-80"
+              >
+                {showAll ? "Show less" : `View all ${live.length}`}
+              </button>
+            ) : (
+              <span className="text-[11px] text-muted">{live.length} live</span>
+            )}
+            {/* The sync already runs when this page opens, but silently.
+                An owner who deleted a photo on Google and came here to
+                check had no way to ask again, and no way to tell whether
+                what they were looking at was current. */}
             <button
               type="button"
-              onClick={() => setShowAll((s) => !s)}
-              className="flex-none text-[13px] font-medium text-pin hover:opacity-80"
+              onClick={() => void resync()}
+              disabled={syncing}
+              className="text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
             >
-              {showAll ? "show less" : `view all ${live.length}`}
+              {syncing ? "Checking…" : "Sync from Google"}
             </button>
-          ) : (
-            <span className="flex-none text-[11px] text-muted">
-              {live.length} live
-            </span>
-          )}
+          </div>
         </div>
 
         {live.length === 0 ? (

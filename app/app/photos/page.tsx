@@ -252,7 +252,7 @@ export default function PhotosPage() {
       location={business.locationName ?? business.city}
       logoUrl={business.logoUrl}
     >
-      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">photos</h1>
+      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">Photos</h1>
       <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
         Add everything once. We put four up a week &mdash; Mon, Wed, Fri and Sat
         &mdash; so your listing always looks like a shop someone is running.
@@ -278,7 +278,7 @@ export default function PhotosPage() {
       >
         {uploading > 0
           ? `uploading… ${uploading} left`
-          : "add photos and videos"}
+          : "Add photos and videos"}
       </button>
 
       {/* ------------------------------ why ------------------------------ */}
@@ -443,7 +443,7 @@ export default function PhotosPage() {
                           >
                             {publishing === item._id
                               ? "sending…"
-                              : "post it now"}
+                              : "Post it now"}
                           </button>
                         </span>
                         <button

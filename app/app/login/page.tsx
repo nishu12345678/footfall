@@ -158,7 +158,7 @@ export default function LoginPage() {
           </h1>
           <p className="mt-2 text-[15px] text-ink-soft">
             {step === "identify"
-              ? "sign in to run your google listing"
+              ? "Sign in to run your Google listing"
               : `we sent a ${expectedLength}-digit code to ${sentTo}`}
           </p>
         </div>
@@ -172,7 +172,7 @@ export default function LoginPage() {
               className="btn btn-ghost w-full disabled:opacity-50"
             >
               <GoogleMark />
-              {busy === "google" ? "opening google…" : "continue with google"}
+              {busy === "google" ? "opening google…" : "Continue with Google"}
             </button>
 
             <div className="my-7 flex items-center gap-3">
@@ -326,7 +326,7 @@ export default function LoginPage() {
       </div>
 
       <p className="text-center text-[12px] leading-relaxed text-muted">
-        no password. we only use this to sign you in.
+        No password. We only use this to sign you in.
       </p>
     </main>
   );

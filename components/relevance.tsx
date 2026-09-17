@@ -129,8 +129,8 @@ export function Relevance() {
           {pushing
             ? "sending…"
             : servicesPushedAt
-              ? "send them again"
-              : "put my services on Google"}
+              ? "Send them again"
+              : "Put my services on Google"}
         </button>
 
         {note ? (

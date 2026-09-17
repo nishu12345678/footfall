@@ -73,9 +73,9 @@ export default function WebsiteStepPage() {
   if (data === null) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
-        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
+        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">Connect Google first</h1>
         <Link href="/app/connect" className="btn btn-primary mt-8 w-full">
-          connect google
+          Connect Google
         </Link>
       </main>
     );
@@ -93,7 +93,7 @@ export default function WebsiteStepPage() {
         <OnboardingTop step={5} edit={edit} />
 
         <div className="mt-9 flex-1">
-          <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">your website</h1>
+          <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">Your website</h1>
           <p className="mt-3 break-all text-[13px] font-mono text-ink-soft">
             {business.website}
           </p>
@@ -180,7 +180,7 @@ export default function WebsiteStepPage() {
 
       <div className="mt-9 flex-1">
         <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
-          {site ? "your website is live" : "we’re making you a website"}
+          {site ? "Your website is live" : "we’re making you a website"}
         </h1>
         <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
           {site
@@ -281,7 +281,7 @@ export default function WebsiteStepPage() {
         href={nextHref(5, edit)}
         className={`btn mt-10 w-full ${site ? "btn-primary" : "btn-ghost"}`}
       >
-        {edit ? "done" : site ? "next" : "skip for now"}
+        {edit ? "done" : site ? "next" : "Skip for now"}
       </Link>
     </main>
   );

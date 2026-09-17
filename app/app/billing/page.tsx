@@ -144,7 +144,7 @@ export default function BillingPage() {
   const phaseRef = useRef(phase);
   useEffect(() => {
     phaseRef.current = phase;
-    // A settled order releases the "one at a time" latch too.
+    // A settled order releases the "One at a time" latch too.
     if (livePhase === "idle") inFlight.current = false;
   }, [phase, livePhase]);
 

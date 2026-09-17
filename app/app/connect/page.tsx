@@ -19,7 +19,7 @@ export default async function ConnectPage({
 
       <div className="mt-10 flex flex-1 flex-col justify-center">
         <h1 className="text-[clamp(1.9rem,7vw,2.5rem)]">
-          connect your google listing
+          Connect your Google listing
         </h1>
         <p className="mt-4 text-[16px] leading-relaxed text-ink-soft">
           This is the profile people see when they search for you nearby. Once
@@ -29,9 +29,9 @@ export default async function ConnectPage({
 
         <ul className="mt-8 space-y-3.5 border-t border-rule pt-6">
           {[
-            "you sign in to Google yourself — we never see your password",
-            "you can remove our access from your Google account any time",
-            "takes about 40 seconds",
+            "You sign in to Google yourself — we never see your password",
+            "You can remove our access from your Google account any time",
+            "Takes about 40 seconds",
           ].map((line) => (
             <li
               key={line}
@@ -55,12 +55,12 @@ export default async function ConnectPage({
         ) : null}
 
         <a href="/api/google/start" className="btn btn-primary mt-10 w-full">
-          <span aria-hidden>◎</span> connect google business profile
+          <span aria-hidden>◎</span> Connect Google Business Profile
         </a>
 
         <p className="mt-5 text-center text-[12px] leading-relaxed text-muted">
-          you&rsquo;ll be asked to allow us to manage your business listings.
-          that permission is what lets us do the work.
+          You&rsquo;ll be asked to allow us to manage your business listings.
+          That permission is what lets us do the work.
         </p>
       </div>
     </main>

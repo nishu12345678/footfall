@@ -254,12 +254,12 @@ export function Loading() {
 export function NeedsConnect() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
-      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
+      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">Connect Google first</h1>
       <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">
         Everything here comes from your Google listing.
       </p>
       <Link href="/app/connect" className="btn btn-primary mt-8 w-full">
-        connect google
+        Connect Google
       </Link>
     </main>
   );

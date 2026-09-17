@@ -210,7 +210,7 @@ export default function ReportPage() {
       <p className="mt-2 text-[13px] text-muted">
         Not the business you meant?{" "}
         <Link href="/app/settings" className="font-medium text-pin hover:opacity-80">
-          switch or connect another in settings
+          Switch or connect another in settings
         </Link>
       </p>
 

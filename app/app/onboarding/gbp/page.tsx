@@ -165,9 +165,9 @@ export default function GbpPage() {
   if (data === null) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-6">
-        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">connect google first</h1>
+        <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">Connect Google first</h1>
         <Link href="/app/connect" className="btn btn-primary mt-8 w-full">
-          connect google
+          Connect Google
         </Link>
       </main>
     );
@@ -323,7 +323,7 @@ export default function GbpPage() {
         {tab === "areas" ? (
           <>
             <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
-              where do your customers come from?
+              Where do your customers come from?
             </h1>
             <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               How far people travel to you. We measure your &ldquo;near
@@ -370,7 +370,7 @@ export default function GbpPage() {
                 disabled={!draft.trim()}
                 className="btn btn-primary btn-sm flex-none disabled:opacity-40"
               >
-                add
+                Add
               </button>
             </form>
 
@@ -515,7 +515,7 @@ export default function GbpPage() {
         {tab === "keywords" ? (
           <>
             <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
-              what do people search?
+              What do people search?
             </h1>
             <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               We track your position for each of these every week, so you can
@@ -542,7 +542,7 @@ export default function GbpPage() {
                 disabled={!draft.trim()}
                 className="btn btn-primary btn-sm flex-none disabled:opacity-40"
               >
-                add
+                Add
               </button>
             </form>
 
@@ -650,7 +650,7 @@ export default function GbpPage() {
         {tab === "hours" ? (
           <>
             <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
-              when are you open?
+              When are you open?
             </h1>
             <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               Wrong hours are the fastest way to lose a walk-in. Check every
@@ -711,7 +711,7 @@ export default function GbpPage() {
         {tab === "attributes" ? (
           <>
             <h1 className="text-[clamp(1.8rem,5vw,2.1rem)]">
-              what else should people know?
+              What else should people know?
             </h1>
             <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               Small things that decide between you and the shop down the road.
@@ -777,21 +777,21 @@ export default function GbpPage() {
         className="btn btn-primary mt-3 w-full disabled:opacity-40"
       >
         {tab === "hours"
-          ? "save hours & next"
+          ? "Save hours & next"
           : tab === "attributes"
             ? busy
               ? "saving…"
               : edit
                 ? "save changes"
-                : "save & make my website"
-            : "save & next"}
+                : "Save & make my website"
+            : "Save & next"}
       </button>
 
       <Link
         href={edit ? "/app/settings" : ONBOARDING_STEPS[4].href}
         className="mt-4 block text-center text-[13px] font-medium text-pin hover:opacity-80"
       >
-        {edit ? "back to settings without saving the rest" : "skip the rest of this step"}
+        {edit ? "Back to settings without saving the rest" : "Skip the rest of this step"}
       </Link>
     </main>
   );

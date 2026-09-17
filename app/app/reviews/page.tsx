@@ -105,7 +105,7 @@ export default function ReviewsPage() {
       location={business.locationName ?? business.city}
       logoUrl={business.logoUrl}
     >
-      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">reviews</h1>
+      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">Reviews</h1>
       <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
         Every review on your Google listing, newest first.
       </p>

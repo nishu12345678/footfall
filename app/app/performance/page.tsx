@@ -206,7 +206,7 @@ export default function PerformancePage() {
       location={business.locationName ?? business.city}
       logoUrl={business.logoUrl}
     >
-      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">performance</h1>
+      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">Performance</h1>
       <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
         What your listing did, and where you rank for the searches that matter.
       </p>
@@ -229,12 +229,12 @@ export default function PerformancePage() {
       </div>
 
       <p className="mt-3 flex flex-wrap items-center gap-x-2 text-[12px] text-muted">
-        {rangeLabel ? <span>{rangeLabel}</span> : <span>no data in range</span>}
+        {rangeLabel ? <span>{rangeLabel}</span> : <span>No data in range</span>}
         <span aria-hidden>·</span>
         <span>
           {autoSyncing
-            ? "syncing now…"
-            : `synced ${ago(business.metricsSyncedAt)}`}
+            ? "Syncing now…"
+            : `Synced ${ago(business.metricsSyncedAt)}`}
         </span>
       </p>
 
@@ -245,7 +245,7 @@ export default function PerformancePage() {
           disabled={busy !== null}
           className="btn btn-ghost btn-sm disabled:opacity-40"
         >
-          {busy === "metrics" ? "syncing…" : `sync ${days} days`}
+          {busy === "metrics" ? "Syncing…" : `Sync ${days} days`}
         </button>
         <button
           type="button"
@@ -253,7 +253,7 @@ export default function PerformancePage() {
           disabled={busy !== null}
           className="btn btn-primary btn-sm disabled:opacity-40"
         >
-          {busy === "ranks" ? "checking…" : "check rankings"}
+          {busy === "ranks" ? "Checking…" : "Check rankings"}
         </button>
       </div>
 
@@ -322,7 +322,7 @@ export default function PerformancePage() {
           </div>
           <div className="mt-2 flex justify-between text-[11px] text-muted">
             <span>{pretty(window[0].date)}</span>
-            <span>peak {peak}</span>
+            <span>Peak {peak}</span>
             <span>{pretty(window[window.length - 1].date)}</span>
           </div>
         </div>
@@ -343,7 +343,10 @@ export default function PerformancePage() {
           <h2 className="text-[15px] font-semibold text-ink">
             Rank for targeted keywords
           </h2>
-          <span className="flex-none text-[12px] text-muted">
+          {/* Standalone value beside a heading, so it is capitalised here.
+              ago() stays lowercase because its other caller reads
+              "Synced 5 min ago" mid-sentence. */}
+          <span className="flex-none text-[12px] text-muted first-letter:uppercase">
             {ago(business.ranksCheckedAt)}
           </span>
         </div>
@@ -410,8 +413,8 @@ export default function PerformancePage() {
                           {checked
                             ? kw.rank !== undefined
                               ? `#${kw.rank}`
-                              : "not found"
-                            : "not checked yet"}
+                              : "Not found"
+                            : "Not checked yet"}
                         </span>
                       </div>
 
@@ -450,10 +453,10 @@ export default function PerformancePage() {
                           className="mt-2 text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
                         >
                           {gridding === kw.term
-                            ? "checking around you…"
+                            ? "Checking around you…"
                             : gridFor === kw.term
-                              ? "hide the map"
-                              : "where do I rank around here?"}
+                              ? "Hide the map"
+                              : "Where do I rank around here?"}
                         </button>
                       ) : null}
 

@@ -26,7 +26,7 @@ export function useEditMode(): boolean {
   return useSyncExternalStore(noop, readEdit, () => false);
 }
 
-/** Where a step's "save & next" goes: the next step, or back to Settings. */
+/** Where a step's "Save & next" goes: the next step, or back to Settings. */
 export function nextHref(step: number, edit: boolean): string {
   if (edit) return "/app/settings";
   const next = ONBOARDING_STEPS.find((s) => s.step === step + 1);
@@ -41,7 +41,7 @@ function backHref(step: number, edit: boolean): string {
 }
 
 /** The label a "save" button should carry in each mode. */
-export function saveLabel(edit: boolean, busy: boolean, normal = "save & next") {
+export function saveLabel(edit: boolean, busy: boolean, normal = "Save & next") {
   if (busy) return "saving…";
   return edit ? "save changes" : normal;
 }
@@ -52,7 +52,7 @@ export function saveLabel(edit: boolean, busy: boolean, normal = "save & next") 
  * back.
  *
  * The Back button walks browser history when the owner navigated here from
- * inside the app (the dashboard's "setup isn't finished" card, Settings, a
+ * inside the app (the dashboard's "Setup isn't finished" card, Settings, a
  * step badge), and only falls back to the previous step on a fresh load.
  * Steps already unlocked are links, so any passed step can be reopened and
  * saved directly.

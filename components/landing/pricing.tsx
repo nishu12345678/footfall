@@ -37,8 +37,12 @@ export function Pricing() {
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         {PRICING.plans.map((plan) => {
-          const featured = Boolean(plan.badge);
+          const featured = plan.featured;
           const saved = plan.listPrice - plan.price;
+          /* Computed from the prices rather than typed, so it cannot drift
+             when one changes — and it is the same figure "Choose your plan"
+             shows in app/app/billing. */
+          const vsMonthly = plan.period === "year" ? PRICING.yearlySaving() : null;
           return (
             <article
               key={plan.id}
@@ -46,9 +50,12 @@ export function Pricing() {
                 featured ? "border-[var(--l-ink)]" : "border-[var(--l-line)]"
               }`}
             >
-              {plan.badge ? (
-                <span className="absolute -top-3 left-8 rounded-full bg-[var(--l-ink)] px-3 py-1 text-[12px] font-semibold text-white md:left-10">
-                  {plan.badge}
+              {vsMonthly && vsMonthly.amount > 0 ? (
+                <span
+                  title={vsMonthly.working}
+                  className="absolute -top-3 left-8 cursor-help rounded-full bg-[var(--l-ink)] px-3 py-1 text-[12px] font-semibold text-white md:left-10"
+                >
+                  Save {inr(vsMonthly.amount)}
                 </span>
               ) : null}
 

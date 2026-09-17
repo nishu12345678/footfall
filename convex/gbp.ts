@@ -650,44 +650,81 @@ async function overpassNearby(
     "https://overpass.kumi.systems/api/interpreter",
   ];
 
-  // Ask mirrors concurrently and cap the whole free-provider attempt. This
-  // avoids making the owner wait through two consecutive 25-second timeouts.
-  const attempts = await Promise.all(
-    MIRRORS.map(async (mirror) => {
-      try {
-        const res = await fetch(mirror, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": "footfall/1.0 (local business listing tool)",
-            Accept: "application/json",
-          },
-          body: new URLSearchParams({ data: query }),
-          signal: AbortSignal.timeout(12_000),
-        });
-        if (!res.ok) return { error: `${mirror} -> ${res.status}` };
-        const body = await res.json();
-        // A busy Overpass answers 200 with a "remark" (usually a timeout)
-        // and no elements. That is a failure, not an empty map.
-        if (body?.remark && !(body.elements ?? []).length) {
-          return {
-            error: `${mirror} -> remark: ${String(body.remark).slice(0, 120)}`,
-          };
-        }
-        return { body };
-      } catch (error) {
+  /** Only the parts of an Overpass reply this function actually reads. */
+  type OverpassBody = {
+    elements?: {
+      lat?: number;
+      lon?: number;
+      tags?: { name?: string; place?: string };
+    }[];
+    remark?: string;
+  };
+  type Attempt = { body?: OverpassBody; error?: string };
+
+  const ask = async (mirror: string): Promise<Attempt> => {
+    try {
+      const res = await fetch(mirror, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": "footfall/1.0 (local business listing tool)",
+          Accept: "application/json",
+        },
+        body: new URLSearchParams({ data: query }),
+        signal: AbortSignal.timeout(12_000),
+      });
+      if (!res.ok) return { error: `${mirror} -> ${res.status}` };
+      const body = await res.json();
+      // A busy Overpass answers 200 with a "remark" (usually a timeout)
+      // and no elements. That is a failure, not an empty map.
+      if (body?.remark && !(body.elements ?? []).length) {
         return {
-          error: `${mirror} -> ${error instanceof Error ? error.message : String(error)}`,
+          error: `${mirror} -> remark: ${String(body.remark).slice(0, 120)}`,
         };
       }
-    }),
-  );
+      return { body };
+    } catch (error) {
+      return {
+        error: `${mirror} -> ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  };
 
-  // Prefer any non-empty response. A valid empty response is believable only
-  // when no mirror returned data, but remains distinct from total failure.
-  const usable = attempts.find((a) => (a.body?.elements ?? []).length > 0);
-  const empty = attempts.find((a) => a.body);
-  const data = usable?.body ?? empty?.body ?? null;
+  /* Resolve as soon as ANY mirror returns places, rather than waiting for
+     every mirror to finish.
+
+     Promise.all here used to mean each lookup cost as long as the SLOWEST
+     mirror. Measured from this machine: overpass-api.de answered in ~5s
+     while kumi.systems ran to its full 12s timeout — so the owner waited
+     on kumi every time, on first load and on every radius click, for data
+     that had already arrived.
+
+     Note this is a real race, not `for (const p of mirrors) await p`.
+     Awaiting in list order would still block on a slow FIRST mirror even
+     after a later one had answered, making latency depend on the order
+     the mirrors happen to be written in.
+
+     Losing requests are left to settle on their own; their results are
+     still collected for the error log. A mirror that fails or returns
+     nothing is not fatal, and a valid-but-empty body is still accepted
+     once no mirror has places — preserving the "some rural coordinates
+     genuinely have nothing named nearby" case handled below. */
+  const attempts: Attempt[] = [];
+  const data = await new Promise<OverpassBody | null>((resolve) => {
+    let outstanding = MIRRORS.length;
+    for (const mirror of MIRRORS) {
+      void ask(mirror).then((attempt) => {
+        attempts.push(attempt);
+        const body = attempt.body;
+        if (body && (body.elements ?? []).length > 0) return resolve(body);
+        // Last one home and nobody had places: fall back to a valid empty
+        // body if any mirror produced one, else null for "all failed".
+        if (--outstanding === 0) {
+          resolve(attempts.find((a) => a.body)?.body ?? null);
+        }
+      });
+    }
+  });
   if (!data) {
     console.error(
       `[overpass] all mirrors failed. ${attempts.map((a) => a.error).filter(Boolean).join("; ")}`,

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAction, useMutation } from "convex/react";
 import { useQuery } from "convex-helpers/react/cache";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { OnboardingTop, nextHref, useEditMode } from "@/components/onboarding-frame";
 import { Working } from "@/components/working";
@@ -42,6 +42,15 @@ const DAYS = [
 ];
 
 type HourRow = { day: number; open?: string; close?: string; closed: boolean };
+
+/** One place the map knows about near the shop. */
+type AreaIdea = {
+  name: string;
+  km: number;
+  kind: string;
+  lat: number;
+  lng: number;
+};
 
 const DEFAULT_HOURS: HourRow[] = DAYS.map((_, day) => ({
   day,
@@ -85,14 +94,21 @@ export default function GbpPage() {
   const [thinking, setThinking] = useState(false);
   const [hours, setLocalHours] = useState<HourRow[]>(DEFAULT_HOURS);
   const [hoursLoaded, setHoursLoaded] = useState(false);
-  const [areaIdeas, setAreaIdeas] = useState<
-    { name: string; km: number; kind: string; lat: number; lng: number }[]
-  >([]);
+  /* Results keyed by radius, so going 20 → 10 → 20 does not re-fetch what
+     has already been fetched. The map lookup is a network round trip to
+     Overpass measured at several seconds; without this, every visit to a
+     radius already looked at costs that again. */
+  const [areasByRadius, setAreasByRadius] = useState<Record<number, AreaIdea[]>>(
+    {},
+  );
   const [radiusKm, setRadiusKm] = useState(20);
   const [autoRan, setAutoRan] = useState<Record<string, boolean>>({});
   const [seen, setSeen] = useState<Record<string, boolean>>({ areas: true });
   const [areasSeeded, setAreasSeeded] = useState(false);
   const [findingAreas, setFindingAreas] = useState(false);
+  /* Which radius the owner is actually looking at. A lookup that finishes
+     after the owner has moved on must not paint its results. */
+  const latestRadius = useRef(20);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -158,6 +174,24 @@ export default function GbpPage() {
     data.attributes.filter((a) => a.enabled).map((a) => a.key),
   );
 
+  /* What to draw right now. If this radius has not loaded yet, keep showing
+     the closest radius that HAS loaded rather than emptying the list: the
+     places within 10km are all within 20km too, so the carried-over chips
+     are never wrong, just incomplete — and the section keeps its height
+     instead of collapsing and reflowing the page under the owner's thumb. */
+  const loadedRadii = Object.keys(areasByRadius).map(Number);
+  const fallbackRadius = loadedRadii.length
+    ? loadedRadii.reduce((best, r) =>
+        Math.abs(r - radiusKm) < Math.abs(best - radiusKm) ? r : best,
+      )
+    : null;
+  const areaIdeas: AreaIdea[] =
+    areasByRadius[radiusKm] ??
+    (fallbackRadius !== null ? areasByRadius[fallbackRadius] : []) ??
+    [];
+  /* Only a radius with nothing to show at all gets the spinner. */
+  const showAreaSpinner = findingAreas && areaIdeas.length === 0;
+
   // The near-me phrases put themselves on the list, so the research panel
   // has to show what is already tracked rather than only what to add.
   const tracked = new Set(data.keywords.map((k) => k.term.toLowerCase()));
@@ -168,15 +202,36 @@ export default function GbpPage() {
     );
   }
 
+  /**
+   * Look up the places within `km` of the shop.
+   *
+   * Three things keep this from feeling janky, all of which matter
+   * because the lookup is a multi-second network call:
+   *
+   *  · A radius already fetched returns instantly from cache, so moving
+   *    between 10 / 20 / 30 is free after the first visit to each.
+   *  · Results are stored per radius, so the chips and map pins for the
+   *    old radius stay on screen while the new one loads instead of the
+   *    list emptying and the section collapsing.
+   *  · A request is only allowed to write its result if it is still the
+   *    radius the owner is looking at. Without that, clicking 30 then
+   *    quickly 10 could leave 30's slower answer on screen under a "10km"
+   *    label.
+   */
   async function findAreas(km: number) {
+    if (areasByRadius[km]) return; // already known — nothing to wait for
+    latestRadius.current = km;
     setFindingAreas(true);
     setError(null);
     try {
-      setAreaIdeas(await nearbyAreas({ radiusKm: km }));
+      const found = await nearbyAreas({ radiusKm: km });
+      if (latestRadius.current !== km) return; // a newer click won
+      setAreasByRadius((prev) => ({ ...prev, [km]: found }));
     } catch (e) {
+      if (latestRadius.current !== km) return;
       setError(friendlyError(e));
     } finally {
-      setFindingAreas(false);
+      if (latestRadius.current === km) setFindingAreas(false);
     }
   }
 
@@ -311,7 +366,12 @@ export default function GbpPage() {
                       key={km}
                       type="button"
                       onClick={() => {
+                        if (km === radiusKm) return;
+                        /* Set before the await so an in-flight lookup for
+                           the old radius knows it has been superseded. */
+                        latestRadius.current = km;
                         setRadiusKm(km);
+                        setError(null);
                         void setServiceRadius({ radiusKm: km });
                         void findAreas(km);
                       }}
@@ -319,7 +379,7 @@ export default function GbpPage() {
                       className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
                         radiusKm === km
                           ? "bg-white text-ink shadow-card"
-                          : "text-muted"
+                          : "text-muted hover:text-ink"
                       }`}
                     >
                       {km}km
@@ -327,12 +387,20 @@ export default function GbpPage() {
                   ))}
                 </div>
               </div>
-              {findingAreas ? (
+              {showAreaSpinner ? (
                 <div className="mt-3">
                   <Working label={`Reading the map ${radiusKm}km around you`} />
                 </div>
               ) : areaIdeas.length ? (
-                <ul className="mt-3 flex flex-wrap gap-2">
+                /* Dimmed rather than replaced while a new radius loads, so
+                   the list keeps its place on the page and the owner can
+                   still read it. Pointer events go off so a chip cannot be
+                   tapped while it is about to be replaced. */
+                <ul
+                  className={`mt-3 flex flex-wrap gap-2 transition-opacity duration-200 ${
+                    findingAreas ? "pointer-events-none opacity-50" : ""
+                  }`}
+                >
                   {areaIdeas.map((area) => {
                     const added = data.serviceAreas.some(
                       (s) => s.name.toLowerCase() === area.name.toLowerCase(),
@@ -343,16 +411,18 @@ export default function GbpPage() {
                           type="button"
                           disabled={added}
                           onClick={() => void addArea({ name: area.name })}
+                          aria-label={
+                            added
+                              ? `${area.name}, already added`
+                              : `add ${area.name}, ${area.km}km away`
+                          }
                           className={`pressable inline-flex items-center gap-1.5 rounded-full py-1.5 pl-2.5 pr-3 text-[13px] transition-colors ${
                             added
                               ? "bg-pin-soft text-pin"
                               : "bg-paper-2 hover:bg-paper-3"
                           }`}
                         >
-                          <span
-                            aria-hidden
-                            className={added ? "text-pin" : "text-pin"}
-                          >
+                          <span aria-hidden className="text-pin">
                             {added ? "✓" : "+"}
                           </span>
                           {area.name}

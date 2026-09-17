@@ -59,6 +59,78 @@ const DEFAULT_HOURS: HourRow[] = DAYS.map((_, day) => ({
   closed: false,
 }));
 
+/** One phrase the research came back with. */
+type Researched = {
+  term: string;
+  score: number;
+  why: string;
+  demand: number;
+  source: string;
+  reviews?: number;
+  volume?: number | null;
+  competition?: string | null;
+  measured: string;
+};
+
+/**
+ * Turn the raw score into something a shop owner can act on.
+ *
+ * "4 pts" told the owner nothing, and quietly misled: most of those four
+ * points are the flat +4 every "near me" phrase receives in
+ * convex/keywords.ts, not measured demand. Two phrases scoring 4 and 0.5
+ * can differ only in whether they contain the words "near me" — a fact
+ * about the phrasing, not about how many people search it.
+ *
+ * Thresholds are read off that scoring, not guessed:
+ *
+ *   0.5   names the city, nothing measurable   ("cafe in agra")
+ *   4.0   says "near me", nothing measurable   (the bonus alone)
+ *   5.5+  names the city AND has real demand
+ *   9.0+  says "near me" AND has real demand
+ *
+ * So 5 is the first score that cannot be reached by phrasing alone, and
+ * is the honest floor for calling something strong.
+ *
+ * The bottom tier says "Still worth it" rather than "Long shot": a phrase
+ * with no national search volume is normal for one shop in one city, not
+ * a bad bet — and in testing every suggestion landed there, so a
+ * discouraging word would have been the only thing the owner saw.
+ */
+function pickLabel(score: number): { label: string; tone: string } {
+  if (score >= 9) return { label: "Best pick", tone: "bg-open-soft text-open-deep" };
+  if (score >= 5) return { label: "Strong pick", tone: "bg-open-soft text-open-deep" };
+  if (score >= 3.5) return { label: "Ready to buy", tone: "bg-pin-soft text-pin" };
+  return { label: "Still worth it", tone: "bg-paper-3 text-ink-soft" };
+}
+
+/**
+ * The research explains itself in its own vocabulary — "is too niche for
+ * Trends to measure", "scores 34 on Trends". That is the tool's language,
+ * not the owner's. Rewrite the common cases; anything unrecognised falls
+ * through unchanged rather than being hidden.
+ */
+function plainWhy(r: Researched, city?: string | null): string {
+  const where = city ?? "your area";
+  if (r.measured === "volume" && r.volume) {
+    return `About ${r.volume.toLocaleString("en-IN")} searches a month in ${where}.`;
+  }
+  const nearMe = /near me|nearby/.test(r.term);
+  if (/too niche for Trends/i.test(r.why)) {
+    // Not "no demand" — just below what a national tool can see. For a
+    // single shop that is normal, and saying so avoids implying the
+    // phrase is worthless.
+    return nearMe
+      ? "Typed by people looking to visit now. Too local for national tools to size."
+      : "Too local for national tools to size, but people here do search it.";
+  }
+  if (/scores \d/i.test(r.why)) {
+    return nearMe
+      ? `Steady interest in ${where}, and typed by people ready to walk in.`
+      : `Steady interest in ${where}.`;
+  }
+  return r.why;
+}
+
 export default function GbpPage() {
   const data = useQuery(api.gbp.list);
   const addArea = useMutation(api.gbp.addServiceArea);
@@ -78,19 +150,12 @@ export default function GbpPage() {
 
   const [tab, setTab] = useState<Tab>("areas");
   const [draft, setDraft] = useState("");
-  const [researched, setResearched] = useState<
-    {
-      term: string;
-      score: number;
-      why: string;
-      demand: number;
-      source: string;
-      reviews?: number;
-      volume?: number | null;
-      competition?: string | null;
-      measured: string;
-    }[]
-  >([]);
+  const [researched, setResearched] = useState<Researched[]>([]);
+  /* Terms the owner has just tapped. Convex round-trips in a moment, but
+     a suggestion that sits inert until it does feels broken — and with a
+     list this long the owner loses their place. Marking it instantly and
+     letting the real data confirm keeps the tap responsive. */
+  const [justAdded, setJustAdded] = useState<Record<string, boolean>>({});
   const [thinking, setThinking] = useState(false);
   const [hours, setLocalHours] = useState<HourRow[]>(DEFAULT_HOURS);
   const [hoursLoaded, setHoursLoaded] = useState(false);
@@ -200,9 +265,22 @@ export default function GbpPage() {
      claim emptiness when the lookup actually succeeded. */
   const areaLookupFailed = failedRadii[radiusKm] === true;
 
-  // The near-me phrases put themselves on the list, so the research panel
-  // has to show what is already tracked rather than only what to add.
   const tracked = new Set(data.keywords.map((k) => k.term.toLowerCase()));
+
+  /* What is actually on offer: research results minus anything already
+     tracked, best first.
+
+     The old panel listed everything the research returned, tracked or
+     not — in testing, four of eight rows were already-added phrases the
+     owner could do nothing with, each still taking a full card. Since
+     several near-me phrases add themselves during setup, that is the
+     normal case rather than an edge one.
+
+     `justAdded` is included so a tapped phrase leaves the list at once,
+     without waiting for the Convex round trip to remove it. */
+  const suggestions = researched
+    .filter((r) => !tracked.has(r.term.toLowerCase()) && !justAdded[r.term])
+    .sort((a, b) => b.score - a.score);
 
   function patchHour(day: number, patch: Partial<HourRow>) {
     setLocalHours((rows) =>
@@ -252,6 +330,19 @@ export default function GbpPage() {
     } finally {
       if (latestRadius.current === km) setFindingAreas(false);
     }
+  }
+
+  /** Track a suggested phrase, marking it added before the server replies. */
+  function trackTerm(term: string) {
+    setJustAdded((prev) => ({ ...prev, [term]: true }));
+    void addKeyword({ term }).catch((e) => {
+      setJustAdded((prev) => {
+        const next = { ...prev };
+        delete next[term];
+        return next;
+      });
+      setError(friendlyError(e));
+    });
   }
 
   async function runResearch(deep: boolean) {
@@ -546,103 +637,136 @@ export default function GbpPage() {
               </button>
             </form>
 
-            <ul className="mt-6 space-y-2.5">
-              {data.keywords.map((kw) => (
-                <li
-                  key={kw._id}
-                  className="flex items-center justify-between gap-3 rounded-[12px] bg-paper-2 px-4 py-3"
-                >
-                  <span className="min-w-0 truncate text-[14px]">
-                    {kw.term}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => void removeKeyword({ id: kw._id })}
-                    aria-label={`remove ${kw.term}`}
-                    className="flex-none text-[13px] text-muted hover:text-pin"
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
+            {/* Chips, not full-width rows. Ten keywords used ten stacked
+                bars and pushed the suggestions — the part that needs a
+                decision — about a thousand pixels down the page. Wrapped
+                chips show the same list in a few lines, so what is already
+                tracked and what is on offer are visible together. */}
+            {data.keywords.length ? (
+              <>
+                <div className="mt-7 flex items-baseline justify-between gap-3">
+                  <p className="text-[15px] font-semibold text-ink">
+                    Tracking {data.keywords.length}
+                  </p>
+                </div>
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {data.keywords.map((kw) => (
+                    <li key={kw._id}>
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-pin-soft py-1.5 pl-3 pr-1.5 text-[13px] font-medium text-pin">
+                        {kw.term}
+                        <button
+                          type="button"
+                          onClick={() => void removeKeyword({ id: kw._id })}
+                          aria-label={`Remove ${kw.term}`}
+                          className="grid h-4 w-4 place-items-center rounded-full text-pin hover:bg-pin hover:text-white"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
 
             <div className="mt-8 border-t border-rule-soft pt-6">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <p className="text-[15px] font-semibold text-ink">
-                  Researched from Google
+                  Suggestions for you
                 </p>
-                <button
-                  type="button"
-                  onClick={() => void runResearch(true)}
-                  disabled={thinking}
-                  className="flex-none text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
-                >
-                  check competition
-                </button>
+                {suggestions.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => suggestions.forEach((r) => trackTerm(r.term))}
+                    className="flex-none text-[13px] font-medium text-pin hover:opacity-80"
+                  >
+                    Add all {suggestions.length}
+                  </button>
+                ) : null}
               </div>
+              <p className="mt-1 text-[12px] leading-relaxed text-muted">
+                What people near you type when they want what you sell. Tap one
+                to start tracking your position for it.
+              </p>
 
               {thinking ? (
                 <div className="mt-3">
                   <Working label="Finding what your customers search for" />
                 </div>
-              ) : researched.length ? (
-                <ul className="mt-4 space-y-2.5">
-                  {researched.map((r) => (
-                    <li
-                      key={r.term}
-                      className="rounded-[12px] bg-paper-2 p-3.5"
-                    >
-                      <div className="flex items-center gap-2">
+              ) : suggestions.length ? (
+                /* One tappable row per phrase. The whole row is the target
+                   rather than a 28px circle beside it — this is a phone
+                   screen and the old hit area was the smallest thing on
+                   the page. Already-tracked phrases are filtered out
+                   entirely: half of the eight results were rows the owner
+                   could do nothing with. */
+                <ul className="mt-4 space-y-2">
+                  {suggestions.map((r) => {
+                    const pick = pickLabel(r.score);
+                    return (
+                      <li key={r.term}>
                         <button
                           type="button"
-                          aria-label={
-                            tracked.has(r.term)
-                              ? `${r.term} is tracked`
-                              : `add ${r.term}`
-                          }
-                          disabled={tracked.has(r.term)}
-                          onClick={() => void addKeyword({ term: r.term })}
-                          className={`pressable grid h-7 w-7 flex-none place-items-center rounded-full text-[15px] leading-none ${
-                            tracked.has(r.term)
-                              ? "bg-paper-3 text-pin"
-                              : "bg-pin text-white"
-                          }`}
+                          onClick={() => trackTerm(r.term)}
+                          aria-label={`Track ${r.term}`}
+                          className="pressable flex w-full items-start gap-3 rounded-[12px] bg-paper-2 p-3.5 text-left transition-colors hover:bg-paper-3"
                         >
-                          {tracked.has(r.term) ? "✓" : "+"}
-                        </button>
-                        <span className="min-w-0 flex-1 text-[13px]">
-                          {r.term}
-                        </span>
-                        {r.measured === "volume" && r.volume ? (
-                          <span className="flex-none rounded-full bg-open-soft px-2 py-0.5 text-[11px] font-medium text-open-deep">
-                            {r.volume.toLocaleString("en-IN")}/mo
+                          <span
+                            aria-hidden
+                            className="mt-0.5 grid h-6 w-6 flex-none place-items-center rounded-full bg-pin text-[15px] leading-none text-white"
+                          >
+                            +
                           </span>
-                        ) : null}
-                        <span
-                          className={`flex-none rounded-full bg-paper-3 px-2 py-0.5 text-[11px] font-medium ${
-                            r.demand > 0 ? "text-ink-soft" : "text-muted"
-                          }`}
-                          title="How worth chasing this search is for you: how many people type it, weighed against how hard the competition is to beat. Higher is better."
-                        >
-                          {r.score} pts
-                        </span>
-                      </div>
-                      <p className="mt-1 text-[11px] leading-snug text-muted">
-                        {r.why}
-                      </p>
-                    </li>
-                  ))}
+                          <span className="min-w-0 flex-1">
+                            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <span className="text-[14px] font-medium text-ink">
+                                {r.term}
+                              </span>
+                              <span
+                                className={`flex-none rounded-full px-2 py-0.5 text-[11px] font-medium ${pick.tone}`}
+                              >
+                                {pick.label}
+                              </span>
+                            </span>
+                            <span className="mt-1 block text-[12px] leading-snug text-muted">
+                              {plainWhy(r, data.business.city)}
+                            </span>
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
+              ) : researched.length ? (
+                /* Every suggestion has been taken. Saying so beats an
+                   empty space that looks like a failed load. */
+                <p className="mt-3 rounded-[12px] bg-paper-2 px-4 py-3 text-[13px] leading-relaxed text-ink-soft">
+                  You&rsquo;re tracking every phrase we found. Add your own
+                  above, or check the competition for tougher ones.
+                </p>
               ) : (
-                <p className="mt-2 text-[12px] leading-relaxed text-muted">
-                  Finds what people near you actually search for what you sell,
-                  ranked by real monthly search volume where Google Ads measures
-                  it, and Google Trends demand where it doesn&rsquo;t. &ldquo;+
-                  competition&rdquo; also reads the map results to see how
-                  strong the current top 3 are — slower, more credits.
+                <p className="mt-3 text-[12px] leading-relaxed text-muted">
+                  Nothing came back. Add a phrase above, or try the deeper
+                  check below.
                 </p>
               )}
+
+              {/* Moved below the list and given its consequence. As a bare
+                  "check competition" link in the header it sat beside the
+                  heading like a tab, gave no hint that it costs time, and
+                  competed for attention with the phrases themselves. */}
+              {!thinking ? (
+                <button
+                  type="button"
+                  onClick={() => void runResearch(true)}
+                  className="mt-4 w-full rounded-[12px] border border-rule px-4 py-3 text-[13px] font-medium text-ink-soft transition-colors hover:border-pin hover:text-pin"
+                >
+                  Check how strong the competition is
+                  <span className="mt-0.5 block text-[11px] font-normal text-muted">
+                    Reads the top 3 on the map for each phrase. Takes longer.
+                  </span>
+                </button>
+              ) : null}
             </div>
           </>
         ) : null}

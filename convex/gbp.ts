@@ -645,10 +645,31 @@ async function overpassNearby(
     `(node["place"~"^(suburb|neighbourhood|quarter|town|village)$"]` +
     `(around:${radius},${lat},${lng}););out body 80;`;
 
+  /* Measured from a dev machine on 2026-09-17, querying 20km around Agra:
+       overpass-api.de      1.7s - 14.8s, and one 504 in five tries
+       maps.mail.ru        18.1s, slow but alive
+       kumi.systems        connection refused — removed, it was dead
+       osm.jp / private.coffee  no usable response
+
+     So no single mirror is reliable, and the fastest one is also the one
+     that intermittently answers 504 "busy". Racing several is what keeps
+     this working; the list is ordered fastest-first only for readability
+     since they all start together. */
   const MIRRORS = [
     "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
   ];
+
+  /* Long enough to let a healthy-but-slow mirror finish, short enough
+     that a stuck one does not hold the owner hostage.
+
+     12s was too tight — it cut off a mirror measured at 14.8s on a
+     perfectly good run. 25s would be too generous now that
+     googleGeocodingNearby is configured and answers in about 2s: past
+     ~16s the fallback is simply the better answer, so we stop waiting
+     and use it rather than making the owner sit through Overpass's own
+     25s server-side limit. */
+  const MIRROR_TIMEOUT_MS = 16_000;
 
   /** Only the parts of an Overpass reply this function actually reads. */
   type OverpassBody = {
@@ -659,9 +680,9 @@ async function overpassNearby(
     }[];
     remark?: string;
   };
-  type Attempt = { body?: OverpassBody; error?: string };
+  type Attempt = { body?: OverpassBody; error?: string; status?: number };
 
-  const ask = async (mirror: string): Promise<Attempt> => {
+  const askOnce = async (mirror: string): Promise<Attempt> => {
     try {
       const res = await fetch(mirror, {
         method: "POST",
@@ -671,15 +692,18 @@ async function overpassNearby(
           Accept: "application/json",
         },
         body: new URLSearchParams({ data: query }),
-        signal: AbortSignal.timeout(12_000),
+        signal: AbortSignal.timeout(MIRROR_TIMEOUT_MS),
       });
-      if (!res.ok) return { error: `${mirror} -> ${res.status}` };
+      if (!res.ok) {
+        return { error: `${mirror} -> ${res.status}`, status: res.status };
+      }
       const body = await res.json();
       // A busy Overpass answers 200 with a "remark" (usually a timeout)
       // and no elements. That is a failure, not an empty map.
       if (body?.remark && !(body.elements ?? []).length) {
         return {
           error: `${mirror} -> remark: ${String(body.remark).slice(0, 120)}`,
+          status: 504, // same meaning as a 504: busy, worth one retry
         };
       }
       return { body };
@@ -688,6 +712,23 @@ async function overpassNearby(
         error: `${mirror} -> ${error instanceof Error ? error.message : String(error)}`,
       };
     }
+  };
+
+  /* One quick retry when a mirror says it is BUSY rather than broken.
+     Overpass answers 429/504 under load — one in five measured calls did —
+     and that is transient by definition: the same request a moment later
+     usually succeeds. A 400 (bad query) or a refused connection is not
+     worth repeating, so only the busy codes retry.
+
+     The pause is deliberately short. With the Google fallback configured
+     there is always a working answer about two seconds away, so a long
+     backoff here would cost the owner more than it saves. */
+  const ask = async (mirror: string): Promise<Attempt> => {
+    const first = await askOnce(mirror);
+    if (!first.error) return first;
+    if (first.status !== 429 && first.status !== 504) return first;
+    await new Promise((r) => setTimeout(r, 600));
+    return askOnce(mirror);
   };
 
   /* Resolve as soon as ANY mirror returns places, rather than waiting for

@@ -109,6 +109,9 @@ export default function GbpPage() {
   /* Which radius the owner is actually looking at. A lookup that finishes
      after the owner has moved on must not paint its results. */
   const latestRadius = useRef(20);
+  /* Radii whose lookup failed, so an empty list is not mistaken for an
+     empty map. Cleared on retry. */
+  const [failedRadii, setFailedRadii] = useState<Record<number, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -191,6 +194,11 @@ export default function GbpPage() {
     [];
   /* Only a radius with nothing to show at all gets the spinner. */
   const showAreaSpinner = findingAreas && areaIdeas.length === 0;
+  /* "The map has nothing here" and "we could not read the map" look
+     identical from an empty list, and telling an owner in a real town
+     that there is nothing near them is worse than saying we failed. Only
+     claim emptiness when the lookup actually succeeded. */
+  const areaLookupFailed = failedRadii[radiusKm] === true;
 
   // The near-me phrases put themselves on the list, so the research panel
   // has to show what is already tracked rather than only what to add.
@@ -223,13 +231,24 @@ export default function GbpPage() {
     latestRadius.current = km;
     setFindingAreas(true);
     setError(null);
+    setFailedRadii((prev) => ({ ...prev, [km]: false }));
     try {
       const found = await nearbyAreas({ radiusKm: km });
       if (latestRadius.current !== km) return; // a newer click won
       setAreasByRadius((prev) => ({ ...prev, [km]: found }));
-    } catch (e) {
+    } catch {
       if (latestRadius.current !== km) return;
-      setError(friendlyError(e));
+      /* Remember the failure so the empty list can say "we couldn't read
+         the map" rather than "there is nothing near you", which is a
+         different and much more discouraging claim.
+
+         Deliberately NOT setError: that banner renders at the bottom of
+         the step, far from the area list, and would repeat what the
+         inline message already says — the owner would read the same
+         failure twice and still have to scroll back up to retry. The
+         shared banner stays for the other tabs, which have nowhere
+         better to put it. */
+      setFailedRadii((prev) => ({ ...prev, [km]: true }));
     } finally {
       if (latestRadius.current === km) setFindingAreas(false);
     }
@@ -434,6 +453,22 @@ export default function GbpPage() {
                     );
                   })}
                 </ul>
+              ) : areaLookupFailed ? (
+                /* Not the same as an empty map — say so, and offer the one
+                   action that might work, since the failure is usually a
+                   busy map server rather than anything about this shop. */
+                <p className="mt-2 text-[12px] leading-relaxed text-muted">
+                  Couldn&rsquo;t read the map just now — this usually clears in
+                  a moment.{" "}
+                  <button
+                    type="button"
+                    onClick={() => void findAreas(radiusKm)}
+                    className="font-semibold text-pin underline underline-offset-2"
+                  >
+                    Try again
+                  </button>
+                  , or type an area name above.
+                </p>
               ) : (
                 <p className="mt-2 text-[12px] leading-relaxed text-muted">
                   No towns or neighbourhoods on the map within {radiusKm}km. Try

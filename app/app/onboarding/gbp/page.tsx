@@ -116,17 +116,27 @@ function plainWhy(r: Researched, city?: string | null): string {
   }
   const nearMe = /near me|nearby/.test(r.term);
   if (/too niche for Trends/i.test(r.why)) {
-    // Not "no demand" — just below what a national tool can see. For a
-    // single shop that is normal, and saying so avoids implying the
-    // phrase is worthless.
+    /* What actually happened: Google Trends was asked about the product
+       word — "smoothies", not "smoothies in agra" — across the whole
+       state, and returned zero. Trends only reports terms with enough
+       nationwide volume to chart, so zero means "below its threshold",
+       NOT "nobody searches this".
+
+       So the honest line is that we could not measure it, and why that
+       is unsurprising for one shop's phrase. An earlier draft said
+       "people here do search it" — that was an invention: we have no
+       evidence either way, which is the whole point. */
     return nearMe
-      ? "Typed by people looking to visit now. Too local for national tools to size."
-      : "Too local for national tools to size, but people here do search it.";
+      ? "We can't measure this one — Google only reports busier searches. Worth tracking: it's how people nearby look for a shop like yours."
+      : "We can't measure this one — Google only reports busier searches. Track it and we'll show you where you rank.";
   }
   if (/scores \d/i.test(r.why)) {
+    /* Trends gives relative interest, not a count, so it cannot be
+       reported as "N searches". "Steady interest" is the strongest claim
+       the number supports. */
     return nearMe
-      ? `Steady interest in ${where}, and typed by people ready to walk in.`
-      : `Steady interest in ${where}.`;
+      ? `People in ${where} search this, and it's typed by someone ready to walk in.`
+      : `People in ${where} search this.`;
   }
   return r.why;
 }

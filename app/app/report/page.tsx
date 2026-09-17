@@ -21,14 +21,21 @@ const fmtDate = (ms: number) =>
     minute: "2-digit",
   });
 
+/* Severity colours read left to right as urgency: orange stops you,
+   cobalt is the ordinary "do this next", green is done.
+
+   "Fix this" used cobalt — the same colour as every link and CTA in the
+   app — so the one chip meant to raise an alarm looked like a button.
+   "Worth doing" used the review-star amber, close enough to orange that
+   the two chips read as the same level of urgency. */
 const TONE = {
   critical: {
-    chip: "bg-pin-soft text-pin",
+    chip: "bg-alert-soft text-alert",
     label: "Fix this",
     mark: "!",
   },
   warn: {
-    chip: "bg-star/15 text-[#8a5a13]",
+    chip: "bg-pin-soft text-pin",
     label: "Worth doing",
     mark: "•",
   },

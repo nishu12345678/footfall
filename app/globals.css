@@ -35,6 +35,13 @@
   --color-star: #e8a33d;
   --color-chat: #1da750;
 
+  /* Needs attention. Deliberately not --color-star, which is the amber of
+     a review rating: a status chip and a star rating can sit on the same
+     screen, and they should not read as the same thing. Dark enough to
+     clear contrast on its own tint. */
+  --color-alert: #c2410c;
+  --color-alert-soft: #fdeee5;
+
   --font-display: var(--font-manrope), -apple-system, BlinkMacSystemFont,
     system-ui, "Segoe UI", Roboto, sans-serif;
   --font-body: var(--font-manrope), -apple-system, BlinkMacSystemFont,

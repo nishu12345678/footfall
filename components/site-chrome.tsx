@@ -106,6 +106,7 @@ export async function SiteNav({ data }: { data: SiteData }) {
               alt=""
               width={36}
               height={36}
+              referrerPolicy="no-referrer"
               className="h-9 w-9 flex-none rounded-[10px] bg-white object-contain p-0.5 shadow-card"
             />
           ) : null}

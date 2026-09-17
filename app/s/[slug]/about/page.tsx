@@ -116,6 +116,7 @@ export default async function AboutPage({
                       src={photo.url}
                       alt={photo.caption ?? `${business.orgName} photo ${i + 1}`}
                       loading="lazy"
+                      referrerPolicy="no-referrer"
                       className="aspect-square w-full rounded-[18px] object-cover shadow-card"
                     />
                   </li>

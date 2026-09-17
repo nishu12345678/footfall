@@ -151,6 +151,7 @@ export function AppHeader({
           <img
             src={logoUrl}
             alt=""
+            referrerPolicy="no-referrer"
             className="h-9 w-9 flex-none rounded-full bg-white object-contain shadow-card"
           />
         ) : (

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
   ContactBand,
+  PinIcon,
   SiteFooter,
   SiteNav,
   UtilityBar,
@@ -112,6 +113,21 @@ export default async function SiteHome({
                   >
                     <WhatsAppIcon />
                     Message on WhatsApp
+                  </a>
+                ) : null}
+                {/* Getting there is the other thing a visitor wants, and it
+                    was only a small grey pill in the footer. This link
+                    starts navigation rather than opening a map to look at
+                    — see directionsLink. */}
+                {directions ? (
+                  <a
+                    href={directions}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-ghost"
+                  >
+                    <PinIcon />
+                    Get directions
                   </a>
                 ) : null}
                 <Link href={`${base}/services`} className="btn btn-ghost">

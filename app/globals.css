@@ -766,3 +766,32 @@ a.link:hover {
     opacity: 0.5;
   }
 }
+
+/* ------------------------------ confetti ---------------------------------
+   One short burst when a shop's website goes live. Kept in CSS rather than
+   a canvas library: eighteen squares falling once do not justify a
+   dependency. Pieces fade out before they land so there is no hard stop.  */
+@keyframes ff-confetti-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0) rotate(0deg);
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--ff-drift, 0), 130px, 0) rotate(420deg);
+  }
+}
+
+.ff-confetti {
+  animation: ff-confetti-fall 2.2s cubic-bezier(0.25, 0.6, 0.4, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ff-confetti {
+    animation: none;
+    display: none;
+  }
+}

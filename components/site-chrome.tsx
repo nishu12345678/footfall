@@ -23,6 +23,26 @@ function WhatsAppIcon() {
   );
 }
 
+/** A map pin, for anything that leads to the shop's location. */
+function PinIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  );
+}
+
 /** Hours, phone and place — the three things a visitor checks first. */
 export function UtilityBar({ data }: { data: SiteData }) {
   const { business, hours, tel } = data;
@@ -218,15 +238,48 @@ export async function SiteFooter({ data }: { data: SiteData }) {
         </div>
 
         <div>
-          {business.mapsUri ? (
+          {directions ?? business.mapsUri ? (
+            /* Prefer the directions link: someone reading a shop's footer
+               wants to get there, not to look at a map. Falls back to the
+               plain Maps link when the listing has no coordinates.
+
+               The faint grid and pin are drawn in CSS rather than loaded
+               as a static map image — a real map tile costs an API call
+               per page view, and this only has to say "location". */
             <a
-              href={business.mapsUri}
+              href={directions ?? business.mapsUri}
               target="_blank"
               rel="noreferrer"
-              className="pressable block overflow-hidden rounded-[16px] border border-white/10 bg-white/5 transition-colors hover:bg-white/10"
+              className="pressable group relative block overflow-hidden rounded-[16px] border border-white/10 bg-white/5 transition-colors hover:bg-white/10"
             >
-              <span className="grid h-[120px] place-items-center text-[13px] text-white/60">
-                View on Google Maps →
+              <span
+                aria-hidden
+                className="absolute inset-0 opacity-[0.18]"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(to right, rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.5) 1px, transparent 1px)",
+                  backgroundSize: "26px 26px",
+                  maskImage:
+                    "radial-gradient(60% 60% at 50% 50%, #000 30%, transparent 100%)",
+                  WebkitMaskImage:
+                    "radial-gradient(60% 60% at 50% 50%, #000 30%, transparent 100%)",
+                }}
+              />
+              {/* A road sweeping past the pin, so the grid reads as a map
+                  rather than as graph paper. */}
+              <span
+                aria-hidden
+                className="absolute inset-0 opacity-[0.22]"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(115deg, transparent 46%, rgba(255,255,255,.7) 46%, rgba(255,255,255,.7) 48%, transparent 48%)",
+                }}
+              />
+              <span className="relative grid h-[120px] place-items-center gap-1.5 text-[13px] text-white/70">
+                <span className="grid h-8 w-8 place-items-center rounded-full bg-white/10 text-white/80 transition-colors group-hover:bg-white/20">
+                  <PinIcon />
+                </span>
+                {directions ? "Get directions →" : "View on Google Maps →"}
               </span>
             </a>
           ) : null}
@@ -288,4 +341,4 @@ export function ContactBand({ data }: { data: SiteData }) {
   );
 }
 
-export { WhatsAppIcon, DAYS };
+export { WhatsAppIcon, PinIcon, DAYS };

@@ -8,6 +8,7 @@ import { api } from "@/convex/_generated/api";
 import { PRICING } from "@/lib/content";
 import { shopHost, shopUrl } from "@/lib/site-host";
 import { BackButton } from "@/components/back-button";
+import { Confetti } from "@/components/confetti";
 import { friendlyError } from "@/lib/errors";
 
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
@@ -48,6 +49,10 @@ export default function ReportPage() {
   const [checking, setChecking] = useState(false);
   const [building, setBuilding] = useState(false);
   const [built, setBuilt] = useState<string | null>(null);
+  /* True only for the run that built the site, so the celebration fires
+     once. The site itself is remembered by the server, so a refresh shows
+     it calmly — confetti on every visit would be noise. */
+  const [justBuilt, setJustBuilt] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
   /* Read the live listing before showing anything. Reporting on empty
@@ -140,6 +145,7 @@ export default function ReportPage() {
     try {
       const r = await generateSite({});
       setBuilt(r.slug);
+      setJustBuilt(true);
     } catch (e) {
       setNote(friendlyError(e));
     } finally {
@@ -301,37 +307,56 @@ export default function ReportPage() {
               : "Check my website too"}
         </button>
       ) : (
-        <section className="card mt-6 p-6">
-          <h2 className="text-[18px] font-bold">You have no website</h2>
-          <p className="mt-2 text-[16px] leading-relaxed text-ink-soft">
-            We can build you one right now from your Google listing — your
-            services, your area, your hours, and the words people search.
-            It is free, it is hosted, and there is nothing for you to
-            maintain.
-          </p>
-          {built ? (
-            <p className="mt-4 rounded-[12px] bg-open-soft p-4 text-[16px] leading-relaxed">
-              Your website is live at{" "}
+        /* `built` covers the moment just after the button; the slug from
+           the report covers every visit after that. Reading only local
+           state meant a refresh forgot the site existed and offered to
+           build a second one. */
+        (() => {
+          const slug = built ?? report.builtSiteSlug;
+          return slug ? (
+            <section className="card relative mt-6 overflow-hidden p-6">
+              {justBuilt ? <Confetti /> : null}
+              <h2 className="text-[18px] font-bold">
+                {justBuilt
+                  ? "Hooray — your site is up!"
+                  : "Your website is live"}
+              </h2>
+              <p className="mt-2 text-[16px] leading-relaxed text-ink-soft">
+                Built from your Google listing, hosted, and nothing for you to
+                maintain.
+              </p>
               <a
-                href={shopUrl(built)}
+                href={shopUrl(slug)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold text-open-deep hover:opacity-80"
+                className="btn btn-primary mt-4 w-full"
               >
-                {shopHost(built)}
+                Go check it out →
               </a>
-            </p>
+              <p className="mt-3 text-center text-[14px] text-muted">
+                {shopHost(slug)}
+              </p>
+            </section>
           ) : (
-            <button
-              type="button"
-              onClick={build}
-              disabled={building}
-              className="btn btn-primary mt-4 w-full disabled:opacity-60"
-            >
-              {building ? "Building your website…" : "Build my free website"}
-            </button>
-          )}
-        </section>
+            <section className="card mt-6 p-6">
+              <h2 className="text-[18px] font-bold">You have no website</h2>
+              <p className="mt-2 text-[16px] leading-relaxed text-ink-soft">
+                We can build you one right now from your Google listing — your
+                services, your area, your hours, and the words people search.
+                It is free, it is hosted, and there is nothing for you to
+                maintain.
+              </p>
+              <button
+                type="button"
+                onClick={build}
+                disabled={building}
+                className="btn btn-primary mt-4 w-full disabled:opacity-60"
+              >
+                {building ? "Building your website…" : "Build my free website"}
+              </button>
+            </section>
+          );
+        })()
       )}
 
       {note ? (

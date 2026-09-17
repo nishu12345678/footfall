@@ -91,7 +91,7 @@ export default async function SiteHome({
                 </p>
               ) : null}
 
-              <h1 className="mt-6 text-[clamp(2.4rem,5.5vw,4rem)]">
+              <h1 className="mt-6 break-words text-[2.1rem] sm:text-[clamp(2.4rem,5.5vw,4rem)]">
                 {site.headline}
               </h1>
               {site.subhead ? (
@@ -109,7 +109,7 @@ export default async function SiteHome({
                     href={wa}
                     target="_blank"
                     rel="noreferrer"
-                    className="btn btn-primary"
+                    className="btn btn-primary w-full sm:w-auto"
                   >
                     <WhatsAppIcon />
                     Message on WhatsApp
@@ -124,19 +124,22 @@ export default async function SiteHome({
                     href={directions}
                     target="_blank"
                     rel="noreferrer"
-                    className="btn btn-ghost"
+                    className="btn btn-ghost w-full sm:w-auto"
                   >
                     <PinIcon />
                     Get directions
                   </a>
                 ) : null}
-                <Link href={`${base}/services`} className="btn btn-ghost">
+                <Link
+                  href={`${base}/services`}
+                  className="btn btn-ghost w-full sm:w-auto"
+                >
                   What we offer
                 </Link>
               </div>
 
               {rating !== null ? (
-                <p className="mt-7 flex items-center gap-2 text-[14px]">
+                <p className="mt-7 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px]">
                   <span className="text-star" aria-hidden>
                     {"★".repeat(Math.round(rating))}
                   </span>
@@ -173,7 +176,7 @@ export default async function SiteHome({
               What we offer
               {business.city ? ` in ${business.city}` : ""}
             </h2>
-            <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+            <ul className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-8">
               {site.services.map((service) => {
                 const link = whatsappLink(
                   data.whatsapp,
@@ -182,7 +185,7 @@ export default async function SiteHome({
                 return (
                   <li
                     key={service.name}
-                    className="card flex flex-col rounded-[22px] p-8"
+                    className="card flex flex-col rounded-[22px] p-6 sm:p-8"
                   >
                     <h3 className="text-[1.25rem]">{service.name}</h3>
                     <p className="mt-2.5 flex-1 text-[15px] leading-relaxed text-ink-soft">
@@ -248,11 +251,11 @@ export default async function SiteHome({
               ) : null}
             </div>
 
-            <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+            <ul className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-8">
               {withText.slice(0, 6).map((review) => (
                 <li
                   key={review._id}
-                  className="card rounded-[22px] p-8"
+                  className="card rounded-[22px] p-6 sm:p-8"
                 >
                   <p className="text-star" aria-label={`${review.rating} out of 5`}>
                     {"★".repeat(review.rating)}
@@ -316,7 +319,7 @@ export default async function SiteHome({
                       href={directions}
                       target="_blank"
                       rel="noreferrer"
-                      className="btn btn-ghost btn-sm mt-5"
+                      className="btn btn-ghost btn-sm mt-5 w-full sm:w-auto"
                     >
                       Get directions
                     </a>
@@ -347,7 +350,7 @@ export default async function SiteHome({
                       +
                     </span>
                   </summary>
-                  <p className="pb-4 pr-8 text-[15px] leading-relaxed text-ink-soft">
+                  <p className="pb-4 pr-6 text-[15px] leading-relaxed text-ink-soft sm:pr-8">
                     {faq.a}
                   </p>
                 </details>

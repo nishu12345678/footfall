@@ -394,7 +394,7 @@ export default function GbpPage() {
     <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-8 sm:py-12">
       <OnboardingTop step={4} edit={edit} />
 
-      <div className="no-scrollbar mt-9 flex gap-5 overflow-x-auto border-b border-rule">
+      <div className="no-scrollbar mt-9 flex snap-x gap-5 overflow-x-auto border-b border-rule">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -404,7 +404,7 @@ export default function GbpPage() {
               setSeen((s) => ({ ...s, [t.id]: true }));
               setDraft("");
             }}
-            className={`-mb-px flex-none border-b-2 pb-2.5 text-[13px] font-semibold transition-colors ${
+            className={`-mb-px flex-none snap-start border-b-2 pb-2.5 pt-2 text-[13px] font-semibold transition-colors ${
               tab === t.id
                 ? "border-pin text-pin"
                 : "border-transparent text-muted hover:text-ink"
@@ -476,7 +476,7 @@ export default function GbpPage() {
             </form>
 
             <div className="mt-8 border-t border-rule-soft pt-6">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-[15px] font-semibold text-ink">
                   Areas near you
                 </p>
@@ -496,7 +496,7 @@ export default function GbpPage() {
                         void findAreas(km);
                       }}
                       aria-pressed={radiusKm === km}
-                      className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
+                      className={`rounded-full px-3 py-1.5 text-[11px] font-semibold transition-colors ${
                         radiusKm === km
                           ? "bg-white text-ink shadow-card"
                           : "text-muted hover:text-ink"
@@ -602,7 +602,7 @@ export default function GbpPage() {
                       type="button"
                       onClick={() => void removeArea({ id: area._id })}
                       aria-label={`remove ${area.name}`}
-                      className="grid h-4 w-4 place-items-center rounded-full text-pin hover:bg-pin hover:text-white"
+                      className="-my-1 grid h-6 w-6 place-items-center rounded-full text-pin hover:bg-pin hover:text-white"
                     >
                       ×
                     </button>
@@ -668,7 +668,7 @@ export default function GbpPage() {
                           type="button"
                           onClick={() => void removeKeyword({ id: kw._id })}
                           aria-label={`Remove ${kw.term}`}
-                          className="grid h-4 w-4 place-items-center rounded-full text-pin hover:bg-pin hover:text-white"
+                          className="-my-1 grid h-6 w-6 place-items-center rounded-full text-pin hover:bg-pin hover:text-white"
                         >
                           ×
                         </button>
@@ -688,7 +688,7 @@ export default function GbpPage() {
                   <button
                     type="button"
                     onClick={() => suggestions.forEach((r) => trackTerm(r.term))}
-                    className="flex-none text-[13px] font-medium text-pin hover:opacity-80"
+                    className="-my-2 flex-none py-2 text-[13px] font-medium text-pin hover:opacity-80"
                   >
                     Add all {suggestions.length}
                   </button>
@@ -795,7 +795,7 @@ export default function GbpPage() {
               {hours.map((row) => (
                 <li
                   key={row.day}
-                  className="inset-row flex items-center gap-3 px-4 py-3.5"
+                  className="inset-row flex flex-wrap items-center gap-x-3 gap-y-2.5 px-4 py-3.5 sm:flex-nowrap"
                 >
                   <span className="w-[76px] flex-none text-[14px] font-semibold">
                     {DAYS[row.day]}
@@ -806,14 +806,14 @@ export default function GbpPage() {
                       closed
                     </span>
                   ) : (
-                    <span className="flex flex-1 items-center gap-1.5">
+                    <span className="order-last flex w-full items-center gap-1.5 sm:order-none sm:w-auto sm:flex-1">
                       <input
                         type="time"
                         value={row.open ?? "10:00"}
                         onChange={(e) =>
                           patchHour(row.day, { open: e.target.value })
                         }
-                        className="w-[92px] rounded-[10px] border border-rule bg-white px-2 py-1.5 text-[13px] outline-none focus:border-pin"
+                        className="min-w-0 flex-1 rounded-[10px] border border-rule bg-white px-2 py-2.5 text-[13px] outline-none focus:border-pin sm:w-[92px] sm:flex-none sm:py-1.5"
                       />
                       <span aria-hidden className="text-muted">
                         –
@@ -824,7 +824,7 @@ export default function GbpPage() {
                         onChange={(e) =>
                           patchHour(row.day, { close: e.target.value })
                         }
-                        className="w-[92px] rounded-[10px] border border-rule bg-white px-2 py-1.5 text-[13px] outline-none focus:border-pin"
+                        className="min-w-0 flex-1 rounded-[10px] border border-rule bg-white px-2 py-2.5 text-[13px] outline-none focus:border-pin sm:w-[92px] sm:flex-none sm:py-1.5"
                       />
                     </span>
                   )}
@@ -832,7 +832,7 @@ export default function GbpPage() {
                   <button
                     type="button"
                     onClick={() => patchHour(row.day, { closed: !row.closed })}
-                    className="flex-none text-[13px] font-medium text-pin hover:opacity-80"
+                    className="-my-2 ml-auto flex-none py-2 text-[13px] font-medium text-pin hover:opacity-80 sm:ml-0"
                   >
                     {row.closed ? "open" : "closed"}
                   </button>
@@ -923,7 +923,7 @@ export default function GbpPage() {
 
       <Link
         href={edit ? "/app/settings" : ONBOARDING_STEPS[4].href}
-        className="mt-4 block text-center text-[13px] font-medium text-pin hover:opacity-80"
+        className="mt-2 block py-2 text-center text-[13px] font-medium text-pin hover:opacity-80"
       >
         {edit ? "Back to settings without saving the rest" : "Skip the rest of this step"}
       </Link>

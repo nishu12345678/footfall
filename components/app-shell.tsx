@@ -144,8 +144,8 @@ export function AppHeader({
   logoUrl?: string;
 }) {
   return (
-    <header className="sticky top-0 z-30 material hairline-b">
-      <div className="mx-auto flex max-w-xl items-center gap-3 px-6 py-3.5">
+    <header className="sticky top-0 z-30 material hairline-b pt-[env(safe-area-inset-top)]">
+      <div className="mx-auto flex max-w-xl items-center gap-2.5 px-4 py-3.5 sm:gap-3 sm:px-6">
         {logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -176,14 +176,14 @@ export function AppHeader({
           href={SUPPORT_WHATSAPP}
           target="_blank"
           rel="noreferrer"
-          className="pressable flex-none rounded-full bg-black/5 px-3.5 py-1.5 text-[13px] font-semibold text-ink"
+          className="pressable inline-flex min-h-10 flex-none items-center rounded-full bg-black/5 px-3.5 py-1.5 text-[13px] font-semibold text-ink"
         >
           Help
         </a>
         <Link
           href="/app/settings"
           aria-label="Settings"
-          className="pressable grid h-9 w-9 flex-none place-items-center rounded-full bg-black/5 text-ink"
+          className="pressable grid h-10 w-10 flex-none place-items-center rounded-full bg-black/5 text-ink"
         >
           <IconGear />
         </Link>
@@ -208,7 +208,7 @@ export function BottomNav() {
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium tracking-[0.01em] transition-colors ${
+                className={`flex min-h-12 flex-col items-center gap-0.5 px-0.5 py-2.5 text-center text-[10px] font-medium leading-tight tracking-[0.01em] transition-colors ${
                   active ? "text-pin" : "text-muted hover:text-ink"
                 }`}
               >
@@ -238,7 +238,9 @@ export function AppScreen({
   return (
     <div className="flex min-h-screen flex-col bg-paper-2">
       <AppHeader name={name} location={location} logoUrl={logoUrl} />
-      <div className="mx-auto w-full max-w-xl flex-1 px-6 py-8">{children}</div>
+      <div className="mx-auto w-full max-w-xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
+        {children}
+      </div>
       <BottomNav />
     </div>
   );

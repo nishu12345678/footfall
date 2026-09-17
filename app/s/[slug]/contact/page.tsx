@@ -82,15 +82,15 @@ export default async function ContactPage({
           <span>Contact</span>
         </nav>
 
-        <h1 className="mt-5 text-[clamp(2.4rem,5.5vw,4rem)]">
+        <h1 className="mt-5 break-words text-[2.1rem] sm:text-[clamp(2.4rem,5.5vw,4rem)]">
           Contact {business.orgName}
         </h1>
         <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-ink-soft">
           The quickest way to reach us is WhatsApp — we answer the same day.
         </p>
 
-        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:gap-8">
-          <div className="card rounded-[22px] p-8">
+        <div className="mt-10 grid gap-4 sm:mt-14 sm:grid-cols-2 sm:gap-6 lg:gap-8">
+          <div className="card rounded-[22px] p-6 sm:p-8">
             <h2 className="text-[1.3rem]">Where we are</h2>
             {business.streetAddress ? (
               <address className="mt-4 text-[15px] not-italic leading-relaxed text-ink-soft">
@@ -108,14 +108,14 @@ export default async function ContactPage({
                 href={directions}
                 target="_blank"
                 rel="noreferrer"
-                className="btn btn-ghost btn-sm mt-6"
+                className="btn btn-ghost btn-sm mt-6 w-full sm:w-auto"
               >
                 Get directions
               </a>
             ) : null}
           </div>
 
-          <div className="card rounded-[22px] p-8">
+          <div className="card rounded-[22px] p-6 sm:p-8">
             <h2 className="text-[1.3rem]">Talk to us</h2>
             <div className="mt-5 flex flex-col gap-2.5">
               {wa ? (
@@ -176,7 +176,7 @@ export default async function ContactPage({
             rel="noreferrer"
             className="card pressable mt-16 block overflow-hidden rounded-[22px] sm:mt-20"
           >
-            <span className="grid h-[220px] place-items-center bg-paper-2 text-[15px] text-ink-soft">
+            <span className="grid h-[180px] place-items-center bg-paper-2 px-6 text-center text-[15px] text-ink-soft sm:h-[220px]">
               Open {business.orgName} on Google Maps →
             </span>
           </a>

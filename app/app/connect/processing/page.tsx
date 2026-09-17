@@ -173,7 +173,7 @@ export default function ProcessingPage() {
               marketing before, or you signed in with a different Google
               account.
             </p>
-            <Link href="/app/connect" className="btn btn-ghost mt-9 w-full">
+            <Link href="/app/connect" className="btn btn-ghost mt-9 w-full px-4">
               Try another Google account
             </Link>
           </div>

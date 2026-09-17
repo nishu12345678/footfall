@@ -219,7 +219,7 @@ export default function PerformancePage() {
             type="button"
             onClick={() => setDays(r.days)}
             aria-pressed={days === r.days}
-            className={`flex-1 rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${
+            className={`min-h-9 flex-1 rounded-full px-2 py-1.5 text-[13px] font-semibold transition-colors sm:px-3 ${
               days === r.days ? "bg-white text-ink shadow-card" : "text-muted"
             }`}
           >
@@ -272,14 +272,14 @@ export default function PerformancePage() {
       ) : null}
 
       {/* totals */}
-      <div className="mt-6 grid grid-cols-3 gap-3">
+      <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-3">
         {METRICS.map((m) => (
           <button
             key={m.key}
             type="button"
             onClick={() => setChart(m.key)}
             aria-pressed={chart === m.key}
-            className={`pressable rounded-[14px] p-4 text-center shadow-card transition-colors ${
+            className={`pressable min-w-0 rounded-[14px] p-3 text-center shadow-card transition-colors sm:p-4 ${
               chart === m.key ? "bg-pin-soft" : "bg-white"
             }`}
           >
@@ -290,7 +290,7 @@ export default function PerformancePage() {
             >
               {m.label}
             </p>
-            <p className="mt-1 text-[22px] font-bold leading-none tracking-[-0.02em]">
+            <p className="mt-1 text-[19px] font-bold leading-none tracking-[-0.02em] sm:text-[22px]">
               {window.length ? totals[m.key].toLocaleString("en-IN") : "—"}
             </p>
           </button>
@@ -384,8 +384,8 @@ export default function PerformancePage() {
                   const checked = kw.checkedAt !== undefined;
                   return (
                     <li key={kw._id} className="inset-row px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <span className="min-w-0 flex-1 truncate text-[14px]">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                        <span className="min-w-[7rem] flex-1 truncate text-[14px]">
                           {kw.term}
                         </span>
                         {moved !== null && moved !== 0 ? (
@@ -420,8 +420,8 @@ export default function PerformancePage() {
 
                       {checked && (kw.coverageTotal ?? 0) > 1 ? (
                         <div className="mt-2">
-                          <div className="flex items-center gap-2">
-                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-paper-3">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <div className="h-1.5 min-w-[6rem] flex-1 overflow-hidden rounded-full bg-paper-3">
                               <div
                                 className={`h-full rounded-full ${
                                   (kw.coverageFound ?? 0) === 0
@@ -434,7 +434,7 @@ export default function PerformancePage() {
                               />
                             </div>
                             <span
-                              className="flex-none text-[11px] text-muted"
+                              className="min-w-0 text-[11px] leading-snug text-muted"
                               title="We search from several points spread across your service area. This is how many of those points show your listing in the results."
                             >
                               found in {kw.coverageFound ?? 0} of{" "}
@@ -450,7 +450,7 @@ export default function PerformancePage() {
                           type="button"
                           onClick={() => void drawGrid(kw.term)}
                           disabled={gridding !== null}
-                          className="mt-2 text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
+                          className="mt-2 inline-flex min-h-10 items-center text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
                         >
                           {gridding === kw.term
                             ? "Checking around you…"

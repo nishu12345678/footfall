@@ -20,7 +20,7 @@ export function LegalPage({
   children: React.ReactNode;
 }) {
   return (
-    <main className="min-h-dvh bg-paper px-6 py-24 sm:px-10">
+    <main className="min-h-dvh bg-paper px-5 py-16 sm:px-10 sm:py-24">
       <div className="mx-auto max-w-3xl">
         <Link
           href="/"
@@ -35,7 +35,7 @@ export function LegalPage({
           footfall
         </Link>
 
-        <h1 className="mt-12 font-display text-[34px] leading-tight font-extrabold tracking-[-0.03em] text-ink sm:text-[46px]">
+        <h1 className="mt-10 font-display text-[30px] leading-tight font-extrabold tracking-[-0.03em] text-ink sm:mt-12 sm:text-[46px]">
           {title}
         </h1>
         <p className="mt-3 text-[13px] font-medium text-muted">
@@ -45,7 +45,7 @@ export function LegalPage({
           {intro}
         </p>
 
-        <div className="mt-16 space-y-12">{children}</div>
+        <div className="mt-12 space-y-10 sm:mt-16 sm:space-y-12">{children}</div>
 
         <div className="mt-20 border-t border-black/8 pt-8">
           <p className="caption leading-relaxed">
@@ -70,7 +70,7 @@ export function Section({
 }) {
   return (
     <section id={`s${n}`} className="scroll-mt-8">
-      <h2 className="font-display text-[22px] leading-snug font-bold tracking-tight text-ink">
+      <h2 className="font-display text-[20px] leading-snug font-bold tracking-tight text-ink sm:text-[22px]">
         <span className="mr-2 font-bold text-pin">{n}.</span>
         {title}
       </h2>
@@ -87,7 +87,9 @@ export function P({ children }: { children: React.ReactNode }) {
 
 export function UL({ children }: { children: React.ReactNode }) {
   return (
-    <ul className="ml-1 space-y-2.5 border-l border-black/10 pl-5">{children}</ul>
+    <ul className="ml-1 space-y-2.5 border-l border-black/10 pl-4 sm:pl-5">
+      {children}
+    </ul>
   );
 }
 
@@ -98,14 +100,16 @@ export function LI({ children }: { children: React.ReactNode }) {
 /** A pulled-out block for the clauses Google's reviewers look for. */
 export function Callout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-[16px] bg-paper-2 p-6 text-[15px] leading-relaxed text-ink">
+    <div className="rounded-[16px] bg-paper-2 p-5 text-[15px] leading-relaxed text-ink sm:p-6">
       {children}
     </div>
   );
 }
 
 export function Term({ children }: { children: React.ReactNode }) {
-  return <strong className="font-semibold text-ink">{children}</strong>;
+  return (
+    <strong className="font-semibold break-words text-ink">{children}</strong>
+  );
 }
 
 export function A({
@@ -118,7 +122,7 @@ export function A({
   return (
     <a
       href={href}
-      className="text-pin underline underline-offset-2 hover:no-underline"
+      className="break-words text-pin underline underline-offset-2 hover:no-underline"
       {...(href.startsWith("http")
         ? { target: "_blank", rel: "noopener noreferrer" }
         : {})}

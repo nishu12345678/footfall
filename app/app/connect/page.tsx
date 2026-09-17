@@ -54,7 +54,7 @@ export default async function ConnectPage({
           </p>
         ) : null}
 
-        <a href="/api/google/start" className="btn btn-primary mt-10 w-full">
+        <a href="/api/google/start" className="btn btn-primary mt-10 w-full px-4">
           <span aria-hidden>◎</span> Connect Google Business Profile
         </a>
 

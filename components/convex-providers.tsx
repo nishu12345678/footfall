@@ -17,7 +17,7 @@ const client = convexUrl ? new ConvexReactClient(convexUrl) : null;
 export function ConvexProviders({ children }: { children: ReactNode }) {
   if (!client) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
+      <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 py-10 sm:px-6">
         <div className="card p-6">
           <h1 className="text-[1.6rem]">Backend not connected</h1>
           <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">

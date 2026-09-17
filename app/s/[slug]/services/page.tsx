@@ -72,7 +72,7 @@ export default async function ServicesPage({
           <span>Services</span>
         </nav>
 
-        <h1 className="mt-5 text-[clamp(2.4rem,5.5vw,4rem)]">
+        <h1 className="mt-5 break-words text-[2.1rem] sm:text-[clamp(2.4rem,5.5vw,4rem)]">
           What we offer{business.city ? ` in ${business.city}` : ""}
         </h1>
         <p className="mt-6 max-w-3xl text-[17px] leading-relaxed text-ink-soft">
@@ -82,7 +82,7 @@ export default async function ServicesPage({
           Message us about any of it and we&rsquo;ll answer the same day.
         </p>
 
-        <ul className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+        <ul className="mt-10 grid gap-4 sm:mt-14 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-8">
           {site.services.map((service) => {
             const link = whatsappLink(
               data.whatsapp,
@@ -91,7 +91,7 @@ export default async function ServicesPage({
             return (
               <li
                 key={service.name}
-                className="card flex flex-col rounded-[22px] p-8"
+                className="card flex flex-col rounded-[22px] p-6 sm:p-8"
               >
                 <h2 className="text-[1.25rem]">{service.name}</h2>
                 <p className="mt-2.5 flex-1 text-[15px] leading-relaxed text-ink-soft">

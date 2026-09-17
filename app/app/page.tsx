@@ -91,7 +91,7 @@ export default function HomePage() {
         <p className="text-[13px] font-medium text-ink-soft">
           This week&rsquo;s reviews
         </p>
-        <div className="mt-1 flex items-baseline justify-between gap-3">
+        <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1.5">
           <p className="text-[17px] font-semibold leading-tight">
             {reviews.thisWeek > 0
               ? `${reviews.thisWeek} new this week`
@@ -129,8 +129,8 @@ export default function HomePage() {
         <div className="mt-5 flex items-center justify-between gap-1 border-t border-rule-soft pt-4 text-center">
           {["More customers", "More reviews", "Better ranking"].map(
             (step, i) => (
-              <div key={step} className="flex flex-1 items-center gap-1">
-                <span className="flex-1 text-[10px] font-medium text-muted">
+              <div key={step} className="flex min-w-0 flex-1 items-center gap-1">
+                <span className="min-w-0 flex-1 text-[10px] font-medium leading-tight text-muted">
                   {step}
                 </span>
                 {i < 2 ? (
@@ -163,7 +163,7 @@ export default function HomePage() {
           type="button"
           onClick={() => void refreshListing()}
           disabled={busy}
-          className="mt-5 text-[13px] font-medium text-pin hover:opacity-80"
+          className="mt-5 inline-flex min-h-10 items-center text-[13px] font-medium text-pin hover:opacity-80"
         >
           Refresh listing from Google
         </button>

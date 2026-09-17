@@ -193,7 +193,7 @@ export default function LoginPage() {
                     type="button"
                     onClick={() => reset(m)}
                     aria-pressed={method === m}
-                    className={`rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors ${
+                    className={`min-h-10 rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors ${
                       method === m
                         ? "bg-white text-ink shadow-card"
                         : "text-muted"
@@ -295,11 +295,11 @@ export default function LoginPage() {
               {busy === "verify" ? "checking…" : "verify"}
             </button>
 
-            <div className="mt-5 flex items-center justify-between text-[13px]">
+            <div className="mt-3 flex items-center justify-between text-[13px]">
               <button
                 type="button"
                 onClick={() => reset(method)}
-                className="font-medium text-pin hover:opacity-80"
+                className="py-2 font-medium text-pin hover:opacity-80"
               >
                 {method === "phone" ? "change number" : "change email"}
               </button>
@@ -307,7 +307,7 @@ export default function LoginPage() {
                 type="button"
                 disabled={secondsLeft > 0 || busy !== null}
                 onClick={() => void sendCode()}
-                className="font-medium text-pin hover:opacity-80 disabled:opacity-50"
+                className="py-2 font-medium text-pin hover:opacity-80 disabled:opacity-50"
               >
                 {secondsLeft > 0 ? `resend in ${secondsLeft}s` : "resend code"}
               </button>

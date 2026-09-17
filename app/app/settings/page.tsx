@@ -216,7 +216,7 @@ export default function SettingsPage() {
           <div className="hairline-t px-5 py-3.5">
             <Link
               href="/app/connect"
-              className="text-[13px] font-medium text-pin hover:opacity-80"
+              className="-my-2 inline-block py-2 text-[13px] font-medium text-pin hover:opacity-80"
             >
               + connect another business
             </Link>
@@ -249,7 +249,7 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => setConfirming(null)}
                     disabled={busy !== null}
-                    className="btn btn-ghost btn-sm"
+                    className="btn btn-ghost btn-sm px-3 sm:px-5"
                   >
                     keep it
                   </button>
@@ -257,7 +257,7 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => void doDisconnect()}
                     disabled={busy !== null}
-                    className="btn btn-primary btn-sm disabled:opacity-50"
+                    className="btn btn-primary btn-sm px-3 disabled:opacity-50 sm:px-5"
                   >
                     {busy === "disconnect" ? "disconnecting…" : "yes, disconnect"}
                   </button>
@@ -267,7 +267,7 @@ export default function SettingsPage() {
                   type="button"
                   onClick={() => setConfirming("disconnect")}
                   disabled={busy !== null}
-                  className="btn btn-ghost btn-sm mt-4 w-full"
+                  className="btn btn-ghost btn-sm mt-4 w-full px-4"
                 >
                   Disconnect Google Business Profile
                 </button>
@@ -278,7 +278,7 @@ export default function SettingsPage() {
               <p className="text-[13px] leading-relaxed text-ink-soft">
                 Everything in the app comes from your Google listing.
               </p>
-              <Link href="/app/connect" className="btn btn-primary btn-sm mt-4 w-full">
+              <Link href="/app/connect" className="btn btn-primary btn-sm mt-4 w-full px-4">
                 Connect Google Business Profile
               </Link>
             </>
@@ -338,7 +338,7 @@ export default function SettingsPage() {
                 type="button"
                 onClick={() => setConfirming(null)}
                 disabled={busy !== null}
-                className="btn btn-ghost btn-sm"
+                className="btn btn-ghost btn-sm px-3 sm:px-5"
               >
                 Cancel
               </button>
@@ -346,7 +346,7 @@ export default function SettingsPage() {
                 type="button"
                 onClick={() => void doSignOutEverywhere()}
                 disabled={busy !== null}
-                className="btn btn-primary btn-sm disabled:opacity-50"
+                className="btn btn-primary btn-sm px-3 disabled:opacity-50 sm:px-5"
               >
                 {busy === "everywhere" ? "Signing out…" : "Sign out everywhere"}
               </button>
@@ -379,7 +379,7 @@ function Row({
   const inner = (
     <>
       <span className="min-w-0 flex-1 text-[14px] font-medium">{label}</span>
-      <span className="truncate text-[13px] text-muted">{value}</span>
+      <span className="min-w-0 truncate text-[13px] text-muted">{value}</span>
       {href ? (
         <span aria-hidden className="flex-none text-muted">
           ›

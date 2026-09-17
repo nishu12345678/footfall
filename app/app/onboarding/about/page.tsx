@@ -130,7 +130,7 @@ export default function AboutPage() {
               setTab(t);
               setDraft("");
             }}
-            className={`rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${
+            className={`min-h-10 rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${
               tab === t ? "bg-white text-ink shadow-card" : "text-muted"
             }`}
           >
@@ -181,7 +181,7 @@ export default function AboutPage() {
                       type="button"
                       onClick={() => void remove({ kind: tab, id: row._id })}
                       aria-label={`remove ${row.label}`}
-                      className="grid h-4 w-4 place-items-center rounded-full text-pin hover:bg-pin hover:text-white"
+                      className="-my-1 grid h-6 w-6 place-items-center rounded-full text-pin hover:bg-pin hover:text-white"
                     >
                       ×
                     </button>
@@ -204,7 +204,7 @@ export default function AboutPage() {
               type="button"
               onClick={() => void getSuggestions()}
               disabled={thinking}
-              className="flex-none text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
+              className="-my-2 -mr-2 flex-none px-2 py-2 text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
             >
               more
             </button>

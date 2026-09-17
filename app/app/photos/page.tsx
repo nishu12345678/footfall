@@ -372,16 +372,16 @@ export default function PhotosPage() {
 
       {/* ------------------------ your photos ---------------------------- */}
       <section className="mt-10">
-        <div className="flex items-baseline justify-between gap-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
           <h2 className="text-[15px] font-semibold text-ink">
             Your photos and videos
           </h2>
-          <div className="flex flex-none items-baseline gap-3">
+          <div className="flex flex-wrap items-baseline gap-3">
             {live.length > 9 ? (
               <button
                 type="button"
                 onClick={() => setShowAll((s) => !s)}
-                className="text-[13px] font-medium text-pin hover:opacity-80"
+                className="inline-flex min-h-10 items-center text-[13px] font-medium text-pin hover:opacity-80"
               >
                 {showAll ? "Show less" : `View all ${live.length}`}
               </button>
@@ -396,7 +396,7 @@ export default function PhotosPage() {
               type="button"
               onClick={() => void resync()}
               disabled={syncing}
-              className="text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
+              className="inline-flex min-h-10 items-center text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
             >
               {syncing ? "Checking…" : "Sync from Google"}
             </button>
@@ -422,7 +422,7 @@ export default function PhotosPage() {
 
       {/* --------------------------- scheduled --------------------------- */}
       <section className="mt-10">
-        <div className="flex items-baseline justify-between gap-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
           <h2 className="text-[15px] font-semibold text-ink">
             Scheduled photos and videos
           </h2>
@@ -455,9 +455,9 @@ export default function PhotosPage() {
                     {items.map(({ date, item }) => (
                       <li
                         key={item._id}
-                        className="inset-row flex items-center gap-3.5 px-4 py-3.5"
+                        className="inset-row flex items-center gap-3 px-4 py-3.5 sm:gap-3.5"
                       >
-                        <span className="w-16 flex-none">
+                        <span className="w-14 flex-none sm:w-16">
                           <Tile item={item} />
                         </span>
                         <span className="min-w-0 flex-1">
@@ -472,7 +472,7 @@ export default function PhotosPage() {
                             type="button"
                             onClick={() => void publishNow(item._id)}
                             disabled={publishing !== null}
-                            className="mt-1 text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
+                            className="mt-1 inline-flex min-h-9 items-center text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
                           >
                             {publishing === item._id
                               ? "sending…"
@@ -483,7 +483,7 @@ export default function PhotosPage() {
                           type="button"
                           onClick={() => void removePhoto({ id: item._id })}
                           aria-label="remove"
-                          className="pressable grid h-7 w-7 flex-none place-items-center rounded-full bg-black/5 text-[13px] text-ink hover:bg-black/10"
+                          className="pressable grid h-10 w-10 flex-none place-items-center rounded-full bg-black/5 text-[15px] text-ink hover:bg-black/10"
                         >
                           ×
                         </button>
@@ -508,7 +508,7 @@ export default function PhotosPage() {
                 <button
                   type="button"
                   onClick={() => void publishNow(item._id)}
-                  className="mt-1 w-full text-[12px] font-medium text-pin hover:opacity-80"
+                  className="mt-1 inline-flex min-h-9 w-full items-center justify-center text-[12px] font-medium text-pin hover:opacity-80"
                 >
                   try again
                 </button>

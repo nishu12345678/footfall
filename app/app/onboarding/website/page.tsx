@@ -89,7 +89,7 @@ export default function WebsiteStepPage() {
   /* ------------------------- they already have one ---------------------- */
   if (hasOwnSite) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-12">
+      <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-8 sm:py-12">
         <OnboardingTop step={5} edit={edit} />
 
         <div className="mt-9 flex-1">
@@ -175,7 +175,7 @@ export default function WebsiteStepPage() {
 
   /* --------------------------- no website yet --------------------------- */
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-12">
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-8 sm:py-12">
       <OnboardingTop step={5} edit={edit} />
 
       <div className="mt-9 flex-1">
@@ -201,7 +201,7 @@ export default function WebsiteStepPage() {
                 <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-                <span className="truncate font-mono text-[11px] text-muted">
+                <span className="min-w-0 truncate font-mono text-[11px] text-muted">
                   /s/{site.slug}
                 </span>
               </div>

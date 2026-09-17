@@ -65,7 +65,10 @@ export function UtilityBar({ data }: { data: SiteData }) {
         ) : null}
 
         {tel ? (
-          <a href={`tel:${tel}`} className="font-semibold hover:text-pin">
+          <a
+            href={`tel:${tel}`}
+            className="-my-2 inline-flex min-h-10 items-center font-semibold hover:text-pin"
+          >
             {business.phone}
           </a>
         ) : null}
@@ -97,7 +100,7 @@ export async function SiteNav({ data }: { data: SiteData }) {
 
   return (
     <header className="material hairline-b sticky top-0 z-40">
-      <nav className="mx-auto flex max-w-[1280px] items-center gap-4 px-6 py-4 sm:px-10 lg:px-14">
+      <nav className="mx-auto flex max-w-[1280px] items-center gap-3 px-4 py-3 sm:gap-4 sm:px-10 sm:py-4 lg:px-14">
         <Link href={base || "/"} className="flex min-w-0 items-center gap-2.5">
           {business.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -133,13 +136,30 @@ export async function SiteNav({ data }: { data: SiteData }) {
             href={wa}
             target="_blank"
             rel="noreferrer"
-            className="btn btn-primary btn-sm ml-auto md:ml-0"
+            className="btn btn-primary btn-sm ml-auto flex-none md:ml-0"
           >
             <WhatsAppIcon />
             Message us
           </a>
         ) : null}
       </nav>
+
+      {/* The desktop link row above hides below md — a phone still needs a
+          way to reach Services/About/Contact, so it gets a horizontally
+          scrolling tab strip instead of a hamburger. No JS: this whole
+          component renders on the server, and four links don't need a
+          disclosure control. */}
+      <div className="no-scrollbar flex items-center gap-6 overflow-x-auto border-t border-rule-soft px-4 py-1 sm:px-10 md:hidden">
+        {links.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className="inline-flex min-h-10 flex-none items-center py-0.5 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink"
+          >
+            {link.label}
+          </Link>
+        ))}
+      </div>
     </header>
   );
 }
@@ -150,7 +170,7 @@ export async function SiteFooter({ data }: { data: SiteData }) {
   const directions = directionsLink(business);
 
   return (
-    <footer className="mt-24 bg-ink text-paper">
+    <footer className="mt-24 bg-ink pb-[env(safe-area-inset-bottom)] text-paper">
       <div className="mx-auto grid max-w-[1280px] gap-10 px-6 py-16 sm:grid-cols-2 sm:px-10 lg:grid-cols-4 lg:gap-8 lg:px-14">
         <div>
           <p className="text-[17px] font-semibold tracking-[-0.01em] text-white">{business.orgName}</p>
@@ -210,7 +230,7 @@ export async function SiteFooter({ data }: { data: SiteData }) {
                 href={`https://wa.me/${whatsapp}`}
                 target="_blank"
                 rel="noreferrer"
-                className="pressable rounded-full bg-white/10 px-3.5 py-1.5 text-[12px] font-medium text-white/80 transition-colors hover:bg-white/15 hover:text-white"
+                className="pressable inline-flex min-h-10 items-center rounded-full bg-white/10 px-3.5 text-[12px] font-medium text-white/80 transition-colors hover:bg-white/15 hover:text-white"
               >
                 WhatsApp
               </a>
@@ -220,7 +240,7 @@ export async function SiteFooter({ data }: { data: SiteData }) {
                 href={directions}
                 target="_blank"
                 rel="noreferrer"
-                className="pressable rounded-full bg-white/10 px-3.5 py-1.5 text-[12px] font-medium text-white/80 transition-colors hover:bg-white/15 hover:text-white"
+                className="pressable inline-flex min-h-10 items-center rounded-full bg-white/10 px-3.5 text-[12px] font-medium text-white/80 transition-colors hover:bg-white/15 hover:text-white"
               >
                 Directions
               </a>
@@ -230,7 +250,7 @@ export async function SiteFooter({ data }: { data: SiteData }) {
                 href={business.reviewUri}
                 target="_blank"
                 rel="noreferrer"
-                className="pressable rounded-full bg-white/10 px-3.5 py-1.5 text-[12px] font-medium text-white/80 transition-colors hover:bg-white/15 hover:text-white"
+                className="pressable inline-flex min-h-10 items-center rounded-full bg-white/10 px-3.5 text-[12px] font-medium text-white/80 transition-colors hover:bg-white/15 hover:text-white"
               >
                 Leave a review
               </a>
@@ -312,7 +332,7 @@ export function ContactBand({ data }: { data: SiteData }) {
 
   return (
     <section className="mx-auto max-w-[1280px] px-6 sm:px-10 lg:px-14">
-      <div className="rounded-[32px] bg-ink p-10 text-white shadow-lift sm:p-14">
+      <div className="rounded-[24px] bg-ink px-6 py-10 text-white shadow-lift sm:rounded-[32px] sm:p-14">
         <h2 className="text-[clamp(2rem,4.5vw,3rem)] text-white">
           Come and see us
         </h2>
@@ -321,9 +341,14 @@ export function ContactBand({ data }: { data: SiteData }) {
             ? `We're in ${business.city}. Message us on WhatsApp or call — we'll tell you what you need to know before you travel.`
             : "Message us on WhatsApp or call, and we'll tell you what you need before you travel."}
         </p>
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           {wa ? (
-            <a href={wa} target="_blank" rel="noreferrer" className="btn btn-whatsapp">
+            <a
+              href={wa}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn-whatsapp px-5 sm:px-[30px]"
+            >
               <WhatsAppIcon />
               Message on WhatsApp
             </a>
@@ -331,7 +356,7 @@ export function ContactBand({ data }: { data: SiteData }) {
           {tel ? (
             <a
               href={`tel:${tel}`}
-              className="btn bg-white/10 text-white backdrop-blur hover:bg-white/20"
+              className="btn bg-white/10 px-5 text-white backdrop-blur hover:bg-white/20 sm:px-[30px]"
             >
               Call {business.phone}
             </a>

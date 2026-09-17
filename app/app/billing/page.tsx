@@ -371,7 +371,7 @@ export default function BillingPage() {
       <BackButton fallback={status.active ? "/app" : "/app/report"} className="-ml-2 mb-4" />
 
       {status.active ? (
-        <section className="card p-6">
+        <section className="card p-5 sm:p-6">
           <p className="text-[13px] font-medium uppercase tracking-[0.05em] text-open-deep">
             Active
           </p>
@@ -403,7 +403,7 @@ export default function BillingPage() {
                 onboardingComplete: status.business.onboardingComplete,
                 gbpLocationName: status.business.connected ? "connected" : undefined,
               })}
-              className="btn btn-primary mt-8 w-full"
+              className="btn btn-primary mt-8 w-full px-4"
             >
               continue setup — step {status.business.onboardingStep} of 6
             </Link>
@@ -416,7 +416,7 @@ export default function BillingPage() {
             <button
               type="button"
               onClick={() => setExtendOk(true)}
-              className="mt-4 w-full text-center text-[14px] font-medium text-pin hover:opacity-80"
+              className="mt-2 w-full py-2 text-center text-[14px] font-medium text-pin hover:opacity-80"
             >
               Pay for another period now
             </button>
@@ -540,7 +540,7 @@ export default function BillingPage() {
             return (
               <section
                 key={p.id}
-                className={`rounded-[18px] bg-white p-6 ${
+                className={`rounded-[18px] bg-white p-5 sm:p-6 ${
                   featured ? "shadow-lift" : "shadow-card"
                 }`}
               >

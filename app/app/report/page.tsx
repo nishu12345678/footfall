@@ -180,7 +180,7 @@ export default function ReportPage() {
   };
 
   return (
-    <main className="mx-auto max-w-xl px-6 py-8 sm:py-12">
+    <main className="mx-auto max-w-xl px-4 py-8 sm:px-6 sm:py-12">
       {/* Settings must stay reachable from here: for an unpaid business the
           paywall routes every app screen back to this report, and Settings
           is where disconnecting, switching business and connecting another
@@ -228,7 +228,7 @@ export default function ReportPage() {
       </p>
 
       {/* The headline number. Blunt on purpose — this is the reason to pay. */}
-      <section className="card mt-9 p-6">
+      <section className="card mt-9 p-5 sm:p-6">
         <p className="text-[17px] leading-relaxed">
           We found{" "}
           <strong className="text-pin">
@@ -237,17 +237,17 @@ export default function ReportPage() {
           </strong>{" "}
           right now.
         </p>
-        <dl className="mt-5 grid grid-cols-3 gap-3 border-t border-rule-soft pt-5">
+        <dl className="mt-5 grid grid-cols-3 gap-2 border-t border-rule-soft pt-5 sm:gap-3">
           {[
             ["Photos", report.counts.photos],
             ["Reviews", report.counts.reviews],
             ["Unanswered", report.counts.unansweredReviews],
           ].map(([label, value]) => (
-            <div key={String(label)}>
-              <dt className="text-[13px] font-medium uppercase tracking-[0.05em] text-muted">
+            <div key={String(label)} className="min-w-0">
+              <dt className="text-[11px] font-medium uppercase tracking-[0.04em] text-muted sm:text-[13px] sm:tracking-[0.05em]">
                 {label}
               </dt>
-              <dd className="mt-1 text-[1.6rem] font-extrabold leading-none">
+              <dd className="mt-1 text-[1.4rem] font-extrabold leading-none sm:text-[1.6rem]">
                 {value}
               </dd>
             </div>
@@ -263,7 +263,7 @@ export default function ReportPage() {
           type="button"
           onClick={readNow}
           disabled={reading}
-          className="text-[14px] font-semibold text-pin hover:opacity-80 disabled:opacity-60"
+          className="inline-flex min-h-10 items-center text-[14px] font-semibold text-pin hover:opacity-80 disabled:opacity-60"
         >
           {reading ? "Reading…" : "Refresh"}
         </button>
@@ -275,7 +275,7 @@ export default function ReportPage() {
           return (
             <li
               key={f.id}
-              className="rounded-[18px] bg-white p-6 shadow-card"
+              className="rounded-[18px] bg-white p-5 shadow-card sm:p-6"
             >
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold ${tone.chip}`}
@@ -371,7 +371,7 @@ export default function ReportPage() {
       ) : null}
 
       {!report.paid ? (
-        <section className="mt-12 rounded-[18px] bg-pin p-8 text-white shadow-lift">
+        <section className="mt-12 rounded-[18px] bg-pin p-6 text-white shadow-lift sm:p-8">
           <h2 className="text-[1.5rem] text-white">
             This is the list. We can do all of it.
           </h2>

@@ -59,6 +59,12 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#faf9f7",
+  // Lets the page draw under the notch/home-indicator on an iPhone instead
+  // of leaving a hard white bar there. Several fixed bars — the app's
+  // bottom nav, the landing page's mobile CTA, a shop site's footer —
+  // already pad themselves with env(safe-area-inset-*); without this,
+  // those insets resolve to 0 and the padding is a harmless no-op.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

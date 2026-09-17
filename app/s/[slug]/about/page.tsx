@@ -66,7 +66,7 @@ export default async function AboutPage({
           <span>About</span>
         </nav>
 
-        <h1 className="mt-5 text-[clamp(2.4rem,5.5vw,4rem)]">
+        <h1 className="mt-5 break-words text-[2.1rem] sm:text-[clamp(2.4rem,5.5vw,4rem)]">
           About {business.orgName}
         </h1>
         <p className="mt-6 max-w-3xl text-[18px] leading-relaxed text-ink-soft">
@@ -74,9 +74,9 @@ export default async function AboutPage({
         </p>
 
         {/* Only real, checkable numbers go here. */}
-        <ul className="mt-14 grid gap-6 sm:grid-cols-3 lg:gap-8">
+        <ul className="mt-10 grid gap-4 sm:mt-14 sm:grid-cols-3 sm:gap-6 lg:gap-8">
           {rating !== null ? (
-            <li className="card rounded-[22px] p-8 text-center">
+            <li className="card rounded-[22px] p-6 text-center sm:p-8">
               <p className="text-[40px] font-extrabold leading-none tracking-[-0.03em]">
                 {rating}
                 <span className="text-star"> ★</span>
@@ -87,7 +87,7 @@ export default async function AboutPage({
             </li>
           ) : null}
           {site.services.length ? (
-            <li className="card rounded-[22px] p-8 text-center">
+            <li className="card rounded-[22px] p-6 text-center sm:p-8">
               <p className="text-[40px] font-extrabold leading-none tracking-[-0.03em]">
                 {site.services.length}
               </p>
@@ -95,7 +95,7 @@ export default async function AboutPage({
             </li>
           ) : null}
           {areas.length ? (
-            <li className="card rounded-[22px] p-8 text-center">
+            <li className="card rounded-[22px] p-6 text-center sm:p-8">
               <p className="text-[40px] font-extrabold leading-none tracking-[-0.03em]">
                 {areas.length}
               </p>

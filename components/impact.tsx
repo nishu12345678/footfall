@@ -63,7 +63,7 @@ export function Impact() {
 
   return (
     <section className="mt-10">
-      <div className="flex items-baseline justify-between gap-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 className="font-display text-[15px] font-bold">
           Before footfall, and after
         </h2>
@@ -87,7 +87,7 @@ export function Impact() {
           return (
             <li
               key={row.key}
-              className="rounded-[16px] bg-paper-2 p-5"
+              className="rounded-[16px] bg-paper-2 p-4 sm:p-5"
             >
               <div className="flex items-baseline justify-between gap-3">
                 <span className="text-[14px] font-semibold">{row.label}</span>
@@ -131,7 +131,7 @@ export function Impact() {
                         }}
                       />
                     </span>
-                    <span className="w-12 flex-none text-right font-display text-[13px] font-semibold">
+                    <span className="min-w-12 flex-none text-right font-display text-[13px] font-semibold">
                       {value.toLocaleString("en-IN")}
                     </span>
                   </div>

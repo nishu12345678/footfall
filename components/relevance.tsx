@@ -124,7 +124,7 @@ export function Relevance() {
           type="button"
           onClick={() => void push()}
           disabled={pushing || offeringCount === 0}
-          className="btn btn-primary mt-3 w-full disabled:opacity-40"
+          className="btn btn-primary mt-3 w-full px-4 disabled:opacity-40"
         >
           {pushing
             ? "sending…"

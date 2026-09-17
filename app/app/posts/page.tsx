@@ -185,10 +185,10 @@ export default function PostsPage() {
             value={editText}
             onChange={(e) => setEditText(e.target.value)}
             minRows={6}
-            className="w-full rounded-[12px] border border-rule bg-white p-3 text-[13px] leading-relaxed outline-none focus:border-pin"
+            className="w-full rounded-[12px] border border-rule bg-white p-3 text-[16px] leading-relaxed outline-none focus:border-pin sm:text-[13px]"
           />
         ) : (
-          <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed">{post.body}</p>
+          <p className="whitespace-pre-wrap break-words text-[13.5px] leading-relaxed">{post.body}</p>
         )}
       </>
     );
@@ -239,14 +239,14 @@ export default function PostsPage() {
     if (picking !== post._id) return null;
     return (
       <div className="mt-3 flex flex-wrap items-end gap-2 rounded-[12px] bg-paper-2 p-3">
-        <label className="min-w-0 flex-1">
+        <label className="min-w-[200px] flex-1">
           <span className="eyebrow">Pick a time</span>
           <input
             type="datetime-local"
             value={pickAt}
             min={localInputValue(Date.now())}
             onChange={(e) => setPickAt(e.target.value)}
-            className="mt-2 w-full rounded-[10px] border border-rule bg-white px-3 py-2 text-[14px] outline-none focus:border-pin"
+            className="mt-2 w-full min-w-0 rounded-[10px] border border-rule bg-white px-3 py-2.5 text-[16px] outline-none focus:border-pin sm:text-[14px]"
           />
         </label>
         <button
@@ -312,8 +312,8 @@ export default function PostsPage() {
                       : `Writing post ${Math.min(run.produced + 1, run.requested)} of ${run.requested}`
               }
             />
-            <div className="mt-4 flex items-center justify-between gap-3">
-              <span className="text-[12px] text-muted">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <span className="min-w-0 text-[12px] text-muted">
                 {run.produced} of {run.requested} written
                 {run.source === "cron" ? " · started by the weekly plan" : ""}
               </span>
@@ -445,7 +445,7 @@ export default function PostsPage() {
                           await removePost({ id: post._id });
                         })
                       }
-                      className="ml-auto text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-40"
+                      className="ml-auto inline-flex min-h-[42px] items-center text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-40"
                     >
                       delete
                     </button>
@@ -531,7 +531,7 @@ export default function PostsPage() {
                           await unapprovePost({ id: post._id });
                         })
                       }
-                      className="ml-auto text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-40"
+                      className="ml-auto inline-flex min-h-[42px] items-center text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-40"
                     >
                       Back to drafts
                     </button>
@@ -611,7 +611,7 @@ export default function PostsPage() {
                           return "Taken off the calendar. It's still approved.";
                         })
                       }
-                      className="ml-auto text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-40"
+                      className="ml-auto inline-flex min-h-[42px] items-center text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-40"
                     >
                       unschedule
                     </button>
@@ -660,7 +660,7 @@ export default function PostsPage() {
                     href={business.mapsUri}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-3 inline-block text-[13px] font-medium text-pin hover:opacity-80"
+                    className="mt-3 inline-flex min-h-10 items-center text-[13px] font-medium text-pin hover:opacity-80"
                   >
                     See it on your listing →
                   </a>

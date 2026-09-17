@@ -152,7 +152,7 @@ export default function OthersPage() {
                 type="button"
                 onClick={() => void findFromWebsite()}
                 disabled={finding || uploading}
-                className="text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
+                className="-my-2 -mr-2 flex-none px-2 py-2 text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
               >
                 {finding ? "looking…" : candidates ? "look again" : "Find my logo"}
               </button>
@@ -160,7 +160,7 @@ export default function OthersPage() {
 
             {candidates && candidates.length > 0 ? (
               <>
-                <ul className="mt-4 grid grid-cols-4 gap-2.5">
+                <ul className="mt-4 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
                   {candidates.map((src) => (
                     <li key={src}>
                       <button
@@ -233,7 +233,7 @@ export default function OthersPage() {
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="mt-4 text-[13px] font-medium text-pin hover:opacity-80"
+              className="-mb-2 mt-2 py-2 text-[13px] font-medium text-pin hover:opacity-80"
             >
               {uploading ? "uploading…" : "replace logo"}
             </button>
@@ -315,12 +315,12 @@ export default function OthersPage() {
         ) : null}
       </div>
 
-      <div className="mt-10 grid grid-cols-2 gap-4">
+      <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-4">
         <button
           type="button"
           onClick={() => void done()}
           disabled={busy}
-          className="btn btn-ghost disabled:opacity-40"
+          className="btn btn-ghost px-4 disabled:opacity-40"
         >
           not now
         </button>
@@ -328,7 +328,7 @@ export default function OthersPage() {
           type="button"
           onClick={() => void done()}
           disabled={busy}
-          className="btn btn-primary disabled:opacity-40"
+          className="btn btn-primary px-4 disabled:opacity-40"
         >
           {busy ? (edit ? "saving…" : "finishing…") : edit ? "save changes" : "Save & finish"}
         </button>

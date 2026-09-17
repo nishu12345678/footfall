@@ -226,7 +226,7 @@ export default function ReviewsPage() {
                 </div>
 
                 {row.comment ? (
-                  <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-ink-soft">
+                  <p className="mt-2 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-ink-soft">
                     {row.comment}
                   </p>
                 ) : null}
@@ -236,10 +236,10 @@ export default function ReviewsPage() {
                     value={editText}
                     onChange={(e) => setEditText(e.target.value)}
                     minRows={4}
-                    className="mt-3 w-full rounded-[12px] border border-rule bg-white p-3 text-[13px] leading-relaxed outline-none focus:border-pin"
+                    className="mt-3 w-full rounded-[12px] border border-rule bg-white p-3 text-[16px] leading-relaxed outline-none focus:border-pin sm:text-[13px]"
                   />
                 ) : (
-                  <p className="mt-3 whitespace-pre-wrap rounded-[12px] bg-pin-soft px-4 py-3 text-[13px] leading-relaxed text-ink">
+                  <p className="mt-3 whitespace-pre-wrap break-words rounded-[12px] bg-pin-soft px-4 py-3 text-[13px] leading-relaxed text-ink">
                     {row.replyText}
                   </p>
                 )}
@@ -279,7 +279,7 @@ export default function ReviewsPage() {
                   <button
                     type="button"
                     onClick={() => void discardDraft({ id: row._id })}
-                    className="ml-auto text-[13px] font-medium text-pin hover:opacity-80"
+                    className="ml-auto inline-flex min-h-[42px] items-center text-[13px] font-medium text-pin hover:opacity-80"
                   >
                     leave it
                   </button>
@@ -337,7 +337,7 @@ export default function ReviewsPage() {
               </div>
 
               {row.comment ? (
-                <p className="mt-2.5 whitespace-pre-wrap text-[13.5px] leading-relaxed">
+                <p className="mt-2.5 whitespace-pre-wrap break-words text-[13.5px] leading-relaxed">
                   {row.comment}
                 </p>
               ) : (
@@ -352,7 +352,7 @@ export default function ReviewsPage() {
                     Your reply
                     {row.repliedAt ? ` · ${ago(row.repliedAt)}` : ""}
                   </p>
-                  <p className="mt-1 whitespace-pre-wrap text-[13px] leading-relaxed text-ink-soft">
+                  <p className="mt-1 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-ink-soft">
                     {row.replyText}
                   </p>
                 </div>

@@ -375,25 +375,45 @@ export default function BillingPage() {
           <p className="text-[13px] font-medium uppercase tracking-[0.05em] text-open-deep">
             Active
           </p>
-          <h1 className="mt-3 text-[clamp(1.7rem,5vw,2rem)]">
-            Your plan is running
-          </h1>
-          <p className="mt-3 text-[17px] leading-relaxed text-ink-soft">
-            {status.business ? (
-              <>
-                <strong>{status.business.orgName}</strong> is on the{" "}
-                <strong>{status.plan}</strong> plan.
-              </>
-            ) : (
-              <>
-                You are on the <strong>{status.plan}</strong> plan.
-              </>
-            )}{" "}
-            It runs until{" "}
-            <strong>{status.expiresAt ? fmtDate(status.expiresAt) : "—"}</strong>
-            . There is no auto-debit; we&rsquo;ll email you a week before it
-            ends.
-          </p>
+          {status.freeAccess ? (
+            <>
+              <h1 className="mt-3 text-[clamp(1.7rem,5vw,2rem)]">
+                This account has free access
+              </h1>
+              <p className="mt-3 text-[17px] leading-relaxed text-ink-soft">
+                No payment needed — {status.business ? (
+                  <>
+                    <strong>{status.business.orgName}</strong> runs on the
+                    house.
+                  </>
+                ) : (
+                  "your account runs on the house."
+                )}
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="mt-3 text-[clamp(1.7rem,5vw,2rem)]">
+                Your plan is running
+              </h1>
+              <p className="mt-3 text-[17px] leading-relaxed text-ink-soft">
+                {status.business ? (
+                  <>
+                    <strong>{status.business.orgName}</strong> is on the{" "}
+                    <strong>{status.plan}</strong> plan.
+                  </>
+                ) : (
+                  <>
+                    You are on the <strong>{status.plan}</strong> plan.
+                  </>
+                )}{" "}
+                It runs until{" "}
+                <strong>{status.expiresAt ? fmtDate(status.expiresAt) : "—"}</strong>
+                . There is no auto-debit; we&rsquo;ll email you a week before
+                it ends.
+              </p>
+            </>
+          )}
           {/* Paid but mid-setup: the next step matters more than a dashboard
               of empty numbers. */}
           {status.business && !status.business.onboardingComplete ? (
@@ -412,7 +432,7 @@ export default function BillingPage() {
               Go to my listing
             </Link>
           )}
-          {!extendOk ? (
+          {status.freeAccess ? null : !extendOk ? (
             <button
               type="button"
               onClick={() => setExtendOk(true)}

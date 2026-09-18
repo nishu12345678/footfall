@@ -13,7 +13,9 @@ import {
 import type { Doc, Id } from "./_generated/dataModel";
 import {
   activeBusinessFor,
+  emailInList,
   hasActivePlan,
+  isFreeAccessEmail,
   legacyPlanBusinessId,
   subscriptionBusinessId,
 } from "./access";
@@ -84,14 +86,7 @@ export function isOneRupeeTester(
   email: string | null | undefined,
   rawAllowlist = process.env.RAZORPAY_ONE_RUPEE_TEST_EMAILS ?? "",
 ): boolean {
-  if (!email) return false;
-  const normalized = email.trim().toLowerCase();
-  if (!normalized) return false;
-  return rawAllowlist
-    .split(/[\s,;]+/)
-    .map((entry) => entry.trim().toLowerCase())
-    .filter(Boolean)
-    .includes(normalized);
+  return emailInList(email, rawAllowlist);
 }
 
 const CURRENCY = "INR";
@@ -159,6 +154,7 @@ export const status = query({
         plan: null,
         expiresAt: null,
         oneRupeeTest: false,
+        freeAccess: false,
         receipts: [],
         pending: null,
       };
@@ -170,6 +166,9 @@ export const status = query({
     const oneRupeeTest =
       typeof user?.emailVerificationTime === "number" &&
       isOneRupeeTester(user.email);
+    const freeAccess =
+      typeof user?.emailVerificationTime === "number" &&
+      isFreeAccessEmail(user.email);
 
     // Plans are per business. The screen shows the ACTIVE business's plan,
     // orders and receipts; another business on the account pays separately.
@@ -201,10 +200,11 @@ export const status = query({
 
     return {
       signedIn: true as const,
-      active: Boolean(live),
+      active: Boolean(live) || freeAccess,
       plan: live?.plan ?? null,
       expiresAt: live?.expiresAt ?? null,
       oneRupeeTest,
+      freeAccess,
       /** The business this plan pays for, and where its setup stands, so
           the screen can send a paid owner to the step they left. */
       business: business

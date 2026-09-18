@@ -24,6 +24,12 @@ import type { Doc, Id, TableNames } from "./_generated/dataModel";
  *   - convex/billing.ts    — the paywall cannot sit in front of the till
  *   - site.bySlug          — the public shop microsites at /s/<slug> are
  *                            read by strangers who have no account at all
+ *
+ * FREE_ACCESS_EMAILS is a small, hand-maintained deployment env var: a
+ * comma/whitespace/semicolon-separated allowlist of verified auth emails
+ * that get comped access with no subscription row at all. Same shape and
+ * same "verified auth email only" rule as billing.ts's one-rupee tester
+ * allowlist — see isFreeAccessEmail below.
  */
 
 export const PAYWALL_MESSAGE =
@@ -82,6 +88,34 @@ export function subscriptionBusinessId(
 }
 
 /**
+ * Exact, case-insensitive membership in a comma/whitespace/semicolon
+ * separated email list. Pure and allocation-cheap so both allowlists
+ * (this file's free-access one and billing.ts's one-rupee-tester one)
+ * can share it. False for an empty or missing email.
+ */
+export function emailInList(
+  email: string | null | undefined,
+  rawList: string,
+): boolean {
+  if (!email) return false;
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return false;
+  return rawList
+    .split(/[\s,;]+/)
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean)
+    .includes(normalized);
+}
+
+/** Exact, case-insensitive email matching against FREE_ACCESS_EMAILS. */
+export function isFreeAccessEmail(
+  email: string | null | undefined,
+  rawAllowlist = process.env.FREE_ACCESS_EMAILS ?? "",
+): boolean {
+  return emailInList(email, rawAllowlist);
+}
+
+/**
  * True when the user's ACTIVE business has a paid row that hasn't run out.
  * Plans are per business: paying for one listing never unlocks another.
  */
@@ -90,6 +124,17 @@ export async function hasActivePlan(
   userId: string,
 ): Promise<boolean> {
   const uid = userId as Id<"users">;
+
+  // Comped access is per-account, not per-business, so it is checked
+  // before the business lookup below.
+  const user = await ctx.db.get(uid);
+  if (
+    typeof user?.emailVerificationTime === "number" &&
+    isFreeAccessEmail(user.email)
+  ) {
+    return true;
+  }
+
   const business = await activeBusinessFor(ctx, uid);
   if (!business) return false;
   const legacyId = await legacyPlanBusinessId(ctx, uid);

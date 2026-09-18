@@ -5,7 +5,12 @@ import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { isOneRupeeTester } from "./billing";
-import { activeBusinessFor, hasActivePlan } from "./access";
+import {
+  activeBusinessFor,
+  emailInList,
+  hasActivePlan,
+  isFreeAccessEmail,
+} from "./access";
 
 /**
  * The money paths that must never double or drift, exercised without
@@ -98,6 +103,79 @@ describe("one-rupee production testers", () => {
     expect(
       await t.query(internal.billing.verifiedEmailForUser, { userId }),
     ).toBe("tester@example.com");
+  });
+});
+
+describe("free access allowlist", () => {
+  test("emailInList matches only exact normalized emails", () => {
+    const allowlist = " Alice@Example.com, bob@example.com\ncarol@example.com ";
+    expect(emailInList("alice@example.com", allowlist)).toBe(true);
+    expect(emailInList(" BOB@EXAMPLE.COM ", allowlist)).toBe(true);
+    expect(emailInList("mallory@example.com", allowlist)).toBe(false);
+    expect(emailInList("alice@example.com", "")).toBe(false);
+    expect(emailInList(null, allowlist)).toBe(false);
+    expect(emailInList(undefined, allowlist)).toBe(false);
+    expect(emailInList("", allowlist)).toBe(false);
+  });
+
+  test("isFreeAccessEmail is case-insensitive against FREE_ACCESS_EMAILS", () => {
+    const allowlist = "free@example.com; Comp@Example.com";
+    expect(isFreeAccessEmail("free@example.com", allowlist)).toBe(true);
+    expect(isFreeAccessEmail(" COMP@EXAMPLE.COM ", allowlist)).toBe(true);
+    expect(isFreeAccessEmail("stranger@example.com", allowlist)).toBe(false);
+    expect(isFreeAccessEmail("free@example.com", "")).toBe(false);
+    expect(isFreeAccessEmail(null, allowlist)).toBe(false);
+  });
+
+  test("a verified allowlisted user gets billing.status active with no subscription rows", async () => {
+    vi.stubEnv("FREE_ACCESS_EMAILS", "vip@example.com");
+    await t.run(async (ctx) => {
+      await ctx.db.patch(userId, {
+        email: "VIP@example.com",
+        emailVerificationTime: Date.now(),
+      });
+    });
+
+    const me = t.withIdentity({ subject: `${userId}|session` });
+    const status = await me.query(api.billing.status, {});
+    expect(status.signedIn).toBe(true);
+    expect(status.active).toBe(true);
+    expect(status.freeAccess).toBe(true);
+    expect(status.receipts).toHaveLength(0);
+    expect(status.plan).toBeNull();
+
+    expect(await t.run(async (ctx) => hasActivePlan(ctx, userId))).toBe(true);
+  });
+
+  test("an unlisted user stays inactive with no plan", async () => {
+    vi.stubEnv("FREE_ACCESS_EMAILS", "vip@example.com");
+    await t.run(async (ctx) => {
+      await ctx.db.patch(userId, {
+        email: "someone-else@example.com",
+        emailVerificationTime: Date.now(),
+      });
+    });
+
+    const me = t.withIdentity({ subject: `${userId}|session` });
+    const status = await me.query(api.billing.status, {});
+    expect(status.active).toBe(false);
+    expect(status.freeAccess).toBe(false);
+
+    expect(await t.run(async (ctx) => hasActivePlan(ctx, userId))).toBe(false);
+  });
+
+  test("an unverified allowlisted email is refused", async () => {
+    vi.stubEnv("FREE_ACCESS_EMAILS", "vip@example.com");
+    await t.run(async (ctx) => {
+      await ctx.db.patch(userId, { email: "vip@example.com" });
+    });
+
+    const me = t.withIdentity({ subject: `${userId}|session` });
+    const status = await me.query(api.billing.status, {});
+    expect(status.active).toBe(false);
+    expect(status.freeAccess).toBe(false);
+
+    expect(await t.run(async (ctx) => hasActivePlan(ctx, userId))).toBe(false);
   });
 });
 

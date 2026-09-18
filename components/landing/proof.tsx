@@ -11,8 +11,13 @@ const EVIDENCE: Record<string, ReactNode> = {
 
 /**
  * Quotes in a row that scrolls sideways on a phone and sits four-up on
- * a desktop. Anything still marked placeholder in content.ts wears a
- * visible "Sample" tag so invented praise can't ship by accident.
+ * a desktop.
+ *
+ * These quotes are illustrative of what owners tell us, not verbatim
+ * attributed testimonials — see the PROOF.quotes note in lib/content.ts.
+ * They carried a visible "Sample" tag until it was removed by request;
+ * the `placeholder` flag is still set on each one and is what to key off
+ * if that marker is ever wanted back.
  */
 export function Proof() {
   return (
@@ -51,11 +56,6 @@ export function Proof() {
               <span className="text-[13px] font-medium text-[var(--l-muted)]">
                 {q.meta}
               </span>
-              {q.placeholder ? (
-                <span className="l-pill bg-[#fef3c7] px-2.5 py-1 text-[11px] text-[#b45309]">
-                  Sample
-                </span>
-              ) : null}
             </div>
             <blockquote className="mt-6 flex-1 text-[15px] leading-relaxed text-[var(--l-ink-2)]">
               “{q.text}”

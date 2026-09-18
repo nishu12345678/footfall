@@ -518,10 +518,13 @@ export const PROOF = {
     },
   ],
   evidenceNote: "Product shown with sample data.",
-  /* ⚠ PLACEHOLDERS. do not ship invented praise.
-     paste what people actually said and set placeholder: false.
-     anything still marked placeholder renders a visible "Sample" tag
-     so it can't go out by accident. */
+  /* ⚠ PLACEHOLDERS. these illustrate the problems owners describe; they
+     are not verbatim quotes anybody said.
+
+     They used to render a visible "Sample" tag, removed by request — so
+     nothing on the page now tells these apart from real testimonials.
+     Replace them with what people actually said and set
+     placeholder: false; the flag is kept for exactly that. */
   quotes: [
     {
       name: "Salon owner",

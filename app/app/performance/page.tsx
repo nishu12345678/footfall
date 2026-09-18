@@ -133,6 +133,9 @@ export default function PerformancePage() {
     }
   }
 
+  // A run of this costs 9 SerpApi searches, so it only ever fires when the
+  // owner explicitly asks for a fresh look — never just to display points
+  // that are already stored.
   async function drawGrid(keyword: string) {
     setGridding(keyword);
     setError(null);
@@ -144,6 +147,22 @@ export default function PerformancePage() {
     } finally {
       setGridding(null);
     }
+  }
+
+  // The toggle button below has three outcomes, in order: close an open map
+  // for free, open an already-stored map for free, or — only when nothing
+  // is stored yet — spend a fresh 9-search run.
+  function toggleGrid(keyword: string) {
+    if (gridFor === keyword) {
+      setGridFor(null);
+      return;
+    }
+    const hasStored = grid.some((g) => g.keyword === keyword);
+    if (hasStored) {
+      setGridFor(keyword);
+      return;
+    }
+    void drawGrid(keyword);
   }
 
   if (data === undefined) return <Loading />;
@@ -440,6 +459,8 @@ export default function PerformancePage() {
                               found in {kw.coverageFound ?? 0} of{" "}
                               {kw.coverageTotal} spots checked
                               {kw.avgRank ? ` · avg position #${kw.avgRank}` : ""}
+                              {" · checked "}
+                              {ago(kw.checkedAt)}
                             </span>
                           </div>
                         </div>
@@ -448,7 +469,7 @@ export default function PerformancePage() {
                       {checked && isNearMe(kw.term) ? (
                         <button
                           type="button"
-                          onClick={() => void drawGrid(kw.term)}
+                          onClick={() => toggleGrid(kw.term)}
                           disabled={gridding !== null}
                           className="mt-2 inline-flex min-h-10 items-center text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
                         >
@@ -464,22 +485,52 @@ export default function PerformancePage() {
                       shownGrid.length > 0 &&
                       business.lat &&
                       business.lng ? (
-                        <div className="mt-3">
-                          <p className="mb-1.5 text-[11px] text-muted">
-                            Showing &ldquo;{kw.term}&rdquo; from several points
-                            around you
-                          </p>
-                          <RankMap
-                            lat={business.lat}
-                            lng={business.lng}
-                            keyword={kw.term}
-                            points={shownGrid.map((g) => ({
-                              lat: g.lat,
-                              lng: g.lng,
-                              rank: g.rank,
-                            }))}
-                          />
-                        </div>
+                        (() => {
+                          const gridCheckedAt = Math.max(
+                            ...shownGrid.map((g) => g.checkedAt),
+                          );
+                          const disagrees =
+                            ((kw.coverageFound ?? 0) > 0 &&
+                              shownGrid.every((g) => g.rank === undefined)) ||
+                            ((kw.coverageFound ?? 0) === 0 &&
+                              shownGrid.some((g) => g.rank !== undefined));
+                          return (
+                            <div className="mt-3">
+                              <p className="mb-1.5 text-[11px] text-muted">
+                                Showing &ldquo;{kw.term}&rdquo; from several
+                                points around you · checked {ago(gridCheckedAt)}
+                              </p>
+                              <RankMap
+                                lat={business.lat}
+                                lng={business.lng}
+                                keyword={kw.term}
+                                points={shownGrid.map((g) => ({
+                                  lat: g.lat,
+                                  lng: g.lng,
+                                  rank: g.rank,
+                                }))}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => void drawGrid(kw.term)}
+                                disabled={gridding !== null}
+                                className="mt-2 inline-flex min-h-10 items-center text-[13px] font-medium text-pin hover:opacity-80 disabled:opacity-50"
+                              >
+                                {gridding === kw.term
+                                  ? "Checking around you…"
+                                  : "Check again now"}
+                              </button>
+                              {disagrees ? (
+                                <p className="mt-2 text-[11px] leading-snug text-muted">
+                                  These two checks ran at different times —
+                                  local rankings move hour to hour, and the
+                                  five-spot summary above was checked{" "}
+                                  {ago(kw.checkedAt)}.
+                                </p>
+                              ) : null}
+                            </div>
+                          );
+                        })()
                       ) : null}
                     </li>
                   );

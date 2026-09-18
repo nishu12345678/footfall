@@ -210,7 +210,12 @@ http.route({
 /* -------------------------------- Resend ---------------------------------
    Delivered / bounced / complained for every email. Resend signs with
    Svix: HMAC-SHA256 over "id.timestamp.body", base64, keyed with the
-   base64-decoded part of the "whsec_…" secret.                          */
+   base64-decoded part of the "whsec_…" secret.
+
+   The same endpoint also receives email.received for inbound mail. That
+   event carries metadata only; the body is fetched out of band because
+   Resend's webhook design supports large attachments that wouldn't fit
+   in a POST body.                                                        */
 
 async function svixValid(secret: string, request: Request, raw: string) {
   const id = request.headers.get("svix-id");
@@ -264,7 +269,21 @@ http.route({
       type?: string;
       data?: {
         email_id?: string;
+        message_id?: string;
+        from?: string;
         to?: string[] | string;
+        cc?: string[] | string;
+        bcc?: string[] | string;
+        received_for?: string[] | string;
+        subject?: string;
+        created_at?: string;
+        attachments?: Array<{
+          id?: string;
+          filename?: string;
+          content_type?: string;
+          content_disposition?: string;
+          content_id?: string;
+        }>;
         bounce?: { message?: string; type?: string };
         error?: { message?: string };
       };
@@ -277,6 +296,51 @@ http.route({
 
     const type = body.type ?? "";
     const id = body.data?.email_id;
+
+    // Inbound: store metadata now, fetch body out of band
+    if (type === "email.received" && id) {
+      const toRaw = body.data?.to;
+      const ccRaw = body.data?.cc;
+      const to = Array.isArray(toRaw) ? toRaw : toRaw ? [toRaw] : [];
+      const cc = Array.isArray(ccRaw) ? ccRaw : ccRaw ? [ccRaw] : undefined;
+      const from = body.data?.from ?? "(unknown)";
+      const subject = body.data?.subject ?? "(no subject)";
+      const attachments = (body.data?.attachments ?? [])
+        .filter((a) => a.id && a.filename)
+        .map((a) => ({
+          id: a.id!,
+          filename: a.filename!,
+          contentType: a.content_type,
+          contentDisposition: a.content_disposition,
+          contentId: a.content_id,
+        }));
+
+      const receivedAt = body.data?.created_at
+        ? new Date(body.data.created_at).getTime()
+        : Date.now();
+
+      const rowId = await ctx.runMutation(internal.inbound.record, {
+        resendId: id,
+        messageId: body.data?.message_id,
+        from,
+        to,
+        cc,
+        subject,
+        attachments,
+        receivedAt,
+      });
+
+      if (rowId) {
+        await ctx.scheduler.runAfter(0, internal.inbound.fetchBody, {
+          id: rowId,
+          resendId: id,
+        });
+      }
+
+      return new Response("ok", { status: 200 });
+    }
+
+    // Outbound delivery events — the original flow
     if (!id) return new Response("ok", { status: 200 });
 
     const to = Array.isArray(body.data?.to) ? body.data?.to[0] : body.data?.to;

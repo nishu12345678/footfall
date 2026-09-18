@@ -531,6 +531,35 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_email", ["email"]),
 
+  /** Inbound emails received at footfall.zone addresses (contact@, etc.).
+      The webhook delivers metadata only; body is fetched out of band. */
+  inboundEmails: defineTable({
+    resendId: v.string(),
+    messageId: v.optional(v.string()),
+    from: v.string(),
+    to: v.array(v.string()),
+    cc: v.optional(v.array(v.string())),
+    subject: v.string(),
+    text: v.optional(v.string()),
+    html: v.optional(v.string()),
+    attachments: v.array(
+      v.object({
+        id: v.string(),
+        filename: v.string(),
+        contentType: v.optional(v.string()),
+        contentDisposition: v.optional(v.string()),
+        contentId: v.optional(v.string()),
+      }),
+    ),
+    /** "received" | "fetched" | "fetch_failed" */
+    status: v.string(),
+    error: v.optional(v.string()),
+    attempts: v.number(),
+    receivedAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_resend_id", ["resendId"]),
+
   /* ------------------------------ free report ------------------------------
      What we found when we looked at the shop's website. Cached because it
      costs a Firecrawl call, and a free user can ask for the report as often

@@ -1,0 +1,107 @@
+[
+  {
+    "file": "public/trades/salon.jpg",
+    "photographer": "Yogesh Sasane",
+    "page": "https://www.pexels.com/photo/portrait-of-a-woman-in-a-traditional-dress-15416958/",
+    "alt": "A beautiful woman elegantly dressed in a traditional Indian saree with intricate jewelry, showcasing cultural fashion.",
+    "source": "Pexels (free for commercial use, no attribution required)"
+  },
+  {
+    "file": "public/trades/clinic.jpg",
+    "photographer": "World Sikh Organization of Canada",
+    "page": "https://www.pexels.com/photo/young-female-doctor-examining-a-senior-patient-18870282/",
+    "alt": "A doctor uses a stethoscope to examine a senior man in an examination room.",
+    "source": "Pexels (free for commercial use, no attribution required)"
+  },
+  {
+    "file": "public/trades/sari.jpg",
+    "photographer": "Lara Jameson",
+    "page": "https://www.pexels.com/photo/woman-looking-at-dress-8886924/",
+    "alt": "Woman explores a lively bazaar showcasing colorful traditional dresses.",
+    "source": "Pexels (free for commercial use, no attribution required)"
+  },
+  {
+    "file": "public/trades/fashion.jpg",
+    "photographer": "Lara Jameson",
+    "page": "https://www.pexels.com/photo/woman-in-trying-the-yellow-sari-from-the-mannequin-8886953/",
+    "alt": "A young woman admires traditional saris in a vibrant Indian clothing store.",
+    "source": "Pexels (free for commercial use, no attribution required)"
+  },
+  {
+    "file": "public/trades/kirana.jpg",
+    "photographer": "Tom Fisk",
+    "page": "https://www.pexels.com/photo/man-in-eyeglass-on-assorted-products-3691103/",
+    "alt": "Bustling Banten market stall with diverse products and local merchant.",
+    "source": "Pexels (free for commercial use, no attribution required)"
+  },
+  {
+    "file": "public/trades/gym.jpg",
+    "source": "supplied by footfall",
+    "photographer": null,
+    "page": null,
+    "alt": "Indian neighbourhood gym interior: dumbbell rack, benches and a painted mural."
+  },
+  {
+    "file": "public/trades/restaurant.jpg",
+    "photographer": "Chan Walrus",
+    "page": "https://www.pexels.com/photo/cooked-dish-serve-on-black-tray-958547/",
+    "alt": "A flavorful assortment of Indian cuisine with various dishes on a serving tray, highlighting vibrant spices and textures.",
+    "source": "Pexels (free for commercial use, no attribution required)"
+  },
+  {
+    "file": "public/trades/tiles.jpg",
+    "source": "supplied by footfall",
+    "photographer": null,
+    "page": null,
+    "alt": "Indian tile and sanitaryware showroom with display panels, basins and steel sinks."
+  },
+  {
+    "file": "public/trades/coaching.jpg",
+    "photographer": "Sanket  Mishra",
+    "page": "https://www.pexels.com/photo/a-group-of-people-doing-yoga-poses-in-a-line-15206701/",
+    "alt": "A vibrant group of young adults in a yoga class exuding enthusiasm and concentration.",
+    "source": "Pexels (free for commercial use, no attribution required)"
+  },
+  {
+    "file": "public/trades/repairs.jpg",
+    "photographer": "PRABHAKAR SALAVE",
+    "page": "https://www.pexels.com/photo/mechanic-fixing-an-engine-8477256/",
+    "alt": "A mechanic works on an engine in a garage in India, showcasing auto repair skills.",
+    "source": "Pexels (free for commercial use, no attribution required)"
+  },
+  {
+    "file": "public/trades/sweets.jpg",
+    "alt": "A variety of Indian sweets displayed at a shop in Kaikaluru, Andhra Pradesh, India.",
+    "photographer": "Mohan Nannapaneni",
+    "page": "https://www.pexels.com/photo/indian-sweet-shop-in-kaikaluru-andhra-pradesh-30251968/",
+    "source": "Pexels (free for commercial use, no attribution required)"
+  },
+  {
+    "file": "public/trades/mobile.jpg",
+    "photographer": "Aa Dil",
+    "page": "https://www.pexels.com/photo/men-in-store-3025495/",
+    "alt": "Colorful street market in Faisalabad at night, showcasing local vendors and vibrant lights.",
+    "source": "Pexels (free for commercial use, no attribution required)"
+  },
+  {
+    "file": "public/trades/jewellers.jpg",
+    "photographer": "Lara Jameson",
+    "page": "https://www.pexels.com/photo/hands-with-golden-bracelets-8886967/",
+    "alt": "A close-up of a woman's hands selecting golden bangles at a jewelry store, showcasing intricate designs.",
+    "source": "Pexels (free for commercial use, no attribution required)"
+  },
+  {
+    "file": "public/trades/chemist.jpg",
+    "photographer": "Magda Ehlers",
+    "page": "https://www.pexels.com/photo/vintage-pharmacy-shop-display-with-retro-products-35285862/",
+    "alt": "A nostalgic view of vintage pharmacy products displayed in a retro shop setting.",
+    "source": "Pexels (free for commercial use, no attribution required)"
+  },
+  {
+    "file": "public/trades/tailor.jpg",
+    "photographer": "Abdalla Khames",
+    "page": "https://www.pexels.com/photo/elderly-tailor-in-traditional-workshop-setting-33542154/",
+    "alt": "Senior tailor sitting in vintage sewing shop with tools and fabrics around.",
+    "source": "Pexels (free for commercial use, no attribution required)"
+  }
+]

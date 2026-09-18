@@ -25,6 +25,7 @@ import type * as gbp from "../gbp.js";
 import type * as google from "../google.js";
 import type * as googleHosts from "../googleHosts.js";
 import type * as http from "../http.js";
+import type * as inbound from "../inbound.js";
 import type * as keywords from "../keywords.js";
 import type * as lists from "../lists.js";
 import type * as messaging from "../messaging.js";
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   google: typeof google;
   googleHosts: typeof googleHosts;
   http: typeof http;
+  inbound: typeof inbound;
   keywords: typeof keywords;
   lists: typeof lists;
   messaging: typeof messaging;

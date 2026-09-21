@@ -17,6 +17,7 @@ import { activeBusinessFor,
   type Owned,
 } from "./access";
 import { v4Base } from "./googleHosts";
+import { dedupe, recordAnalyticsEvent } from "./analytics";
 
 /**
  * Photos on the Google Business Profile.
@@ -281,15 +282,42 @@ export const markPhotoPublished = internalMutation({
       return;
     }
 
-    await ctx.db.patch(id, { status: "published", publishedAt: Date.now() });
+    const already = photo.status === "published";
+    const now = Date.now();
+
+    await ctx.db.patch(id, {
+      status: "published",
+      publishedAt: photo.publishedAt ?? now,
+    });
     await ctx.db.insert("agentActions", {
       businessId: photo.businessId,
       type: "media",
       title: "Photo published",
       detail: photo.caption,
       imageUrl: photo.url,
-      createdAt: Date.now(),
+      createdAt: now,
     });
+
+    // A photo we uploaded and Google accepted. Keyed by the photo row, so
+    // a retried mark records once. The caption and URL stay out.
+    //
+    // Only OUR uploads reach this mutation — the gallery mirror in
+    // saveGooglePhotos inserts rows with status "published" directly and
+    // is deliberately not instrumented, because a photo the owner put on
+    // Google themselves is not value this product delivered.
+    if (!already) {
+      const owner = await ctx.db.get(photo.businessId);
+      await recordAnalyticsEvent(ctx, {
+        event: "content_published",
+        dedupeKey: dedupe.contentPublished("photo", id),
+        // Photos go out on the drip, which is the agent.
+        source: "agent",
+        occurredAt: now,
+        userId: owner?.userId,
+        businessId: photo.businessId,
+        metadata: { kind: "photo" },
+      });
+    }
   },
 });
 

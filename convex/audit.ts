@@ -9,6 +9,7 @@ import {
   query,
 } from "./_generated/server";
 import { activeBusinessFor, hasActivePlan } from "./access";
+import { dedupe, istDay, recordAnalyticsEvent } from "./analytics";
 
 /* ---------------------------------------------------------------------------
    The free report.
@@ -520,7 +521,22 @@ export const stampSynced = internalMutation({
   handler: async (ctx, { userId }) => {
     const business = await activeBusinessFor(ctx, userId);
     if (business) {
-      await ctx.db.patch(business._id, { listingSyncedAt: Date.now() });
+      const now = Date.now();
+      await ctx.db.patch(business._id, { listingSyncedAt: now });
+
+      // The listing has just been read end to end, which is the only
+      // moment the free report is known to be complete. The report is
+      // free and the button is re-pressable, so the key is bounded to one
+      // per business per IST day; counting every tap would measure
+      // impatience rather than value delivered.
+      await recordAnalyticsEvent(ctx, {
+        event: "audit_completed",
+        dedupeKey: dedupe.auditCompleted(business._id, istDay(now)),
+        source: "owner",
+        occurredAt: now,
+        userId,
+        businessId: business._id,
+      });
     }
   },
 });

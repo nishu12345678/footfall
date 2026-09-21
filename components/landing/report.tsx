@@ -64,7 +64,13 @@ export function Report() {
             ))}
           </ul>
 
-          <a href={LINKS.cta} className="lb lb-primary mt-10 h-12 px-6 text-base">
+          <a
+            href={LINKS.cta}
+            className="lb lb-primary mt-10 h-12 px-6 text-base"
+            data-analytics-event="cta_click"
+            data-analytics-cta-id="report_primary"
+            data-analytics-location="report"
+          >
             {REPORT.cta}
             <Icon name="arrow-right" />
           </a>

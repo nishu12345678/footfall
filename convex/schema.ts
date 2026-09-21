@@ -2,6 +2,77 @@ import { defineSchema, defineTable } from "convex/server";
 import { authTables } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 
+/* ------------------------- product analytics types ------------------------
+   Closed sets, declared here so the schema, the writer in
+   convex/analytics.ts and the read-only dashboard in convex/adminDash.ts
+   all agree. An event name that is not on this list fails the validator at
+   the boundary instead of quietly creating a new metric.                  */
+
+/** Every fact the product ledger records. docs/product-analytics.md. */
+export const ANALYTICS_EVENTS = [
+  "account_created",
+  "gbp_connect_started",
+  "gbp_connect_failed",
+  "business_connected",
+  "business_reconnected",
+  "onboarding_step_completed",
+  "onboarding_completed",
+  "audit_completed",
+  "content_generated",
+  "content_published",
+  "site_published",
+  "checkout_started",
+  "checkout_failed",
+  "checkout_dismissed",
+  "payment_succeeded",
+  "payment_refunded",
+] as const;
+
+export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];
+
+export const analyticsEventValidator = v.union(
+  v.literal("account_created"),
+  v.literal("gbp_connect_started"),
+  v.literal("gbp_connect_failed"),
+  v.literal("business_connected"),
+  v.literal("business_reconnected"),
+  v.literal("onboarding_step_completed"),
+  v.literal("onboarding_completed"),
+  v.literal("audit_completed"),
+  v.literal("content_generated"),
+  v.literal("content_published"),
+  v.literal("site_published"),
+  v.literal("checkout_started"),
+  v.literal("checkout_failed"),
+  v.literal("checkout_dismissed"),
+  v.literal("payment_succeeded"),
+  v.literal("payment_refunded"),
+);
+
+/**
+ * Who caused the fact, where the code knows it.
+ *
+ *   owner   a signed-in person pressed something
+ *   agent   the product acted on its own (crons, the writer)
+ *   system  a server-to-server confirmation: webhooks, reconciliation
+ *   backfill  derived after the fact from existing rows
+ */
+export const ANALYTICS_SOURCES = [
+  "owner",
+  "agent",
+  "system",
+  "backfill",
+] as const;
+
+export type AnalyticsSource = (typeof ANALYTICS_SOURCES)[number];
+
+export const analyticsSourceValidator = v.union(
+  v.literal("owner"),
+  v.literal("agent"),
+  v.literal("system"),
+  v.literal("backfill"),
+);
+
 /**
  * footfall data model.
  *
@@ -522,6 +593,76 @@ export default defineSchema({
     .index("by_resend_id", ["resendId"])
     .index("by_user", ["userId"])
     .index("by_to", ["to"]),
+
+  /* --------------------------- product analytics ---------------------------
+     The measurement contract in docs/product-analytics.md.
+
+     analyticsEvents is append-only and server-confirmed: a row is written
+     in the same transaction as the business fact it records, keyed by a
+     deterministic dedupeKey so a webhook retry, an action retry or a
+     browser refresh cannot inflate a count.
+
+     analyticsDaily and analyticsTotals are maintained in that same
+     transaction, so the dashboard answers "how many" with bounded indexed
+     reads instead of scanning the event table.
+
+     Nothing here may carry an email, phone, business name, review text,
+     address, Google token, Razorpay signature or provider response —
+     metadata is a small non-PII record: content kind, onboarding step,
+     plan, confirmation path or error class. See convex/analytics.ts.      */
+
+  analyticsEvents: defineTable({
+    /** Closed set — see ANALYTICS_EVENTS in convex/analytics.ts. */
+    event: analyticsEventValidator,
+    /** When the fact happened, not when the row was written. */
+    occurredAt: v.number(),
+    /** IST calendar day of occurredAt, "YYYY-MM-DD". The aggregate key. */
+    day: v.string(),
+    /** Who caused it, where the code knows: the owner, the agent, or the
+        system (webhooks, crons, backfills). */
+    source: analyticsSourceValidator,
+    /** Deterministic identity of the fact. Same key twice = one event. */
+    dedupeKey: v.string(),
+    /** Optional only because a failure can happen before either exists. */
+    userId: v.optional(v.id("users")),
+    businessId: v.optional(v.id("businesses")),
+    /** Integer paise and ISO currency; revenue events only. */
+    amountPaise: v.optional(v.number()),
+    currency: v.optional(v.string()),
+    /** Small, non-PII. Sanitised by recordAnalyticsEvent. */
+    metadata: v.optional(
+      v.record(v.string(), v.union(v.string(), v.number(), v.boolean())),
+    ),
+  })
+    .index("by_dedupe", ["dedupeKey"])
+    .index("by_occurredAt", ["occurredAt"])
+    .index("by_event_occurredAt", ["event", "occurredAt"])
+    .index("by_business_occurredAt", ["businessId", "occurredAt"])
+    .index("by_user_occurredAt", ["userId", "occurredAt"])
+    /** "When did THIS business first do X" in one indexed row — the
+        customer table asks it per row, and a filter over the event index
+        would scan every other business's events to answer it. */
+    .index("by_business_event_occurredAt", ["businessId", "event", "occurredAt"]),
+
+  /** One row per (day, event): the trend line, without a scan. */
+  analyticsDaily: defineTable({
+    day: v.string(), // IST "YYYY-MM-DD"
+    event: analyticsEventValidator,
+    count: v.number(),
+    /** Sum of amountPaise on that day's events; 0 for non-revenue ones. */
+    amountPaise: v.number(),
+  })
+    .index("by_day_event", ["day", "event"])
+    .index("by_event_day", ["event", "day"]),
+
+  /** One row per event: lifetime count and revenue, without a scan. */
+  analyticsTotals: defineTable({
+    event: analyticsEventValidator,
+    count: v.number(),
+    amountPaise: v.number(),
+    firstOccurredAt: v.number(),
+    lastOccurredAt: v.number(),
+  }).index("by_event", ["event"]),
 
   /** Addresses that bounced or complained. We stop writing to them. */
   emailSuppressions: defineTable({

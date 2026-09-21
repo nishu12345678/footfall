@@ -11,6 +11,12 @@ import { BackButton } from "@/components/back-button";
 import { OfferDeadline } from "@/components/offer-deadline";
 import { describePaymentFailure } from "@/convex/paymentText";
 import { friendlyError } from "@/lib/errors";
+import {
+  beginCheckoutParams,
+  claimPurchase,
+  gaEvent,
+  purchaseParams,
+} from "@/lib/ga";
 
 /* Razorpay Checkout attaches itself to window. */
 declare global {
@@ -195,6 +201,28 @@ export default function BillingPage() {
       const orderId = order.orderId;
       setWatching(orderId);
 
+      /* GA begin_checkout.
+       *
+       * Here, and not on the button press: the amount and currency sent to
+       * Google must be the ones the server authoritatively created the
+       * Razorpay order with, never the price rendered on the card. Those
+       * two can differ — a ₹1 production-test allowlist change is caught a
+       * few lines above and sends the owner back to look at a new price —
+       * and a marketing report built on the displayed number would quietly
+       * disagree with the Convex ledger.
+       *
+       * The item is the plan. No business, no user, no Convex id. GA's
+       * copy of revenue is for channel attribution only; convex/billing.ts
+       * remains the accounting truth. */
+      gaEvent(
+        "begin_checkout",
+        beginCheckoutParams({
+          plan: planId,
+          amountPaise: order.amountPaise,
+          currency: order.currency,
+        }),
+      );
+
       let checkout: InstanceType<NonNullable<Window["Razorpay"]>>;
       try {
         checkout = new window.Razorpay!({
@@ -225,6 +253,36 @@ export default function BillingPage() {
                 razorpaySignature: response.razorpay_signature,
               });
               if (result.state === "paid") {
+                /* GA purchase.
+                 *
+                 * Only here: the server has checked Razorpay's signature
+                 * and its own amount/currency guard, and said "paid".
+                 * Razorpay's handler firing is not proof of a sale — a
+                 * forged or replayed response reaches this callback just
+                 * the same — so sending on the handler alone would let the
+                 * browser write revenue into the marketing report.
+                 *
+                 * transaction_id is the Razorpay ORDER id, which is what
+                 * the ledger row is keyed on and what support quotes. It
+                 * is not a Convex document id.
+                 *
+                 * Once per transaction. verifyPayment answers "paid" again
+                 * for an order already granted (`already: true`), the
+                 * "check payment status now" button can observe the same
+                 * order, and a reload re-runs neither — but GA counts a
+                 * repeated transaction_id as a second sale, so the guard
+                 * lives in sessionStorage rather than in a ref. */
+                if (claimPurchase(orderId)) {
+                  gaEvent(
+                    "purchase",
+                    purchaseParams({
+                      transactionId: orderId,
+                      plan: planId,
+                      amountPaise: order.amountPaise,
+                      currency: order.currency,
+                    }),
+                  );
+                }
                 // `status` and `order` are live; the screen flips itself.
                 setPhase("idle");
                 inFlight.current = false;

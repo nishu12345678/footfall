@@ -43,11 +43,25 @@ export function Hero({
         </p>
 
         <div className="mt-6 flex w-full flex-col items-center gap-2 sm:w-auto sm:flex-row md:mt-9 md:gap-3">
-          <a href={LINKS.cta} className="lb lb-primary lb-lg w-full sm:w-auto">
+          {/* The page's primary CTA. `cta_id` is hand-written and stable —
+              it is the key the acquisition funnel is reported on, so it
+              must survive a copy change in lib/content.ts. */}
+          <a
+            href={LINKS.cta}
+            className="lb lb-primary lb-lg w-full sm:w-auto"
+            data-analytics-event="cta_click"
+            data-analytics-cta-id="hero_primary"
+            data-analytics-location="hero"
+          >
             {HERO.ctaPrimary}
             <Icon name="arrow-right" />
           </a>
-          <WhatsAppCta label={HERO.ctaWhatsapp} className="lb-lg w-full sm:w-auto" />
+          <WhatsAppCta
+            label={HERO.ctaWhatsapp}
+            className="lb-lg w-full sm:w-auto"
+            ctaId="hero_whatsapp"
+            location="hero"
+          />
         </div>
 
         <p className="mt-4 text-[14px] text-[var(--l-muted)]">{HERO.support}</p>

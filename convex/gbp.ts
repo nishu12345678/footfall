@@ -16,6 +16,7 @@ import { activeBusinessFor,
   paidMutation,
   paidQuery,
 } from "./access";
+import { recordOnboardingStep } from "./analytics";
 
 /**
  * Step 4 — the parts of the listing that decide whether anyone finds it:
@@ -358,6 +359,13 @@ export const complete = paidMutation({
     const business = await ownedBusiness(ctx);
     await ctx.db.patch(business._id as Id<"businesses">, {
       onboardingStep: Math.max(business.onboardingStep, 5),
+    });
+
+    // Step 4 done. Service areas and keywords stay out of the event.
+    await recordOnboardingStep(ctx, {
+      businessId: business._id,
+      userId: business.userId,
+      step: 4,
     });
   },
 });

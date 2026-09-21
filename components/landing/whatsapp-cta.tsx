@@ -25,10 +25,16 @@ export function WhatsAppCta({
   label,
   tone = "light",
   className = "",
+  ctaId,
+  location,
 }: {
   label: string;
   tone?: "light" | "dark";
   className?: string;
+  /** GA `cta_id`. Stable and hand-written — see docs/product-analytics.md. */
+  ctaId?: string;
+  /** GA `location`: which section of the page this button sits in. */
+  location?: string;
 }) {
   return (
     <a
@@ -36,6 +42,20 @@ export function WhatsAppCta({
       target="_blank"
       rel="noopener noreferrer"
       className={`lb ${tone === "dark" ? "lb-white" : "lb-outline"} ${className}`}
+      /* Declarative instrumentation. The single delegated listener in
+         components/analytics.tsx reads these and sends cta_click, so this
+         file stays a server component and no payload is written twice.
+         `destination` is "whatsapp" rather than the href: the real link
+         carries the founder's phone number and a prefilled message, and
+         neither belongs in an analytics property. */
+      {...(ctaId && location
+        ? {
+            "data-analytics-event": "cta_click",
+            "data-analytics-cta-id": ctaId,
+            "data-analytics-location": location,
+            "data-analytics-destination": "whatsapp",
+          }
+        : {})}
     >
       <WhatsAppIcon size={18} style={{ color: WHATSAPP_GREEN }} />
       {label}

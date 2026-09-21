@@ -210,6 +210,74 @@ export const paidAction = ((def: any) =>
 
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+/* --------------------------------- admin ---------------------------------
+
+   The internal analytics dashboard at /admin/analytics.
+
+   ANALYTICS_ADMIN_EMAILS is a deployment env var with the same shape and
+   the same rule as the two allowlists above: exact, case-insensitive
+   emails, and only a VERIFIED auth email counts. Without the verification
+   check, anyone who can set an unverified email on their own account —
+   which the sign-up flow allows — could name an admin address and read the
+   whole customer table.
+
+   A denied call is refused with NOT_FOUND_MESSAGE, not "forbidden", so the
+   route does not advertise that an admin area exists. Hiding the nav link
+   is decoration; this is the authorisation.                              */
+
+/** Exact, case-insensitive email matching against ANALYTICS_ADMIN_EMAILS. */
+export function isAnalyticsAdminEmail(
+  email: string | null | undefined,
+  rawAllowlist = process.env.ANALYTICS_ADMIN_EMAILS ?? "",
+): boolean {
+  return emailInList(email, rawAllowlist);
+}
+
+/**
+ * True when the signed-in user holds a verified email on the allowlist.
+ * Never takes an email, a user id or anything else from the caller.
+ */
+export async function isAnalyticsAdmin(
+  ctx: QueryCtx | MutationCtx,
+): Promise<boolean> {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) return false;
+  const user = await ctx.db.get(userId);
+  if (!user) return false;
+  if (typeof user.emailVerificationTime !== "number") return false;
+  return isAnalyticsAdminEmail(user.email);
+}
+
+/** The same check, as a gate. Throws "Not found." for everyone else. */
+export async function requireAnalyticsAdmin(
+  ctx: QueryCtx | MutationCtx,
+): Promise<Id<"users">> {
+  const userId = await getAuthUserId(ctx);
+  // Signed out, not an admin and no such user are all the same answer.
+  if (!userId || !(await isAnalyticsAdmin(ctx))) {
+    throw new ConvexError(NOT_FOUND_MESSAGE);
+  }
+  return userId;
+}
+
+/**
+ * A query only an analytics admin can run. Same public type as `query`,
+ * so generated types and call sites are unchanged; only the runtime gains
+ * the check. There is deliberately no adminMutation or adminAction — the
+ * dashboard is read-only.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const adminQuery = ((def: any) =>
+  query({
+    args: def.args,
+    returns: def.returns,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    handler: async (ctx: QueryCtx, args: any) => {
+      await requireAnalyticsAdmin(ctx);
+      return def.handler(ctx, args);
+    },
+  })) as typeof query;
+
 /* ------------------------------- ownership -------------------------------
 
    Every row a shop owns carries its businessId. A client-callable function

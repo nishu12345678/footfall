@@ -10,7 +10,8 @@ import type { ActionCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Doc, Id } from "./_generated/dataModel";
-import { activeBusinessFor, paidAction, paidMutation } from "./access";
+import { activeBusinessFor, paidAction } from "./access";
+import { dedupe, istDay, recordAnalyticsEvent } from "./analytics";
 import {
   MOCK_AUTH_CODE,
   accountsUrl,
@@ -531,6 +532,7 @@ export const createBusinessFromLocation = internalMutation({
     if (existing) {
       // The same listing coming back: refresh what Google says about it,
       // keep the owner's onboarding progress and content exactly as it was.
+      const wasDisconnected = !existing.gbpLocationName;
       await ctx.db.patch(existing._id, listingFields);
       businessId = existing._id;
       await ctx.db.insert("agentActions", {
@@ -540,6 +542,23 @@ export const createBusinessFromLocation = internalMutation({
         detail: location.title,
         createdAt: Date.now(),
       });
+
+      // A reconnect is a real, repeatable fact — an owner can revoke and
+      // come back more than once — so the key carries the occasion. Only
+      // a listing that had actually been disconnected counts; re-running
+      // the linker on a live listing is a refresh, not a reconnect.
+      if (wasDisconnected) {
+        const now = Date.now();
+        await recordAnalyticsEvent(ctx, {
+          event: "business_reconnected",
+          dedupeKey: dedupe.businessReconnected(businessId, istDay(now)),
+          source: "owner",
+          occurredAt: now,
+          userId,
+          businessId,
+          metadata: { reconnect: true },
+        });
+      }
     } else {
       businessId = await ctx.db.insert("businesses", {
         userId,
@@ -554,6 +573,18 @@ export const createBusinessFromLocation = internalMutation({
         title: "Google Business Profile connected",
         detail: location.title,
         createdAt: Date.now(),
+      });
+
+      // The funnel's Connect step. Keyed by the business row, which is
+      // created once per listing — so a retried link action, or the owner
+      // linking the same listing twice, still counts one connection. No
+      // listing title or address goes into the event.
+      await recordAnalyticsEvent(ctx, {
+        event: "business_connected",
+        dedupeKey: dedupe.businessConnected(businessId),
+        source: "owner",
+        userId,
+        businessId,
       });
     }
 
@@ -622,14 +653,79 @@ export const startLink = mutation({
     if (!userId) throw new ConvexError("Sign in first.");
 
     const token = crypto.randomUUID().replace(/-/g, "");
-    await ctx.db.insert("googleLinkTokens", {
+    const attemptId = await ctx.db.insert("googleLinkTokens", {
       userId,
       token,
       codeVerifier,
       returnTo,
       expiresAt: Date.now() + 10 * 60 * 1000,
     });
+
+    // The funnel's "attempted to connect" step, written in the same
+    // transaction as the token row. The non-secret row id is the key — never
+    // the OAuth state token, because analytics dedupe keys persist after that
+    // one-time credential should be forgotten.
+    await recordAnalyticsEvent(ctx, {
+      event: "gbp_connect_started",
+      dedupeKey: dedupe.gbpConnectStarted(attemptId),
+      source: "owner",
+      userId,
+    });
+
     return token;
+  },
+});
+
+/**
+ * The other end of a consent attempt that didn't land.
+ *
+ * Keyed by the same non-secret attempt row id as the start, so one attempt
+ * produces at most one failure however many times the callback action
+ * retries. Only an error CLASS is stored — never Google's message, the code,
+ * state token or anything else from the provider response.
+ */
+export const noteConnectFailed = internalMutation({
+  args: {
+    attemptId: v.id("googleLinkTokens"),
+    errorClass: v.string(),
+    userId: v.optional(v.id("users")),
+  },
+  returns: v.null(),
+  handler: async (ctx, { attemptId, errorClass, userId }) => {
+    await recordAnalyticsEvent(ctx, {
+      event: "gbp_connect_failed",
+      dedupeKey: dedupe.gbpConnectFailed(attemptId),
+      source: "owner",
+      userId,
+      metadata: { errorClass },
+    });
+    return null;
+  },
+});
+
+/**
+ * Non-secret identity of a consent attempt, including an expired one.
+ * The action uses this only to dedupe failure analytics without persisting the
+ * OAuth state token in the permanent event ledger.
+ */
+export const linkAttemptForAnalytics = internalQuery({
+  args: { token: v.string() },
+  returns: v.union(
+    v.object({
+      attemptId: v.id("googleLinkTokens"),
+      userId: v.id("users"),
+      returnTo: v.string(),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, { token }) => {
+    const row = await ctx.db
+      .query("googleLinkTokens")
+      .withIndex("by_token", (q) => q.eq("token", token))
+      .first();
+    return row
+      ? { attemptId: row._id, userId: row.userId, returnTo: row.returnTo }
+      : null;
   },
 });
 
@@ -663,16 +759,40 @@ export const completeLink = internalAction({
     returnTo: string | null;
     error: string | null;
   }> => {
+    // Read the non-secret row identity before consuming the one-time token.
+    // Even an expired attempt can then be counted without copying its OAuth
+    // state credential into a permanent analytics dedupe key.
+    const attempt = await ctx.runQuery(
+      internal.google.linkAttemptForAnalytics,
+      { token: state },
+    );
     const link = await ctx.runMutation(internal.google.consumeLinkToken, {
       token: state,
     });
-    if (!link) {
+
+    /**
+     * Records the attempt as failed and hands the owner back a message.
+     *
+     * Only the class is stored: `errorClass` is a fixed string chosen here,
+     * never Google's own text, which can contain the account's email. A forged
+     * state with no attempt row is not analytics data and is simply refused.
+     */
+    const fail = async (errorClass: string, message: string) => {
+      if (attempt) {
+        await ctx.runMutation(internal.google.noteConnectFailed, {
+          attemptId: attempt.attemptId,
+          errorClass,
+          userId: attempt.userId,
+        });
+      }
       return {
         ok: false,
-        returnTo: null,
-        error: "That link expired. Try again.",
+        returnTo: link?.returnTo ?? attempt?.returnTo ?? null,
+        error: message,
       };
-    }
+    };
+
+    if (!link) return await fail("link_expired", "That link expired. Try again.");
 
     // The start route hands out this code only when the fake Google is on
     // in Next. If the backend is about to send it to the real Google, the
@@ -686,21 +806,19 @@ export const completeLink = internalAction({
         /\/+$/,
         "",
       );
-      return {
-        ok: false,
-        returnTo: link.returnTo,
-        error: `The fake Google is on in the frontend but not on the backend. Run: npx convex env set GOOGLE_API_MOCK_URL ${site}/api/mock/google`,
-      };
+      return await fail(
+        "mock_mismatch",
+        `The fake Google is on in the frontend but not on the backend. Run: npx convex env set GOOGLE_API_MOCK_URL ${site}/api/mock/google`,
+      );
     }
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     if (!clientId || !clientSecret) {
-      return {
-        ok: false,
-        returnTo: link.returnTo,
-        error: "Google credentials are not configured.",
-      };
+      return await fail(
+        "not_configured",
+        "Google credentials are not configured.",
+      );
     }
 
     const res = await fetch(tokenUrl(), {
@@ -727,29 +845,25 @@ export const completeLink = internalAction({
           res.status,
           raw.slice(0, 400),
         );
-        return {
-          ok: false,
-          returnTo: link.returnTo,
-          error: `Google returned an unreadable token response (${res.status}). Try reconnecting.`,
-        };
+        return await fail(
+          "token_unreadable",
+          `Google returned an unreadable token response (${res.status}). Try reconnecting.`,
+        );
       }
     }
     if (!res.ok) {
       console.error("[google] token exchange failed", payload || raw);
-      return {
-        ok: false,
-        returnTo: link.returnTo,
-        error:
-          payload.error_description ?? payload.error ?? "Token exchange failed",
-      };
+      return await fail(
+        "token_exchange_failed",
+        payload.error_description ?? payload.error ?? "Token exchange failed",
+      );
     }
     if (typeof payload.access_token !== "string") {
       console.error("[google] token exchange missing access_token", payload);
-      return {
-        ok: false,
-        returnTo: link.returnTo,
-        error: "Google did not return an access token. Try reconnecting.",
-      };
+      return await fail(
+        "no_access_token",
+        "Google did not return an access token. Try reconnecting.",
+      );
     }
 
     await ctx.runMutation(internal.google.saveAccount, {

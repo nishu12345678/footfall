@@ -10,6 +10,7 @@ import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
 import { activeBusinessFor, paidAction, paidMutation, paidQuery } from "./access";
+import { dedupe, recordAnalyticsEvent } from "./analytics";
 
 /**
  * A free one-page website for shops that don't have one.
@@ -241,7 +242,7 @@ export const saveSite = internalMutation({
       if (!found) slug = `${args.slug}-${Math.random().toString(36).slice(2, 6)}`;
     }
 
-    await ctx.db.insert("sites", {
+    const siteId = await ctx.db.insert("sites", {
       ...args,
       slug,
       published: true,
@@ -254,6 +255,19 @@ export const saveSite = internalMutation({
       title: "Website created",
       detail: `${slug}.footfall.zone`,
       createdAt: Date.now(),
+    });
+
+    // A new site is created live, so creation IS the publish. Keyed by
+    // the site row, which is what setPublished below keys on too: an
+    // owner who unpublishes and republishes is not a second first-publish.
+    // No slug, headline or copy goes into the event.
+    const owner = await ctx.db.get(args.businessId);
+    await recordAnalyticsEvent(ctx, {
+      event: "site_published",
+      dedupeKey: dedupe.sitePublished(siteId),
+      source: "owner",
+      userId: owner?.userId,
+      businessId: args.businessId,
     });
 
     return slug;
@@ -411,6 +425,18 @@ export const setPublished = mutation({
     if (!site) throw new ConvexError("No website yet.");
 
     await ctx.db.patch(site._id, { published });
+
+    // Same key as the creation above, so the "shop has a live site" fact
+    // is counted once per site however many times the switch is flipped.
+    if (published) {
+      await recordAnalyticsEvent(ctx, {
+        event: "site_published",
+        dedupeKey: dedupe.sitePublished(site._id),
+        source: "owner",
+        userId,
+        businessId: business._id,
+      });
+    }
   },
 });
 

@@ -80,11 +80,22 @@ export function Start() {
           {START.sub}
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-2 sm:flex-row md:gap-3">
-          <a href={LINKS.cta} className="lb lb-primary lb-lg w-full sm:w-auto">
+          <a
+            href={LINKS.cta}
+            className="lb lb-primary lb-lg w-full sm:w-auto"
+            data-analytics-event="cta_click"
+            data-analytics-cta-id="closing_primary"
+            data-analytics-location="closing"
+          >
             {HERO.ctaPrimary}
             <Icon name="arrow-right" />
           </a>
-          <WhatsAppCta label={HERO.ctaWhatsapp} className="lb-lg w-full sm:w-auto" />
+          <WhatsAppCta
+            label={HERO.ctaWhatsapp}
+            className="lb-lg w-full sm:w-auto"
+            ctaId="closing_whatsapp"
+            location="closing"
+          />
         </div>
         <p className="mt-5 text-[14px] text-[var(--l-muted)]">{START.note}</p>
       </div>

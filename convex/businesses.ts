@@ -14,6 +14,7 @@ import {
   paidMutation,
   subscriptionBusinessId,
 } from "./access";
+import { recordOnboardingStep } from "./analytics";
 
 /** The signed-in owner's ACTIVE business, or null if none is connected. */
 export const mine = query({
@@ -135,6 +136,16 @@ export const updateLocation = paidMutation({
       ...args,
       // Only ever move forward; going back to edit shouldn't undo progress.
       onboardingStep: Math.max(business.onboardingStep, 3),
+    });
+
+    // Step 2 is done. Same transaction as the patch, and keyed by
+    // (business, step), so re-editing this screen later records nothing.
+    // None of the fields the owner just confirmed — name, phone, email,
+    // address — goes into the event.
+    await recordOnboardingStep(ctx, {
+      businessId: business._id,
+      userId,
+      step: 2,
     });
 
     return { ok: true };

@@ -54,7 +54,14 @@ export function MobileCta() {
         on ? "is-on" : ""
       }`}
     >
-      <a href={LINKS.cta} className="lb lb-primary w-full" tabIndex={on ? 0 : -1}>
+      <a
+        href={LINKS.cta}
+        className="lb lb-primary w-full"
+        tabIndex={on ? 0 : -1}
+        data-analytics-event="cta_click"
+        data-analytics-cta-id="sticky_primary"
+        data-analytics-location="mobile_bar"
+      >
         {NAV_CTA.primary}
       </a>
     </div>

@@ -26,6 +26,18 @@ const fmtDate = (ms: number) =>
 export default function SettingsPage() {
   const me = useQuery(api.account.me);
   const businesses = useQuery(api.businesses.list);
+  /* Whether to offer the internal dashboard link.
+   *
+   * `adminDash.me` is the one query in that file that answers a non-admin
+   * rather than throwing, precisely so a screen can ask this without
+   * handling an error. It returns a boolean and nothing else — no email,
+   * no allowlist, no hint about who else is on it.
+   *
+   * Hiding the link is decoration, not authorisation: every query behind
+   * /admin/analytics re-checks the verified email server-side and answers
+   * "Not found." A client that flipped this boolean by hand would reach a
+   * page that tells it nothing. */
+  const admin = useQuery(api.adminDash.me);
   const switchTo = useMutation(api.businesses.switchTo);
   const { signOut } = useAuthActions();
   const disconnect = useAction(api.google.disconnect);
@@ -312,6 +324,25 @@ export default function SettingsPage() {
                 }
               />
             ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {/* ------------------------------- internal ---------------------------- */}
+      {admin?.isAdmin ? (
+        <section className="inset-group mt-6">
+          <div className="hairline-b px-5 py-3.5">
+            <p className="text-[15px] font-semibold">Internal</p>
+            <p className="mt-0.5 text-[12px] text-muted">
+              Only visible to the footfall team.
+            </p>
+          </div>
+          <ul>
+            <Row
+              label="Product analytics"
+              value="Open"
+              href="/admin/analytics"
+            />
           </ul>
         </section>
       ) : null}

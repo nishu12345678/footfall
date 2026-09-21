@@ -18,6 +18,7 @@ import { activeBusinessFor,
   paidMutation,
   paidQuery,
 } from "./access";
+import { recordOnboardingStep } from "./analytics";
 
 /**
  * Step 3 — what the shop actually sells, and what it's known for.
@@ -114,6 +115,14 @@ export const complete = paidMutation({
     if (!business) return;
     await ctx.db.patch(businessId, {
       onboardingStep: Math.max(business.onboardingStep, 4),
+    });
+
+    // Step 3 done. The offerings and specialties themselves stay out of
+    // the event — only the step number is recorded.
+    await recordOnboardingStep(ctx, {
+      businessId,
+      userId: business.userId,
+      step: 3,
     });
   },
 });

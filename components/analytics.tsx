@@ -4,6 +4,7 @@ import Script from "next/script";
 import { usePathname } from "next/navigation";
 import { useEffect, useSyncExternalStore } from "react";
 import { gaId, shouldTrack } from "@/lib/analytics";
+import { gaEvent, gaPush, paramsFromDataset, setGaTracking } from "@/lib/ga";
 
 /**
  * Google Analytics 4, on the marketing page and the product only.
@@ -26,7 +27,14 @@ import { gaId, shouldTrack } from "@/lib/analytics";
  *    fixed (js, config, then page_views) no matter whether gtag.js has
  *    finished downloading. The library drains the queue when it arrives.
  *    Pushing an `arguments` object, not an array, is load-bearing: gtag.js
- *    ignores plain arrays.
+ *    ignores plain arrays. That push now lives in lib/ga.ts (`gaPush`) so
+ *    the page_view path and the custom-event path share one transport.
+ *
+ * Custom events (cta_click, login_start, begin_checkout, purchase) go
+ * through lib/ga.ts, which allowlists their parameters. This component
+ * owns the switch: `setGaTracking` is flipped on only when the measurement
+ * id exists AND this host+path is ours to measure, so a data-analytics-*
+ * attribute that somehow renders on a shop microsite still sends nothing.
  *
  * Search params are deliberately not read: useSearchParams would force
  * the static marketing page into dynamic rendering, and nothing in the
@@ -34,8 +42,10 @@ import { gaId, shouldTrack } from "@/lib/analytics";
  *
  * Privacy: GA4 does not store IP addresses and Google Signals is not
  * enabled, so this is visits, pages and rough geography — nothing that
- * identifies a person. The privacy policy (§7, §13) says exactly this; if
- * the configuration here changes, so must those sections.
+ * identifies a person. No user_id is ever set and no Convex document id is
+ * ever sent, so GA stays unconnected to an account exactly as the privacy
+ * policy (§7, §13) says; if the configuration here changes, so must those
+ * sections.
  *
  * CSP (when next.config.ts grows one): allow script-src and connect-src
  * for https://www.googletagmanager.com and https://*.google-analytics.com,
@@ -44,28 +54,65 @@ import { gaId, shouldTrack } from "@/lib/analytics";
 
 const ID = gaId();
 
-declare global {
-  interface Window {
-    dataLayer?: unknown[];
-  }
-}
-
-// `function`, not an arrow: `arguments` is the whole point. The typed rest
-// parameter exists only so call sites typecheck; the body must not use it.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function gtag(...args: unknown[]) {
-  // eslint-disable-next-line prefer-rest-params
-  (window.dataLayer ??= []).push(arguments);
-}
+// Module-level rather than refs: React's dev-mode double-invoked effects
+// would otherwise send the first page_view twice.
+let initialised = false;
+let lastPath: string | null = null;
 
 const noop = () => () => {};
 const readHost = () => window.location.host;
 const serverHost = () => null;
 
-// Module-level rather than refs: React's dev-mode double-invoked effects
-// would otherwise send the first page_view twice.
-let initialised = false;
-let lastPath: string | null = null;
+/**
+ * One delegated listener for everything carrying data-analytics-event.
+ *
+ * Instrumenting a link should not turn a server component into a client
+ * one, and forty onClick handlers are forty places for a payload to drift.
+ * So the markup declares intent — `data-analytics-event="cta_click"` plus
+ * `data-analytics-cta-id`, `data-analytics-location`,
+ * `data-analytics-destination` — and this reads it.
+ *
+ * Capture phase, on the document, and `closest()` rather than the exact
+ * target: a click usually lands on the <svg> or the text node inside the
+ * button, and capture still fires when a handler on the element itself
+ * calls stopPropagation. Nothing is prevented or delayed; the push is
+ * synchronous onto the queue, which survives the navigation because
+ * dataLayer is drained by gtag.js as soon as it loads on the next page.
+ */
+function onDocumentClick(e: MouseEvent) {
+  // Only a plain primary click; a ctrl/cmd-click opening a new tab is a
+  // real intent too, so those are kept — only auxiliary buttons are not.
+  if (e.button !== 0) return;
+
+  const start = e.target;
+  if (!(start instanceof Element)) return;
+  const el = start.closest<HTMLElement>("[data-analytics-event]");
+  if (!el) return;
+
+  // Anchors and buttons only. A div with the attribute is a mistake in the
+  // markup, and silently honouring it invites "track this whole section".
+  const tag = el.tagName;
+  const role = el.getAttribute("role");
+  if (tag !== "A" && tag !== "BUTTON" && role !== "button" && role !== "link") {
+    return;
+  }
+
+  const parsed = paramsFromDataset({ ...el.dataset });
+  if (!parsed) return;
+
+  // A cta_click on an anchor knows its own destination; let the markup
+  // override it, but never make a call site repeat the href.
+  if (
+    parsed.event === "cta_click" &&
+    !parsed.params.destination &&
+    el instanceof HTMLAnchorElement
+  ) {
+    const href = el.getAttribute("href");
+    if (href) parsed.params.destination = href;
+  }
+
+  gaEvent(parsed.event, parsed.params);
+}
 
 export function Analytics() {
   const pathname = usePathname();
@@ -79,19 +126,32 @@ export function Analytics() {
   const allowed = ID !== null && host !== null && shouldTrack(host, pathname);
 
   useEffect(() => {
+    // The gate every custom event reads. Flipped off again on a route that
+    // is not ours, so a client-side navigation into /s/<slug> stops
+    // sending as surely as a fresh load of it would.
+    setGaTracking(allowed);
+  }, [allowed]);
+
+  useEffect(() => {
     if (!allowed || !ID || lastPath === pathname) return;
     lastPath = pathname;
     if (!initialised) {
       initialised = true;
-      gtag("js", new Date());
-      gtag("config", ID, { send_page_view: false });
+      gaPush("js", new Date());
+      gaPush("config", ID, { send_page_view: false });
     }
-    gtag("event", "page_view", {
+    gaPush("event", "page_view", {
       page_path: pathname,
       page_location: window.location.href,
       page_title: document.title,
     });
   }, [allowed, pathname]);
+
+  useEffect(() => {
+    if (!allowed) return;
+    document.addEventListener("click", onDocumentClick, true);
+    return () => document.removeEventListener("click", onDocumentClick, true);
+  }, [allowed]);
 
   if (!allowed || !ID) return null;
 

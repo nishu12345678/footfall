@@ -34,6 +34,12 @@ const APP_TABLES = [
   "emailSuppressions",
   "postGenerations",
   "websiteChecks",
+  // Product analytics has no customer prose or contact data, but a full
+  // deployment wipe must reset the ledger and its aggregates together or a
+  // fresh onboarding run would inherit yesterday's funnel and revenue.
+  "analyticsEvents",
+  "analyticsDaily",
+  "analyticsTotals",
   "businesses",
 ] as const;
 

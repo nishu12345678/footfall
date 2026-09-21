@@ -3,6 +3,11 @@ import { action, internalMutation, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { activeBusinessFor, ownedBusiness, paidAction, paidMutation, paidQuery } from "./access";
+import {
+  dedupe,
+  recordAnalyticsEvent,
+  recordOnboardingStep,
+} from "./analytics";
 
 /**
  * Step 5 — the logo we stamp on every post image, and the switch that turns
@@ -77,6 +82,23 @@ export const finishOnboarding = paidMutation({
       onboardingComplete: true,
       agentActive: true,
       agentStartedAt: business.agentStartedAt ?? Date.now(),
+    });
+
+    // Step 5, then the activation milestone itself. Both are keyed by the
+    // business, so an owner who revisits this screen to change their logo
+    // does not re-activate in the funnel. The `first` flag is belt and
+    // braces on top of that.
+    await recordOnboardingStep(ctx, {
+      businessId: business._id,
+      userId: business.userId,
+      step: 5,
+    });
+    await recordAnalyticsEvent(ctx, {
+      event: "onboarding_completed",
+      dedupeKey: dedupe.onboardingCompleted(business._id),
+      source: "owner",
+      userId: business.userId,
+      businessId: business._id,
     });
 
     // Editing a finished setup lands here too; only the first time is news.

@@ -21,6 +21,7 @@ import {
 } from "./access";
 import { sendNow as sendMessage, type SendResult } from "./messaging";
 import { describePaymentFailure } from "./paymentText";
+import { dedupe, recordAnalyticsEvent } from "./analytics";
 
 /* ---------------------------------------------------------------------------
    Razorpay, one-time orders.
@@ -317,6 +318,23 @@ export const recordPending = internalMutation({
       attempts: 0,
       updatedAt: Date.now(),
     });
+
+    // Intent to pay, recorded where the order row is created rather than
+    // in the browser. createOrder reuses an open order rather than opening
+    // a second one, so this fires once per genuine attempt; the order id
+    // is the key, so a retried mutation cannot double it.
+    //
+    // The amount is deliberately NOT carried here: checkout_started is not
+    // revenue, and counting an opened order as money would overstate the
+    // ledger. The plan name is enough to segment the funnel.
+    await recordAnalyticsEvent(ctx, {
+      event: "checkout_started",
+      dedupeKey: dedupe.checkoutStarted(args.razorpayOrderId),
+      source: "owner",
+      userId: args.userId,
+      businessId: args.businessId,
+      metadata: { plan: args.plan },
+    });
   },
 });
 
@@ -426,6 +444,32 @@ export const markPaid = internalMutation({
       `[billing] PAID ${row.razorpayOrderId} ${args.razorpayPaymentId} ${row.plan} via ${args.confirmedBy}`,
     );
 
+    // Revenue, recorded here and nowhere else.
+    //
+    // Every early return above has already happened: an unknown order, an
+    // order already paid, a second payment on a paid order and an
+    // amount/currency mismatch all leave without reaching this line. So
+    // this event exists only where a period was actually granted.
+    //
+    // The browser and the webhook race for this mutation and the loser
+    // returns at the "already paid" guard, so the race cannot double the
+    // count either — and the order id key means even a lost guard could
+    // not. Money is the captured amount, in paise, matched against what
+    // we asked for. No payment id, signature or Razorpay payload.
+    await recordAnalyticsEvent(ctx, {
+      event: "payment_succeeded",
+      dedupeKey: dedupe.paymentSucceeded(row.razorpayOrderId),
+      // Server-to-server confirmation either way; the owner's tap was the
+      // checkout_started above.
+      source: "system",
+      occurredAt: now,
+      userId: row.userId,
+      businessId: rowBusiness ?? undefined,
+      amountPaise: args.amountPaise,
+      currency: args.currency,
+      metadata: { plan: row.plan, confirmedBy: args.confirmedBy },
+    });
+
     // The receipt goes once, from whichever side won. The dedupe key is
     // the order id, so even a second markPaid can't send another.
     await ctx.db.patch(row._id, { receiptEmailedAt: now });
@@ -506,6 +550,28 @@ export const markAttemptFailed = internalMutation({
     console.log(
       `[billing] attempt ${attempts} failed on ${row.razorpayOrderId} (${args.source}): ${args.code ?? ""} ${args.reason ?? ""}`,
     );
+
+    // A declined or abandoned attempt. Keyed by (order, payment): one
+    // order can be retried with another card and each genuine decline is
+    // worth counting, while the browser and the webhook both reporting
+    // the SAME failed payment is one event.
+    //
+    // Only Razorpay's error CODE is stored, as an error class. Their
+    // `reason` is free-form text that has carried bank and cardholder
+    // detail, so it stays in the subscription row for support and out of
+    // the analytics ledger entirely.
+    await recordAnalyticsEvent(ctx, {
+      event: "checkout_failed",
+      dedupeKey: dedupe.checkoutFailed(
+        args.razorpayOrderId,
+        args.razorpayPaymentId,
+      ),
+      source: args.source === "checkout" ? "owner" : "system",
+      occurredAt: now,
+      userId: row.userId,
+      businessId: row.businessId,
+      metadata: { plan: row.plan, errorClass: args.code ?? "unknown" },
+    });
 
     // One "didn't go through" email per order, not one per tap.
     if (!row.failureEmailedAt) {
@@ -638,6 +704,27 @@ export const applyRefund = internalMutation({
     console.log(
       `[billing] refund ${args.razorpayRefundId} processed: ${args.amountPaise} of ${sub.amountPaise} on ${sub.razorpayOrderId} (${full ? "full" : "partial"})`,
     );
+
+    // Money returned. Only a PROCESSED refund reaches this line — a
+    // created or failed one returned above — so captured revenue minus
+    // refunded revenue is the real figure.
+    //
+    // Keyed by Razorpay's own refund id, which is stable across the
+    // webhook redeliveries and reconcile passes that all land here. A
+    // partial refund and a later second partial on the same payment are
+    // two different refund ids and count as two events, which is correct:
+    // the amounts add up to what was actually returned.
+    await recordAnalyticsEvent(ctx, {
+      event: "payment_refunded",
+      dedupeKey: dedupe.paymentRefunded(args.razorpayRefundId),
+      source: "system",
+      occurredAt: now,
+      userId: sub.userId,
+      businessId: sub.businessId,
+      amountPaise: args.amountPaise,
+      currency: sub.currency,
+      metadata: { plan: sub.plan, full },
+    });
 
     if (!refund.emailedAt) {
       await ctx.db.patch(refund._id, { emailedAt: now });
@@ -1150,6 +1237,21 @@ export const noteDismissed = mutation({
     if (!["created", "attempted"].includes(row.status)) return;
     console.log(`[billing] checkout dismissed on ${orderId}`);
     await ctx.db.patch(row._id, { updatedAt: Date.now() });
+
+    // The owner closed the modal. This is the one funnel event the
+    // browser reports rather than the server observing, so it is fenced:
+    // the order must belong to the caller (checked above) and the key is
+    // the order id alone, so closing the modal five times is one
+    // abandonment. The ownership check above is what stops a caller
+    // dismissing somebody else's order.
+    await recordAnalyticsEvent(ctx, {
+      event: "checkout_dismissed",
+      dedupeKey: dedupe.checkoutDismissed(orderId),
+      source: "owner",
+      userId,
+      businessId: row.businessId,
+      metadata: { plan: row.plan },
+    });
   },
 });
 

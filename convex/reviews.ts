@@ -17,6 +17,7 @@ import { activeBusinessFor,
   type Owned,
 } from "./access";
 import { v4Base } from "./googleHosts";
+import { dedupe, recordAnalyticsEvent } from "./analytics";
 
 /**
  * Reviews from the Google Business Profile.
@@ -334,9 +335,12 @@ export const markReplied = internalMutation({
       return;
     }
 
+    const already = review.replyStatus === "published";
+    const now = Date.now();
+
     await ctx.db.patch(id, {
       replyStatus: "published",
-      repliedAt: Date.now(),
+      repliedAt: review.repliedAt ?? now,
       replyNeedsApproval: undefined,
       replyError: undefined,
       ...(replyText ? { replyText } : {}),
@@ -347,8 +351,27 @@ export const markReplied = internalMutation({
       type: "review_reply",
       title: `Replied to ${review.authorName ?? "a customer"}`,
       detail: (replyText ?? review.replyText ?? "").slice(0, 160),
-      createdAt: Date.now(),
+      createdAt: now,
     });
+
+    // A reply Google accepted — the third kind of first value. Keyed by
+    // the review row. Neither the review text, the reply text nor the
+    // reviewer's name goes anywhere near the event.
+    if (!already) {
+      const owner = await ctx.db.get(review.businessId);
+      await recordAnalyticsEvent(ctx, {
+        event: "content_published",
+        dedupeKey: dedupe.contentPublished("review_reply", id),
+        // A reply the owner approved by hand still went out through the
+        // agent's drafting loop; "agent" is the honest attribution for
+        // both paths, and the code cannot tell them apart here.
+        source: "agent",
+        occurredAt: now,
+        userId: owner?.userId,
+        businessId: review.businessId,
+        metadata: { kind: "review_reply" },
+      });
+    }
   },
 });
 

@@ -29,7 +29,13 @@ export function Pricing() {
               ))}
             </ul>
           </div>
-          <a href={LINKS.cta} className="lb lb-outline h-12 flex-none px-6 text-base">
+          <a
+            href={LINKS.cta}
+            className="lb lb-outline h-12 flex-none px-6 text-base"
+            data-analytics-event="cta_click"
+            data-analytics-cta-id="pricing_free"
+            data-analytics-location="pricing"
+          >
             {PRICING.free.cta}
           </a>
         </div>
@@ -78,11 +84,18 @@ export function Pricing() {
                 </p>
               ) : null}
 
+              {/* Intent, not a sale. GA's begin_checkout is sent only from
+                  app/app/billing once the server has created a real
+                  Razorpay order with an authoritative amount — a click here
+                  is just a visitor saying which plan interests them. */}
               <a
                 href="/app/billing"
                 className={`lb mt-8 h-12 w-full text-base ${
                   featured ? "lb-primary" : "lb-outline"
                 }`}
+                data-analytics-event="cta_click"
+                data-analytics-cta-id={`pricing_plan_${plan.id}`}
+                data-analytics-location="pricing"
               >
                 {plan.cta}
                 <Icon name="arrow-right" />
@@ -119,6 +132,11 @@ export function Pricing() {
             target="_blank"
             rel="noopener noreferrer"
             className="lb lb-white h-12 flex-none px-6 text-base"
+            data-analytics-event="cta_click"
+            data-analytics-cta-id="pricing_whatsapp"
+            data-analytics-location="pricing_offer"
+            /* Not the href: it carries the founder's number. */
+            data-analytics-destination="whatsapp"
           >
             <WhatsAppIcon size={18} style={{ color: "#25d366" }} />
             {PRICING.offer.cta}

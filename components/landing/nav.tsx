@@ -51,11 +51,23 @@ export function Nav() {
           </ul>
 
           <div className="flex items-center gap-3">
-            <a href={LINKS.cta} className="lb lb-primary hidden lg:inline-flex">
+            <a
+              href={LINKS.cta}
+              className="lb lb-primary hidden lg:inline-flex"
+              data-analytics-event="cta_click"
+              data-analytics-cta-id="nav_primary"
+              data-analytics-location="nav"
+            >
               {NAV_CTA.primary}
               <Icon name="arrow-right" />
             </a>
-            <a href={LINKS.login} className="lb lb-outline hidden lg:inline-flex">
+            <a
+              href={LINKS.login}
+              className="lb lb-outline hidden lg:inline-flex"
+              data-analytics-event="cta_click"
+              data-analytics-cta-id="nav_login"
+              data-analytics-location="nav"
+            >
               {NAV_CTA.login}
             </a>
             <button
@@ -90,11 +102,26 @@ export function Nav() {
             </li>
           ))}
         </ul>
+        {/* Same two actions, different placement. The `location` is what
+            separates them in the report — the ids stay identical so the
+            CTA's total is one number. */}
         <div className="mt-4 grid gap-2">
-          <a href={LINKS.cta} className="lb lb-primary w-full">
+          <a
+            href={LINKS.cta}
+            className="lb lb-primary w-full"
+            data-analytics-event="cta_click"
+            data-analytics-cta-id="nav_primary"
+            data-analytics-location="nav_mobile"
+          >
             {NAV_CTA.primary}
           </a>
-          <a href={LINKS.login} className="lb lb-outline w-full">
+          <a
+            href={LINKS.login}
+            className="lb lb-outline w-full"
+            data-analytics-event="cta_click"
+            data-analytics-cta-id="nav_login"
+            data-analytics-location="nav_mobile"
+          >
             {NAV_CTA.login}
           </a>
         </div>

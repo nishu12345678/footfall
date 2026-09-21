@@ -8,6 +8,7 @@ import { BRAND_ASSETS } from "@/lib/brand";
 import { BackButton } from "@/components/back-button";
 import { friendlyError, GENERIC } from "@/lib/errors";
 import { TWILIO_UI_ENABLED } from "@/lib/features";
+import { gaEvent, loginStartParams, type LoginMethod } from "@/lib/ga";
 
 type Method = "phone" | "email";
 type Step = "identify" | "code";
@@ -72,7 +73,29 @@ export default function LoginPage() {
     setError(friendly === GENERIC ? fallback : friendly);
   }
 
+  /**
+   * GA `login_start`: which door a visitor tried, and nothing else.
+   *
+   * Sent when an attempt *begins*, not when it succeeds — the point is to
+   * see where sign-in is abandoned, and a method that always fails would
+   * be invisible in a success-only event. The signed-in fact itself is
+   * `account_created` in the Convex ledger; this is the browser's guess at
+   * intent and is allowed to be lost to an ad blocker.
+   *
+   * The identifier is deliberately not passed: lib/ga.ts would drop an
+   * email or a phone number anyway, but no call site should be handing one
+   * to an analytics function in the first place.
+   */
+  function noteLoginStart(m: LoginMethod) {
+    gaEvent("login_start", loginStartParams(m));
+  }
+
   async function sendCode() {
+    // Only a first send is a start. A resend from the code step is the
+    // same attempt continuing, and counting it would inflate the method.
+    if (step === "identify") {
+      noteLoginStart(method === "phone" ? "phone_otp" : "email_otp");
+    }
     setBusy("send");
     setError(null);
     try {
@@ -115,6 +138,9 @@ export default function LoginPage() {
   }
 
   async function continueWithGoogle() {
+    // Before the redirect: signIn("google") navigates away, so an event
+    // queued after it would never be flushed.
+    noteLoginStart("google");
     setBusy("google");
     setError(null);
     try {

@@ -5,9 +5,11 @@ import { Email } from "@convex-dev/auth/providers/Email";
 import Google from "@auth/core/providers/google";
 import type { EmailConfig } from "@auth/core/providers/email";
 import { internal } from "./_generated/api";
-import type { ActionCtx } from "./_generated/server";
+import type { ActionCtx, MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { sendNow as sendMessage, toE164, twilioEnabled } from "./messaging";
 import { sendNow as sendEmail } from "./email";
+import { dedupe, recordAnalyticsEvent } from "./analytics";
 
 /**
  * Three ways in, because shop owners don't all have the same habits:
@@ -155,6 +157,20 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       // First sign-in ever: say hello, once. The email module dedupes on
       // the key, so a second account link on the same user can't repeat it.
       if (existingUserId === null) {
+        // Convex Auth runs this callback inside the mutation that inserted
+        // the user, so the account and its event commit together. Keyed by
+        // the user id: linking a second provider to one account later is
+        // not a second signup.
+        //
+        // The cast is because Convex Auth types this ctx against
+        // AnyDataModel; at runtime it is this deployment's MutationCtx.
+        await recordAnalyticsEvent(ctx as unknown as MutationCtx, {
+          event: "account_created",
+          dedupeKey: dedupe.accountCreated(userId as Id<"users">),
+          source: "owner",
+          userId: userId as Id<"users">,
+        });
+
         await ctx.scheduler.runAfter(0, internal.email.sendToUser, {
           userId,
           template: "welcome",

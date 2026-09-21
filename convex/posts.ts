@@ -17,6 +17,7 @@ import { activeBusinessFor,
 } from "./access";
 import { v4Base } from "./googleHosts";
 import type { ActionCtx } from "./_generated/server";
+import { dedupe, recordAnalyticsEvent } from "./analytics";
 
 /**
  * Writing and publishing Google Business Profile posts.
@@ -160,9 +161,15 @@ export const markPublished = internalMutation({
       return;
     }
 
+    // A post that is already published is not published again: Google
+    // accepted it once, and a retried markPublished must not move the
+    // timestamp or count a second publish.
+    const already = post.status === "published";
+    const now = Date.now();
+
     await ctx.db.patch(id, {
       status: "published",
-      publishedAt: Date.now(),
+      publishedAt: post.publishedAt ?? now,
       gbpPostName,
       error: undefined,
     });
@@ -173,8 +180,26 @@ export const markPublished = internalMutation({
       title: "New post published",
       detail: post.body.slice(0, 120),
       imageUrl: post.imageUrl,
-      createdAt: Date.now(),
+      createdAt: now,
     });
+
+    // First value: a successful Google publish, not a draft. Keyed by the
+    // post row. The body and the Google post name stay out of the event —
+    // only the kind of content and who wrote it.
+    if (!already) {
+      const owner = await ctx.db.get(post.businessId);
+      await recordAnalyticsEvent(ctx, {
+        event: "content_published",
+        dedupeKey: dedupe.contentPublished("post", id),
+        // A cron publish is product value, not human engagement. The
+        // caller is the cron whenever the post got here through a slot.
+        source: post.scheduledFor ? "agent" : "owner",
+        occurredAt: now,
+        userId: owner?.userId,
+        businessId: post.businessId,
+        metadata: { kind: "post", generatedBy: post.generatedBy },
+      });
+    }
   },
 });
 
@@ -819,6 +844,30 @@ export const touchRun = internalMutation({
       ...(error !== undefined ? { error } : {}),
       ...(done ? { finishedAt: now } : {}),
     });
+
+    // One content_generated per RUN, not per post, recorded when the run
+    // reaches a terminal state having actually written something. A run
+    // the owner stopped halfway still generated what it generated, so
+    // "cancelled" counts too; a run that produced nothing did not.
+    //
+    // The run row is the unit of work and the dedupe key, so the repeated
+    // heartbeat calls this mutation makes cannot double the count, and
+    // neither can a retried finish. The post bodies stay out of the event.
+    const total = produced ?? run.produced;
+    if (done && total > 0) {
+      await recordAnalyticsEvent(ctx, {
+        event: "content_generated",
+        dedupeKey: dedupe.contentGenerated(id),
+        // The weekly top-up is the product acting on its own; a run the
+        // owner started from the screen is not.
+        source: run.source === "cron" ? "agent" : "owner",
+        occurredAt: now,
+        userId: run.userId,
+        businessId: run.businessId,
+        metadata: { kind: "post", count: total, trigger: run.source },
+      });
+    }
+
     return { cancelled: Boolean(run.cancelRequestedAt) };
   },
 });

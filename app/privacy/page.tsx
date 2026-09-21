@@ -237,6 +237,14 @@ export default function Privacy() {
             <Term>Twilio and Resend</Term> &mdash; deliver your sign-in code by
             SMS and email respectively.
           </LI>
+          <LI>
+            <Term>Google Analytics</Term> &mdash; tells us how many people
+            visit footfall.zone and the app, which pages they look at, and
+            roughly where they are. It does not receive your name, phone,
+            email or anything about your business, and it does not store
+            your IP address. It is not used on your shop&rsquo;s own website.
+            See section 13.
+          </LI>
         </UL>
         <P>
           We may also disclose information where the law requires it, to enforce
@@ -342,13 +350,34 @@ export default function Privacy() {
         </P>
       </Section>
 
-      <Section n={13} title="Cookies">
+      <Section n={13} title="Cookies and analytics">
         <P>
-          We use a small number of cookies, all of them necessary: one to keep
-          you signed in, and one to remember your preferences. We do not use
-          advertising cookies and we do not run third-party trackers on the
-          product. You can clear cookies in your browser, but you will be signed
-          out.
+          We use a small number of necessary cookies: one to keep you signed
+          in, and one to remember your preferences. You can clear cookies in
+          your browser, but you will be signed out.
+        </P>
+        <P>
+          On footfall.zone and inside the app we also use{" "}
+          <Term>Google Analytics</Term>, which sets its own cookies to tell
+          apart a returning visitor from a new one. We use it for one thing:
+          to see how many people visit, which pages they read, and roughly
+          where they are, so we know whether the site is doing its job. It is
+          not connected to your account, it does not see your name, phone or
+          business, and we do not use it for advertising. Google&rsquo;s own
+          notice on how it handles this data is at{" "}
+          <A href="https://policies.google.com/technologies/partner-sites">
+            policies.google.com/technologies/partner-sites
+          </A>
+          . You can block it with a browser extension such as{" "}
+          <A href="https://tools.google.com/dlpage/gaoptout">
+            Google&rsquo;s opt-out add-on
+          </A>{" "}
+          or any ad blocker, and everything on the site will keep working.
+        </P>
+        <P>
+          <Term>Your shop&rsquo;s website is different.</Term> The free site
+          footfall builds for you carries no analytics from us. Its visitors
+          are your customers, not ours, and we do not measure them.
         </P>
       </Section>
 

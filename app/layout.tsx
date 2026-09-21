@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
+import { Analytics } from "@/components/analytics";
 import "./globals.css";
 
 /*
@@ -72,6 +73,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={`${manrope.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <div className="relative z-10 flex min-h-full flex-col">{children}</div>
+        {/* Inert without NEXT_PUBLIC_GA_ID; never runs on a shop site. */}
+        <Analytics />
       </body>
     </html>
   );

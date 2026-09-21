@@ -30,6 +30,14 @@ const RESERVED = [
 
 const SHOP_HOST = `(?<slug>(?!(?:${RESERVED.join("|")})\\.)[a-z0-9][a-z0-9-]{0,61})\\.${SITE_DOMAIN}`;
 
+/*
+ * There is no Content-Security-Policy yet. When one is added, it must
+ * allow Google Analytics (components/analytics.tsx) or reporting stops with
+ * no error anywhere but the browser console:
+ *   script-src  https://www.googletagmanager.com
+ *   connect-src https://www.googletagmanager.com https://*.google-analytics.com
+ *   img-src     https://*.google-analytics.com
+ */
 const nextConfig: NextConfig = {
   async rewrites() {
     return {

@@ -30,7 +30,7 @@ export const COMPANY = {
   /** Named under the DPDP Act so complaints have somewhere to land. */
   grievanceOfficer: "Nishkarsh Bansal",
   jurisdiction: "Muzaffarnagar, Uttar Pradesh",
-  updated: "31 August 2026",
+  updated: "21 September 2026",
 } as const;
 
 /** "36 Imambara…, Muzaffarnagar, Uttar Pradesh 251002, India" */

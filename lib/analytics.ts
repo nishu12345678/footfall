@@ -56,8 +56,35 @@ export function shouldTrack(
   return !isShopHost(host, domain) && !isShopPath(pathname);
 }
 
+/**
+ * Clarity uses the same shop-site exclusion as GA, plus the internal admin
+ * dashboard. Recordings of staff operating a customer-wide dashboard are not
+ * useful product research and would add another place for customer data to
+ * appear in a third-party session recording.
+ */
+export function shouldTrackClarity(
+  host: string | null | undefined,
+  pathname: string | null | undefined,
+  domain = SITE_DOMAIN,
+) {
+  const p = pathname ?? "";
+  return (
+    shouldTrack(host, p, domain) && p !== "/admin" && !p.startsWith("/admin/")
+  );
+}
+
 /** The GA4 measurement id, or null when analytics is switched off. */
 export function gaId(): string | null {
   const id = (process.env.NEXT_PUBLIC_GA_ID ?? "").trim();
   return /^G-[A-Z0-9]+$/.test(id) ? id : null;
+}
+
+/**
+ * The Microsoft Clarity project id, or null when behavior analytics is off.
+ * Only simple alphanumeric ids are accepted because this value is inserted
+ * into the vendor's bootstrap snippet.
+ */
+export function clarityId(): string | null {
+  const id = (process.env.NEXT_PUBLIC_CLARITY_ID ?? "").trim();
+  return /^[A-Za-z0-9]+$/.test(id) ? id : null;
 }

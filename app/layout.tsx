@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 import { Analytics } from "@/components/analytics";
+import { Clarity } from "@/components/clarity";
 import "./globals.css";
 
 /*
@@ -75,6 +76,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <div className="relative z-10 flex min-h-full flex-col">{children}</div>
         {/* Inert without NEXT_PUBLIC_GA_ID; never runs on a shop site. */}
         <Analytics />
+        {/* Inert without NEXT_PUBLIC_CLARITY_ID; never runs on shops or admin. */}
+        <Clarity />
       </body>
     </html>
   );

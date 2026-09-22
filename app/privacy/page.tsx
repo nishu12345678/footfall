@@ -245,6 +245,19 @@ export default function Privacy() {
             your IP address. It is not used on your shop&rsquo;s own website.
             See section 13.
           </LI>
+          <LI>
+            <Term>Microsoft Clarity</Term> &mdash; helps us understand how
+            visitors use footfall.zone and the app through anonymised session
+            recordings, heatmaps, scrolling and click behaviour. It is not
+            loaded on customer shop websites or the internal admin dashboard.
+            We do not call its identity API or deliberately send it your name,
+            email, phone number, business identifiers or account identifiers.
+            See section 13 and Microsoft&rsquo;s{" "}
+            <A href="https://privacy.microsoft.com/privacystatement">
+              privacy statement
+            </A>
+            .
+          </LI>
         </UL>
         <P>
           We may also disclose information where the law requires it, to enforce
@@ -373,6 +386,20 @@ export default function Privacy() {
             Google&rsquo;s opt-out add-on
           </A>{" "}
           or any ad blocker, and everything on the site will keep working.
+        </P>
+        <P>
+          We also use <Term>Microsoft Clarity</Term> on footfall.zone and
+          inside the app for session recordings, heatmaps, scroll depth and
+          interaction signals such as clicks and repeated failed clicks. This
+          helps us find confusing screens and bugs. Clarity is not loaded on
+          customer shop websites or the internal admin dashboard. We keep
+          sensitive-content masking enabled and do not send it account
+          identifiers, names, email addresses, phone numbers or business
+          identifiers. Microsoft&rsquo;s privacy statement is at{" "}
+          <A href="https://privacy.microsoft.com/privacystatement">
+            privacy.microsoft.com/privacystatement
+          </A>
+          .
         </P>
         <P>
           <Term>Your shop&rsquo;s website is different.</Term> The free site

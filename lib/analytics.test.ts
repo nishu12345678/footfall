@@ -1,5 +1,11 @@
-import { describe, expect, it } from "vitest";
-import { isShopHost, isShopPath, shouldTrack } from "./analytics";
+import { afterEach, describe, expect, it } from "vitest";
+import {
+  clarityId,
+  isShopHost,
+  isShopPath,
+  shouldTrack,
+  shouldTrackClarity,
+} from "./analytics";
 
 const D = "footfall.zone";
 
@@ -59,5 +65,40 @@ describe("shouldTrack", () => {
     // Path form on the main host, previews and localhost.
     expect(shouldTrack("footfall.zone", "/s/sharma-bakery", D)).toBe(false);
     expect(shouldTrack("localhost:3000", "/s/sharma-bakery/about", D)).toBe(false);
+  });
+});
+
+describe("shouldTrackClarity", () => {
+  it("measures marketing and product pages", () => {
+    expect(shouldTrackClarity("footfall.zone", "/", D)).toBe(true);
+    expect(shouldTrackClarity("footfall.zone", "/app/posts", D)).toBe(true);
+  });
+
+  it("excludes the staff dashboard and shop sites", () => {
+    expect(shouldTrackClarity("footfall.zone", "/admin", D)).toBe(false);
+    expect(shouldTrackClarity("footfall.zone", "/admin/analytics", D)).toBe(false);
+    expect(shouldTrackClarity("sharma-bakery.footfall.zone", "/", D)).toBe(false);
+    expect(shouldTrackClarity("footfall.zone", "/s/sharma-bakery", D)).toBe(false);
+  });
+});
+
+describe("clarityId", () => {
+  const original = process.env.NEXT_PUBLIC_CLARITY_ID;
+
+  afterEach(() => {
+    if (original === undefined) delete process.env.NEXT_PUBLIC_CLARITY_ID;
+    else process.env.NEXT_PUBLIC_CLARITY_ID = original;
+  });
+
+  it("accepts a Clarity project id", () => {
+    process.env.NEXT_PUBLIC_CLARITY_ID = "ymbaryo6fx";
+    expect(clarityId()).toBe("ymbaryo6fx");
+  });
+
+  it("rejects an empty or script-shaped value", () => {
+    process.env.NEXT_PUBLIC_CLARITY_ID = "";
+    expect(clarityId()).toBeNull();
+    process.env.NEXT_PUBLIC_CLARITY_ID = 'x";alert(1);//';
+    expect(clarityId()).toBeNull();
   });
 });

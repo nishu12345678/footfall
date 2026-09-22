@@ -130,6 +130,24 @@ there. That listener, and every `gaEvent` call, is gated on the same
 host-and-path check that governs page views, so a CTA rendered on a shop
 microsite sends nothing.
 
+## Microsoft Clarity contract
+
+Clarity is behavior research, not a source of product or revenue truth. It is
+used for session recordings, heatmaps, scroll depth and interaction friction
+such as repeated clicks. It is enabled only when `NEXT_PUBLIC_CLARITY_ID` is
+present, so local and preview builds stay out of the production project.
+
+The loader is gated to the marketing site and `/app` product routes. It never
+loads on customer shop microsites (`*.footfall.zone` or `/s/*`) or the internal
+`/admin` dashboard. We do not call Clarity's identity API and do not send names,
+emails, phone numbers, business names, account identifiers or Convex document
+ids. Sensitive-content masking remains enabled in Clarity. If consent is
+required for the visitor's jurisdiction, Clarity must be held behind the
+product's consent decision using Clarity Consent Mode before enabling it.
+
+Clarity's recordings are qualitative evidence: use them to explain a GA or
+Convex drop-off, not to count signups, payments, active businesses or revenue.
+
 Where the two payment events fire is load-bearing:
 
 - `begin_checkout` is sent after `billing.createOrder` returns, using the

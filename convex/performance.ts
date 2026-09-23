@@ -10,6 +10,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
 import { activeBusinessFor, paidAction } from "./access";
 import { perfBase } from "./googleHosts";
+import { dataForSeoMapsSearch, type LocalSearchResult } from "./searchProviders";
 
 /**
  * The two jobs behind the Performance screen.
@@ -17,11 +18,11 @@ import { perfBase } from "./googleHosts";
  *   syncMetrics  — views, calls and direction requests, from Google's own
  *                  Business Profile Performance API.
  *   checkRanks   — where the shop actually sits in the map results for each
- *                  targeted keyword, via SerpApi searched from the shop's
+ *                  targeted keyword, via DataForSEO searched from the shop's
  *                  own coordinates.
  *
  * No Google API returns "your rank for this keyword at this pin", which is
- * why ranking needs SerpApi and metrics don't.
+ * why ranking needs a Maps SERP provider and metrics don't.
  */
 
 const IMPRESSION_METRICS = [
@@ -200,8 +201,11 @@ function normalise(value: string) {
     .trim();
 }
 
-/** Position of this business in a SerpApi maps result, 1-based. */
-function findRank(results: any[], businessName: string): number | undefined {
+/** Position of this business in a Google Maps result set, 1-based. */
+function findRank(
+  results: LocalSearchResult[],
+  businessName: string,
+): number | undefined {
   const target = normalise(businessName);
   const words = target.split(" ").filter((w) => w.length > 2);
 
@@ -225,24 +229,8 @@ async function mapsSearch(
   lat: number,
   lng: number,
   zoom = 14,
-): Promise<any[]> {
-  const key = process.env.SERPAPI_KEY;
-  if (!key) throw new ConvexError("Rank checks aren't set up on this server yet.");
-
-  const url = new URL("https://serpapi.com/search");
-  url.searchParams.set("engine", "google_maps");
-  url.searchParams.set("q", keyword);
-  url.searchParams.set("ll", `@${lat},${lng},${zoom}z`);
-  url.searchParams.set("type", "search");
-  url.searchParams.set("api_key", key);
-
-  const res = await fetch(url.toString());
-  const data = await res.json();
-  if (data.error) {
-    console.error(`[serpapi] ${data.error}`);
-    throw new ConvexError("The search provider couldn't answer just now. Try again in a moment.");
-  }
-  return data.local_results ?? [];
+): Promise<LocalSearchResult[]> {
+  return await dataForSeoMapsSearch(keyword, lat, lng, zoom);
 }
 
 export const saveRanks = internalMutation({
@@ -381,11 +369,13 @@ export const checkRanksForUser = internalAction({
     const MAX_AREA_KEYWORDS = 6;
     const nearMe = context.keywords
       .filter(
-        (k: any) => k.term.includes("near me") || k.term.includes("nearby"),
+        (keyword) =>
+          keyword.term.includes("near me") || keyword.term.includes("nearby"),
       )
       .slice(0, MAX_AREA_KEYWORDS);
     const rest = context.keywords.filter(
-      (k: any) => !k.term.includes("near me") && !k.term.includes("nearby"),
+      (keyword) =>
+        !keyword.term.includes("near me") && !keyword.term.includes("nearby"),
     );
 
     const ranks: {
@@ -407,7 +397,10 @@ export const checkRanksForUser = internalAction({
       }
     >();
 
-    const collectRivals = (results: any[], selfName: string) => {
+    const collectRivals = (
+      results: LocalSearchResult[],
+      selfName: string,
+    ) => {
       for (const r of results.slice(0, 10)) {
         const title: string = r.title ?? "";
         if (!title) continue;
@@ -528,8 +521,8 @@ export const saveGrid = internalMutation({
 
 /**
  * Searches the same keyword from a grid of points around the shop, so the
- * owner can see how far their ranking reaches. 3x3 by default: 9 SerpApi
- * calls per keyword per run.
+ * owner can see how far their ranking reaches. 3x3 by default: 9 DataForSEO
+ * Maps calls per keyword per run.
  */
 export const runGeoGrid = paidAction({
   args: {
@@ -695,7 +688,7 @@ export const syncAllMetrics = internalAction({
 });
 
 /**
- * Weekly rank check. Deliberately not daily: every run costs one SerpApi
+ * Weekly rank check. Deliberately not daily: every run costs one Maps SERP
  * search per keyword, per business.
  */
 export const checkAllRanks = internalAction({

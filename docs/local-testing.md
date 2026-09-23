@@ -53,9 +53,8 @@ OTP_DEV_ECHO=1
 
 OPENAI_API_KEY=
 FIRECRAWL_API_KEY=
-# Optional, paid per search: rank checks and keyword research.
-SERPAPI_KEY=
-# Optional: keyword volumes.
+# DataForSEO Basic auth: base64(api-login:api-password).
+# Rank checks, geo-grid, Trends, competitors and keyword volumes.
 DATAFORSEO_AUTH=
 
 RAZORPAY_KEY_ID=rzp_test_
@@ -120,8 +119,7 @@ with `npx convex env list`, adding `--deployment <name>` for a cloud one.
 | `RAZORPAY_ONE_RUPEE_TEST_EMAILS` | Convex production | Exact comma-separated verified login emails that pay ₹1 through live Razorpay while receiving the full selected plan | Everyone pays the normal server price |
 | `OPENAI_API_KEY` | Convex | Writing posts, review replies, keyword ideas, the shop site, post images | Those buttons error; everything else works |
 | `FIRECRAWL_API_KEY` | Convex | Reading the shop's website for the report and for suggestions | Website check reports nothing |
-| `SERPAPI_KEY` | Convex | Rank checks and the geo-grid. Every pin per keyword is one paid search, so leave this blank unless you are testing ranking. | Rank check errors; the rest of Performance works from the mock's metrics |
-| `DATAFORSEO_AUTH` | Convex | Keyword search volumes | Keywords show without volumes |
+| `DATAFORSEO_AUTH` | Convex | Base64-encoded DataForSEO `api-login:api-password`; powers Maps rank checks, geo-grid, competitor strength, Google Trends related queries/demand, and keyword search volumes | Rank checks/geo-grid error; keyword research still has free Google Autocomplete and built local phrases, but no Trends or volume data |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Convex | Only for the real Google consent screen. Not needed with the mock. | Nothing, with the mock on |
 | `TWILIO_ENABLED=1` | Convex | Master backend gate for every Twilio call: phone OTP, SMS reminders and WhatsApp/SMS review invites | All Twilio sends are intentionally skipped; phone OTP is rejected with a friendly message |
 | `NEXT_PUBLIC_TWILIO_ENABLED=1` | `.env.local` / Vercel | Shows mobile OTP in the login UI | Login offers Google and email only |
@@ -159,13 +157,13 @@ drawn by the mock, so they load without internet.
 
 The listing itself is a real public business: the name, address, phone,
 coordinates and website are the real ones. That is deliberate. The parts
-of the product that never go through Google, keyword research (SerpApi,
-DataForSEO), rank checks and the geo grid (SerpApi), and the "does your
-website match your listing" check (Firecrawl), run against real search
-results and a real page, so they can be tested with the mock on. The
-reviews, photos and posts are invented. Those three APIs are live and
-paid; put their keys in `convex/.env.local` only when you want to
-exercise them.
+of the product that never go through Google, keyword research, rank checks
+and the geo grid (DataForSEO), and the "does your website match your
+listing" check (Firecrawl), run against real search results and a real page,
+so they can be tested with the mock on. Google Autocomplete itself is free
+and keyless. The reviews, photos and posts are invented. The DataForSEO and
+Firecrawl calls are live and paid; put their keys in `convex/.env.local`
+only when you want to exercise them.
 
 The mock keeps state in memory. A post you publish shows up in the next
 sync; a reply lands on its review. `POST _control/reset` starts over,

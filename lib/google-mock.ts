@@ -12,7 +12,7 @@
  * The pool itself is a real public listing: the name, address, phone,
  * coordinates and website are the real ones. That is so the features
  * that never touch Google, rank checks and keyword research through
- * SerpApi and DataForSEO, and the Firecrawl check of the website against
+ * DataForSEO, and the Firecrawl check of the website against
  * the listing, get real answers with the mock on. The reviews, the
  * photos and the posts are invented.
  *

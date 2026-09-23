@@ -97,7 +97,7 @@ the listing is written around the wrong words.
   Google Trends related queries; pulls **real monthly search volume** per
   city (DataForSEO) when configured — it never invents volumes.
 - Checks the shop's **actual map position** for each tracked keyword
-  **every Monday** using real Google Maps searches (SerpApi). "Near me"
+  **every Monday** using real Google Maps results through DataForSEO. "Near me"
   keywords are searched from **5 points** (the shop + 4 compass points at
   the shop's pull radius); city keywords once from the shop itself.
 - Records the **top 8 competitors** per keyword (name, rating, review

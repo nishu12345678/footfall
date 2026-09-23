@@ -78,7 +78,7 @@ export default function PerformancePage() {
 
   // Google's numbers cost nothing to read, so refresh them whenever the
   // screen is opened and the data has gone stale. Rank checks are NOT
-  // automatic here — each one spends a SerpApi search per keyword.
+  // automatic here — each one spends a DataForSEO Maps search per keyword.
   const STALE_AFTER_MS = 30 * 60 * 1000;
   const syncedAt = data?.business.metricsSyncedAt;
   const stale = data
@@ -133,7 +133,7 @@ export default function PerformancePage() {
     }
   }
 
-  // A run of this costs 9 SerpApi searches, so it only ever fires when the
+  // A run of this costs 9 DataForSEO Maps searches, so it only ever fires when the
   // owner explicitly asks for a fresh look — never just to display points
   // that are already stored.
   async function drawGrid(keyword: string) {

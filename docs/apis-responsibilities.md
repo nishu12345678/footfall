@@ -1,115 +1,96 @@
-# SerpApi and DataForSEO Usage
+# Search-data API responsibilities
 
-## SerpApi
+## Free Google Autocomplete
 
-SerpApi is used for reading Google search-related data.
+Footfall calls Google's lightweight suggestion feed directly:
 
-### 1. Google Autocomplete Suggestions
+`https://suggestqueries.google.com/complete/search`
 
-Gets search suggestions based on what users type into Google.
-
-**Example:**
-
-When a user types:
-
-`dentist`
-
-Google may suggest:
+It is used only for keyword discovery: finding the phrases Google suggests
+while a customer types, such as:
 
 - `dentist near me`
 - `dentist in agra`
 - `dentist near me open now`
 
-### 2. Google Trends Related Queries
-
-Finds search queries related to the business offering.
-
-This helps identify what people are searching for around a particular service or business category.
-
-### 3. Google Trends Demand
-
-Provides relative search interest for keywords over time.
-
-> **Note:** Google Trends provides relative interest, not exact monthly search volume.
-
-### 4. Google Maps Rankings
-
-Searches Google Maps for a keyword near the business location.
-
-**Example:**
-
-For a dentist, we can search:
-
-`dentist`
-
-and determine where the business appears among the local Google Maps results.
-
-### 5. Competitor Strength
-
-Looks at the top Google Maps results for a keyword and evaluates competitor strength using factors such as:
-
-- Ranking position
-- Review count
-- Presence among top local results
+This endpoint requires no API key. It is undocumented, so failures are treated
+as optional: built local phrases still keep keyword research useful.
 
 ---
 
 ## DataForSEO
 
-DataForSEO is used for keyword metrics and search-volume data.
+One DataForSEO credential powers all paid search-data features. The Convex
+variable is:
 
-### 1. Monthly Search Volume
+`DATAFORSEO_AUTH=base64(api-login:api-password)`
 
-Provides estimated monthly search volume for keywords.
+### 1. Google Maps ranking
 
-**Example:**
+The live Google Maps SERP API searches a keyword from the business's exact
+latitude, longitude and zoom. Footfall uses the returned Maps order to measure:
 
-`dentist near me` → estimated searches per month
+- the listing's position for each tracked keyword;
+- coverage across five points around the business;
+- the manual 3×3 geo-grid;
+- weekly movement in ranking.
 
-### 2. Keyword Competition
+### 2. Competitor strength
 
-Provides an estimate of how competitive a keyword is based on Google Ads data.
+The same Maps response provides the businesses currently ranking nearby,
+including:
 
-### 3. CPC
+- position;
+- rating;
+- review count;
+- primary category.
 
-Provides the approximate **Cost Per Click (CPC)** for a keyword.
+Footfall uses this to record the top competitors and estimate whether a
+keyword is realistically winnable.
 
-CPC represents the approximate amount advertisers pay when someone clicks on an ad for that keyword.
+### 3. Google Trends related queries
 
-### 4. Keyword Metrics
+DataForSEO's Google Trends endpoint returns top and rising searches related to
+a business offering. These expand the keyword pool beyond Autocomplete.
 
-DataForSEO helps replace guesswork with actual keyword metrics when available, such as:
+### 4. Google Trends demand
 
-- Monthly search volume
-- Keyword competition
-- CPC
+The Trends graph compares up to five terms at once and returns relative search
+interest over the last 12 months. This is a relative 0–100 signal, not monthly
+search volume.
+
+### 5. Monthly keyword metrics
+
+DataForSEO's Google Ads keyword-data endpoint provides, when available:
+
+- estimated monthly search volume;
+- Google Ads competition;
+- approximate cost per click (CPC).
+
+Google Ads data is used only as a data source. Footfall does not create or run
+ad campaigns and does not spend money on Google Ads.
 
 ---
 
-## Google Ads
+## Firecrawl
 
-Google Ads is **not used for running advertising campaigns or spending money on ads**.
+Firecrawl reads websites, not Google Maps rankings. Footfall uses it to:
 
-Google Ads data is used **only as a data source through DataForSEO** for keyword metrics such as:
+- inspect the business's existing website for the free audit;
+- give the AI real website context when suggesting offerings;
+- find logo candidates.
 
-- CPC
-- Keyword competition
-
-We are **not running Google Ads campaigns**.
+It is not used for Autocomplete, Trends, rank checking or geo-grids.
 
 ---
 
-## Simple Difference
+## Simple difference
 
 | Tool | Purpose |
 |---|---|
-| **SerpApi** | Reads Google Autocomplete, Google Trends, Google Search, and Google Maps results |
-| **DataForSEO** | Provides keyword metrics such as monthly search volume, competition, and CPC |
-| **Google Ads** | Only provides underlying advertising data used by DataForSEO; we do not run ads |
+| **Google Autocomplete** | Free, keyless keyword suggestions |
+| **DataForSEO** | Maps ranks, competitors, Trends and keyword metrics |
+| **Firecrawl** | Reads the business's own website |
+| **Google Ads** | Underlying keyword-volume/CPC data only; no ad campaigns |
 
-### Summary
-
-> **SerpApi = What Google shows people**  
-> **DataForSEO = Keyword metrics**  
-> **Google Ads = Data source for CPC/competition through DataForSEO**  
-> **No Google Ads spending or campaigns**
+SerpApi is no longer used by the application.

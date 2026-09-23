@@ -3,50 +3,30 @@ import { action, internalMutation, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { activeBusinessFor, paidAction } from "./access";
+import {
+  dataForSeoMapsSearch,
+  dataForSeoRelatedQueries,
+  dataForSeoTrendDemand,
+  googleAutocomplete,
+} from "./searchProviders";
 
 /**
  * Keyword research for a local business.
  *
  * The pipeline, and what each stage is actually measuring:
  *
- *   1 DISCOVER   Google Trends related queries + Google Autocomplete, seeded
- *                from what the shop sells. Both are records of real searches.
+ *   1 DISCOVER   DataForSEO Google Trends related queries + Google's free
+ *                Autocomplete feed, seeded from what the shop sells.
  *   2 FILTER     Keep buying intent, drop how-to questions and other cities.
- *   3 DEMAND     Google Trends compares terms head to head in this state and
- *                returns relative interest — the closest thing to volume that
- *                a free source gives.
+ *   3 DEMAND     DataForSEO first returns real city-level Google Ads volume;
+ *                when unavailable, its Trends endpoint compares head terms.
  *   4 WINNABLE   Optional: read the map results and see how strong the current
  *                top three are.
  *   5 SCORE      demand x intent x winnability, with the reasoning shown.
  *
- * Trends returns RELATIVE interest, not searches per month. Nothing here
- * prints an absolute volume, because no source we pay for provides one.
+ * Trends returns RELATIVE interest, not searches per month. Absolute volume
+ * is shown only when DataForSEO's Google Ads keyword-data endpoint returns it.
  */
-
-const STATE_CODES: Record<string, string> = {
-  "andhra pradesh": "IN-AP",
-  assam: "IN-AS",
-  bihar: "IN-BR",
-  chhattisgarh: "IN-CT",
-  delhi: "IN-DL",
-  goa: "IN-GA",
-  gujarat: "IN-GJ",
-  haryana: "IN-HR",
-  "himachal pradesh": "IN-HP",
-  jharkhand: "IN-JH",
-  karnataka: "IN-KA",
-  kerala: "IN-KL",
-  "madhya pradesh": "IN-MP",
-  maharashtra: "IN-MH",
-  odisha: "IN-OR",
-  punjab: "IN-PB",
-  rajasthan: "IN-RJ",
-  "tamil nadu": "IN-TN",
-  telangana: "IN-TG",
-  "uttar pradesh": "IN-UP",
-  uttarakhand: "IN-UT",
-  "west bengal": "IN-WB",
-};
 
 const OTHER_CITIES = [
   "delhi",
@@ -137,93 +117,28 @@ function productNoun(offering: string): string {
     .trim();
 }
 
-function serpUrl(params: Record<string, string>) {
-  const url = new URL("https://serpapi.com/search");
-  for (const [k, val] of Object.entries(params)) url.searchParams.set(k, val);
-  url.searchParams.set("api_key", process.env.SERPAPI_KEY ?? "");
-  return url.toString();
-}
-
-async function serp(params: Record<string, string>): Promise<any> {
-  if (!process.env.SERPAPI_KEY) throw new ConvexError("Rank checks aren't set up on this server yet.");
-  const res = await fetch(serpUrl(params));
-  const data = await res.json();
-  if (data.error) {
-    console.log(`[serpapi] ${params.engine}: ${data.error}`);
-    return null;
-  }
-  return data;
-}
-
 /* ------------------------------ 1 discover ------------------------------ */
 
-async function relatedQueries(seed: string, geo: string) {
-  const data = await serp({
-    engine: "google_trends",
-    q: seed,
-    geo,
-    date: "today 12-m",
-    data_type: "RELATED_QUERIES",
-  });
-  const rq = data?.related_queries ?? {};
-  const out: { term: string; source: string }[] = [];
-  for (const row of rq.top ?? []) {
-    if (row?.query)
-      out.push({ term: String(row.query).toLowerCase(), source: "trending" });
-  }
-  for (const row of rq.rising ?? []) {
-    if (row?.query)
-      out.push({ term: String(row.query).toLowerCase(), source: "rising" });
-  }
-  return out;
+async function relatedQueries(seed: string, state?: string) {
+  const related = await dataForSeoRelatedQueries(seed, state);
+  return [
+    ...related.top.map((term) => ({ term, source: "trending" })),
+    ...related.rising.map((term) => ({ term, source: "rising" })),
+  ];
 }
 
 async function autocomplete(seed: string) {
-  const data = await serp({
-    engine: "google_autocomplete",
-    q: seed,
-    gl: "in",
-    hl: "en",
-  });
-  return (data?.suggestions ?? [])
-    .map((s: { value?: string }) => (s.value ?? "").toLowerCase().trim())
-    .filter(Boolean)
-    .map((term: string) => ({ term, source: "autocomplete" }));
+  return (await googleAutocomplete(seed)).map((term) => ({
+    term,
+    source: "autocomplete",
+  }));
 }
 
 /* ------------------------------- 3 demand ------------------------------- */
 
-/** Google Trends compares up to five terms at once. */
-async function demandFor(terms: string[], geo: string) {
-  const scores = new Map<string, number>();
-
-  for (let i = 0; i < terms.length; i += 5) {
-    const batch = terms.slice(i, i + 5);
-    const data = await serp({
-      engine: "google_trends",
-      q: batch.join(","),
-      geo,
-      date: "today 12-m",
-      data_type: "TIMESERIES",
-    });
-
-    const timeline = data?.interest_over_time?.timeline_data ?? [];
-    if (timeline.length === 0) {
-      batch.forEach((t) => scores.set(t, 0));
-      continue;
-    }
-
-    batch.forEach((term, index) => {
-      const total = timeline.reduce(
-        (sum: number, point: any) =>
-          sum + (point.values?.[index]?.extracted_value ?? 0),
-        0,
-      );
-      scores.set(term, Math.round((total / timeline.length) * 10) / 10);
-    });
-  }
-
-  return scores;
+/** DataForSEO's Google Trends endpoint compares up to five terms per call. */
+async function demandFor(terms: string[], state?: string) {
+  return await dataForSeoTrendDemand(terms, state);
 }
 
 /* --------------------------- 3b real volume ------------------------------
@@ -291,18 +206,13 @@ async function dataForSeoVolume(
 /* ----------------------------- 4 winnability ---------------------------- */
 
 async function topThreeReviews(term: string, lat: number, lng: number) {
-  const data = await serp({
-    engine: "google_maps",
-    q: term,
-    ll: `@${lat},${lng},14z`,
-    type: "search",
-  });
-  const results = data?.local_results ?? [];
+  const results = await dataForSeoMapsSearch(term, lat, lng);
   const top3 = results.slice(0, 3);
   if (top3.length === 0) return { reviews: 0, rivals: 0 };
   return {
     reviews: Math.round(
-      top3.reduce((t: number, r: any) => t + (r.reviews ?? 0), 0) / top3.length,
+      top3.reduce((total, result) => total + (result.reviews ?? 0), 0) /
+        top3.length,
     ),
     rivals: results.length,
   };
@@ -458,7 +368,7 @@ export const research = paidAction({
       throw new ConvexError("Add what you sell first — that's what we search from.");
     }
 
-    const geo = STATE_CODES[(c.state ?? "").toLowerCase()] ?? "IN";
+    const state = c.state ?? undefined;
     const city = (c.city ?? "").toLowerCase();
     const already = new Set(c.have);
 
@@ -488,7 +398,7 @@ export const research = paidAction({
     }
 
     for (const seed of uniqueSeeds) {
-      for (const { term, source } of await relatedQueries(seed, geo)) {
+      for (const { term, source } of await relatedQueries(seed, state)) {
         if (!pool.has(term)) pool.set(term, source);
       }
       for (const { term, source } of await autocomplete(seed)) {
@@ -552,7 +462,7 @@ export const research = paidAction({
       ? new Map<string, number>()
       : await demandFor(
           [...new Set(refined.map((r) => r.head))].slice(0, 15),
-          geo,
+          state,
         );
 
     const peakVolume = Math.max(

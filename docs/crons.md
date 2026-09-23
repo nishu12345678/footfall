@@ -97,9 +97,9 @@ has roughly one answer). This is what
 keeps the rank badges and "found in X of 5 spots" lines on the
 Performance screen at most a week old.
 
-Why only weekly: every single search here costs real money (one SerpApi
-credit each). Google's own performance numbers are free, so those sync
-daily; rankings are paid, so they sync weekly. The owner can always
+Why only weekly: every single location search here costs real money (one
+DataForSEO Maps request each). Google's own performance numbers are free, so
+those sync daily; rankings are paid, so they sync weekly. The owner can always
 press "Check rankings" for a fresh look, and the 9-point map is only
 ever run by hand — no cron touches it.
 

@@ -401,7 +401,7 @@ export default defineSchema({
 
   /**
    * One row per pin, per keyword, per run. This is the geo-grid:
-   * SerpApi is queried with ll=@lat,lng,zoom for each pin.
+   * DataForSEO Maps is queried with latitude, longitude and zoom for each pin.
    */
   rankGrid: defineTable({
     businessId: v.id("businesses"),

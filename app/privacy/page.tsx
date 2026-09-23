@@ -229,9 +229,9 @@ export default function Privacy() {
             details, and it does not train on this content.
           </LI>
           <LI>
-            <Term>SerpApi, DataForSEO and Firecrawl</Term> &mdash; search data
-            providers. They receive search terms and your locality, not your
-            personal details.
+            <Term>DataForSEO and Firecrawl</Term> &mdash; search data providers.
+            They receive search terms and your locality, not your personal
+            details.
           </LI>
           <LI>
             <Term>Twilio and Resend</Term> &mdash; deliver your sign-in code by

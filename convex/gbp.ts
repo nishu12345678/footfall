@@ -17,6 +17,7 @@ import { activeBusinessFor,
   paidQuery,
 } from "./access";
 import { recordOnboardingStep } from "./analytics";
+import { dataForSeoMapsSearch, googleAutocomplete } from "./searchProviders";
 
 /**
  * Step 4 — the parts of the listing that decide whether anyone finds it:
@@ -378,8 +379,9 @@ export const complete = paidMutation({
    winnability The map results for that phrase. Three rivals with 500 reviews
                each is a wall; three with 15 reviews is an opening.
 
-   Nothing here claims a monthly search volume, because no source we have
-   provides one. DataForSEO or Google Ads would, and both cost money.      */
+   This lightweight setup view uses suggestion order rather than claiming a
+   monthly volume; the full keyword-research flow gets real volume from
+   DataForSEO when available.                                             */
 
 type Researched = {
   term: string;
@@ -391,25 +393,7 @@ type Researched = {
 };
 
 async function autocomplete(seed: string): Promise<string[]> {
-  const key = process.env.SERPAPI_KEY;
-  if (!key) throw new ConvexError("Rank checks aren't set up on this server yet.");
-
-  const url = new URL("https://serpapi.com/search");
-  url.searchParams.set("engine", "google_autocomplete");
-  url.searchParams.set("q", seed);
-  url.searchParams.set("gl", "in");
-  url.searchParams.set("hl", "en");
-  url.searchParams.set("api_key", key);
-
-  const res = await fetch(url.toString());
-  const data = await res.json();
-  if (data.error) {
-    console.log(`[serpapi/autocomplete] ${data.error}`);
-    return [];
-  }
-  return (data.suggestions ?? [])
-    .map((s: { value?: string }) => (s.value ?? "").toLowerCase().trim())
-    .filter(Boolean);
+  return await googleAutocomplete(seed);
 }
 
 async function competition(
@@ -417,25 +401,13 @@ async function competition(
   lat: number,
   lng: number,
 ): Promise<{ topReviews: number; rivals: number }> {
-  const key = process.env.SERPAPI_KEY;
-  if (!key) throw new ConvexError("Rank checks aren't set up on this server yet.");
-
-  const url = new URL("https://serpapi.com/search");
-  url.searchParams.set("engine", "google_maps");
-  url.searchParams.set("q", term);
-  url.searchParams.set("ll", `@${lat},${lng},14z`);
-  url.searchParams.set("type", "search");
-  url.searchParams.set("api_key", key);
-
-  const res = await fetch(url.toString());
-  const data = await res.json();
-  const results = data.local_results ?? [];
+  const results = await dataForSeoMapsSearch(term, lat, lng);
   const top3 = results.slice(0, 3);
   const topReviews =
     top3.length === 0
       ? 0
       : Math.round(
-          top3.reduce((t: number, r: any) => t + (r.reviews ?? 0), 0) /
+          top3.reduce((total, result) => total + (result.reviews ?? 0), 0) /
             top3.length,
         );
   return { topReviews, rivals: results.length };

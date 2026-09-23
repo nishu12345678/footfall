@@ -38,6 +38,7 @@ import type * as photos from "../photos.js";
 import type * as postimage from "../postimage.js";
 import type * as posts from "../posts.js";
 import type * as reviews from "../reviews.js";
+import type * as searchProviders from "../searchProviders.js";
 import type * as site from "../site.js";
 
 import type {
@@ -77,6 +78,7 @@ declare const fullApi: ApiFromModules<{
   postimage: typeof postimage;
   posts: typeof posts;
   reviews: typeof reviews;
+  searchProviders: typeof searchProviders;
   site: typeof site;
 }>;
 

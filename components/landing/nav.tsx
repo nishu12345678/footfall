@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BRAND, LINKS, NAV, NAV_CTA } from "@/lib/content";
+import { LINKS, NAV, NAV_CTA } from "@/lib/content";
+import { FootfallAttribution } from "@/components/footfall-attribution";
 import { Icon } from "./icons";
 
 /**
@@ -24,17 +25,11 @@ export function Nav() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[var(--l-line)] bg-white">
       <nav className="mx-auto flex h-[72px] max-w-[1400px] items-center justify-between px-6">
-        <a href="#top" className="flex items-center gap-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/brand/logo-64.png"
-            alt=""
-            width={32}
-            height={32}
-            className="h-8 w-8"
-          />
-          <span className="text-xl font-semibold tracking-tight">{BRAND.name}</span>
-        </a>
+        <FootfallAttribution
+          href="#top"
+          size="navigation"
+          ariaLabel="Back to top"
+        />
 
         <div className="flex items-center gap-7">
           <ul className="hidden items-center gap-7 lg:flex">

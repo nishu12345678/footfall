@@ -7,6 +7,7 @@ import {
   type SiteData,
 } from "@/lib/site-data";
 import { shopBase } from "@/lib/site-host";
+import { FootfallAttribution } from "@/components/footfall-attribution";
 
 /** Path-form link base for the host serving this request, so internal
     links stay client-side navigations instead of full page loads. */
@@ -314,9 +315,17 @@ export async function SiteFooter({ data }: { data: SiteData }) {
       </div>
 
       <div className="border-t border-white/10">
-        <p className="mx-auto max-w-[1280px] px-6 py-6 text-[12px] text-white/40 sm:px-10 lg:px-14">
-          © {new Date().getFullYear()} {business.orgName}. Site by footfall.
-        </p>
+        <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-4 px-6 py-5 sm:px-10 lg:px-14">
+          <p className="text-[12px] text-white/40">
+            © {new Date().getFullYear()} {business.orgName}
+          </p>
+          <FootfallAttribution
+            href="https://footfall.zone"
+            size="compact"
+            tone="dark"
+            ariaLabel="Visit Footfall"
+          />
+        </div>
       </div>
     </footer>
   );

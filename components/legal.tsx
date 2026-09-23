@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { FootfallAttribution } from "@/components/footfall-attribution";
 
 /*
  * The shell both legal pages sit in.
@@ -22,18 +22,7 @@ export function LegalPage({
   return (
     <main className="min-h-dvh bg-paper px-5 py-16 sm:px-10 sm:py-24">
       <div className="mx-auto max-w-3xl">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 font-display text-[19px] font-bold tracking-tight text-ink"
-        >
-          <span
-            aria-hidden
-            className="grid h-6 w-6 place-items-center rounded-[10px] bg-pin text-[11px] text-white"
-          >
-            ◎
-          </span>
-          footfall
-        </Link>
+        <FootfallAttribution href="/" size="navigation" />
 
         <h1 className="mt-10 font-display text-[30px] leading-tight font-extrabold tracking-[-0.03em] text-ink sm:mt-12 sm:text-[46px]">
           {title}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { FootfallAttribution } from "@/components/footfall-attribution";
 
 /* ---------------------------------------------------------------------------
    The internal dashboard's chrome and its small vocabulary of parts.
@@ -37,13 +38,13 @@ export function AdminShell({
       <header className="sticky top-0 z-30 material hairline-b pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-3 px-4 py-3.5 sm:px-6 lg:flex-row lg:items-center lg:gap-6">
           <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted">
-              <span
-                aria-hidden
-                className="inline-block h-1.5 w-1.5 rounded-full bg-pin"
-              />
-              footfall internal
-            </p>
+            <div className="flex items-center gap-3">
+              <FootfallAttribution href="/" size="compact" />
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
+                <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-pin" />
+                internal
+              </span>
+            </div>
             <h1 className="mt-0.5 truncate text-[20px] font-extrabold tracking-[-0.02em] sm:text-[22px]">
               {title}
             </h1>

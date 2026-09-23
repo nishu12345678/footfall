@@ -3,9 +3,8 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth } from "convex/react";
 import { useEffect, useRef, useState } from "react";
-import { BRAND } from "@/lib/content";
-import { BRAND_ASSETS } from "@/lib/brand";
 import { BackButton } from "@/components/back-button";
+import { FootfallAttribution } from "@/components/footfall-attribution";
 import { friendlyError, GENERIC } from "@/lib/errors";
 import { TWILIO_UI_ENABLED } from "@/lib/features";
 import { gaEvent, loginStartParams, type LoginMethod } from "@/lib/ga";
@@ -171,18 +170,8 @@ export default function LoginPage() {
       )}
       <div className="flex flex-1 flex-col justify-center">
         <div className="text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={BRAND_ASSETS.logo}
-            alt=""
-            width={48}
-            height={48}
-            className="mx-auto h-12 w-12"
-          />
-          <h1 className="mt-5 text-[2.4rem] font-bold tracking-tight">
-            {BRAND.name}
-          </h1>
-          <p className="mt-2 text-[15px] text-ink-soft">
+          <FootfallAttribution size="display" className="mx-auto text-left" />
+          <p className="mt-5 text-[15px] text-ink-soft">
             {step === "identify"
               ? "Sign in to run your Google listing"
               : `we sent a ${expectedLength}-digit code to ${sentTo}`}

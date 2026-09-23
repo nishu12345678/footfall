@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { LINKS } from "@/lib/content";
+import { FootfallAttribution } from "@/components/footfall-attribution";
 
 /** The founder's WhatsApp, same as the marketing site's "Talk on WhatsApp". */
 const SUPPORT_WHATSAPP = LINKS.whatsapp;
@@ -145,38 +146,43 @@ export function AppHeader({
 }) {
   return (
     <header className="sticky top-0 z-30 material hairline-b pt-[env(safe-area-inset-top)]">
-      <div className="mx-auto flex max-w-xl items-center gap-2.5 px-4 py-3.5 sm:gap-3 sm:px-6">
-        {logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={logoUrl}
-            alt=""
-            referrerPolicy="no-referrer"
-            className="h-9 w-9 flex-none rounded-full bg-white object-contain shadow-card"
-          />
-        ) : (
-          <span
-            aria-hidden
-            className="grid h-9 w-9 flex-none place-items-center rounded-full bg-pin text-[14px] font-semibold text-white shadow-card"
-          >
-            {name.slice(0, 1).toUpperCase()}
-          </span>
-        )}
+      <div className="mx-auto flex max-w-xl items-center gap-2 px-4 py-2.5 sm:gap-3 sm:px-6">
+        <FootfallAttribution href="/" size="compact" className="flex-none" />
 
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[16px] font-semibold leading-tight tracking-[-0.01em]">
-            {name}
+          <span className="flex min-w-0 items-center gap-1.5">
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={logoUrl}
+                alt=""
+                referrerPolicy="no-referrer"
+                className="h-7 w-7 flex-none rounded-full bg-white object-contain shadow-card"
+              />
+            ) : (
+              <span
+                aria-hidden
+                className="grid h-7 w-7 flex-none place-items-center rounded-full bg-pin text-[11px] font-semibold text-white shadow-card"
+              >
+                {name.slice(0, 1).toUpperCase()}
+              </span>
+            )}
+            <span className="min-w-0">
+              <span className="block truncate text-[14px] font-semibold leading-tight tracking-[-0.01em]">
+                {name}
+              </span>
+              {location ? (
+                <span className="block truncate text-[11px] text-muted">{location}</span>
+              ) : null}
+            </span>
           </span>
-          {location ? (
-            <span className="block truncate text-[12px] text-muted">{location}</span>
-          ) : null}
         </span>
 
         <a
           href={SUPPORT_WHATSAPP}
           target="_blank"
           rel="noreferrer"
-          className="pressable inline-flex min-h-10 flex-none items-center rounded-full bg-black/5 px-3.5 py-1.5 text-[13px] font-semibold text-ink"
+          className="pressable inline-flex min-h-10 flex-none items-center rounded-full bg-black/5 px-3 py-1.5 text-[12px] font-semibold text-ink"
         >
           Help
         </a>

@@ -86,6 +86,16 @@ crons.interval(
   internal.billing.reconcilePending,
 );
 
+// Convex is the source of truth. This private action mirrors the small,
+// privacy-safe reporting projection into Supabase for Metabase. It is
+// intentionally independent of the HTTP/manual-sync path, so it does not
+// require METABASE_EXPORT_SECRET.
+crons.interval(
+  "sync reporting to Supabase",
+  { hours: 2 },
+  internal.metabaseSync.syncToSupabase,
+);
+
 // Orders nobody finished are closed after a day, so the billing screen
 // stops offering "check status" on something that will never land.
 crons.daily(

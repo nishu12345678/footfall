@@ -1,5 +1,5 @@
 import { httpRouter } from "convex/server";
-import { httpAction } from "./_generated/server";
+import { httpAction, type ActionCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { auth } from "./auth";
 import { hmacHex, safeEqual } from "./billing";
@@ -357,6 +357,140 @@ http.route({
     });
     return new Response("ok", { status: 200 });
   }),
+});
+
+/* ----------------------------- Metabase export ----------------------------
+   Metabase cannot query Convex directly. A small, secret-protected HTTP
+   surface lets an external sync job copy only the reporting projection into
+   Supabase Postgres. The internal queries themselves are never public.
+--------------------------------------------------------------------------- */
+
+type ExportPageArgs = {
+  cursor: string | null;
+  numItems: number;
+  now: number;
+};
+
+function parseExportPage(body: unknown): ExportPageArgs | null {
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    return null;
+  }
+
+  const input = body as Record<string, unknown>;
+  const cursor = input.cursor;
+  if (
+    cursor !== undefined &&
+    cursor !== null &&
+    typeof cursor !== "string"
+  ) {
+    return null;
+  }
+
+  const requestedSize = input.numItems;
+  if (
+    requestedSize !== undefined &&
+    (typeof requestedSize !== "number" ||
+      !Number.isInteger(requestedSize) ||
+      requestedSize < 1)
+  ) {
+    return null;
+  }
+
+  const requestedNow = input.now;
+  if (
+    requestedNow !== undefined &&
+    (typeof requestedNow !== "number" || !Number.isFinite(requestedNow))
+  ) {
+    return null;
+  }
+
+  return {
+    cursor: cursor === undefined ? null : cursor,
+    numItems: Math.min(requestedSize === undefined ? 100 : requestedSize, 100),
+    now: requestedNow === undefined ? Date.now() : requestedNow,
+  };
+}
+
+async function metabaseExport(
+  ctx: ActionCtx,
+  request: Request,
+  run: (ctx: ActionCtx, args: ExportPageArgs) => Promise<unknown>,
+) {
+  const configuredSecret = process.env.METABASE_EXPORT_SECRET;
+  const suppliedSecret = request.headers.get("x-metabase-export-secret") ?? "";
+  if (!configuredSecret || !safeEqual(configuredSecret, suppliedSecret)) {
+    return new Response("Not found.", { status: 404 });
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return new Response("bad json", { status: 400 });
+  }
+
+  const args = parseExportPage(body);
+  if (!args) return new Response("invalid export page", { status: 400 });
+
+  try {
+    const payload = await run(ctx, args);
+    return new Response(JSON.stringify(payload), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("[metabase] export failed", error);
+    return new Response("export failed", { status: 500 });
+  }
+}
+
+http.route({
+  path: "/metabase/export/analytics-events",
+  method: "POST",
+  handler: httpAction((ctx, request) =>
+    metabaseExport(ctx, request, (actionCtx, args) =>
+      actionCtx.runQuery(internal.metabase.analyticsEvents, {
+        paginationOpts: { numItems: args.numItems, cursor: args.cursor },
+      }),
+    ),
+  ),
+});
+
+http.route({
+  path: "/metabase/export/analytics-daily",
+  method: "POST",
+  handler: httpAction((ctx, request) =>
+    metabaseExport(ctx, request, (actionCtx, args) =>
+      actionCtx.runQuery(internal.metabase.analyticsDaily, {
+        paginationOpts: { numItems: args.numItems, cursor: args.cursor },
+      }),
+    ),
+  ),
+});
+
+http.route({
+  path: "/metabase/export/analytics-totals",
+  method: "POST",
+  handler: httpAction((ctx, request) =>
+    metabaseExport(ctx, request, (actionCtx, args) =>
+      actionCtx.runQuery(internal.metabase.analyticsTotals, {
+        paginationOpts: { numItems: args.numItems, cursor: args.cursor },
+      }),
+    ),
+  ),
+});
+
+http.route({
+  path: "/metabase/export/businesses",
+  method: "POST",
+  handler: httpAction((ctx, request) =>
+    metabaseExport(ctx, request, (actionCtx, args) =>
+      actionCtx.runQuery(internal.metabase.businesses, {
+        paginationOpts: { numItems: args.numItems, cursor: args.cursor },
+        now: args.now,
+      }),
+    ),
+  ),
 });
 
 export default http;

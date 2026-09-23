@@ -32,6 +32,8 @@ import type * as inbound from "../inbound.js";
 import type * as keywords from "../keywords.js";
 import type * as lists from "../lists.js";
 import type * as messaging from "../messaging.js";
+import type * as metabase from "../metabase.js";
+import type * as metabaseSync from "../metabaseSync.js";
 import type * as paymentText from "../paymentText.js";
 import type * as performance from "../performance.js";
 import type * as photos from "../photos.js";
@@ -71,6 +73,8 @@ declare const fullApi: ApiFromModules<{
   keywords: typeof keywords;
   lists: typeof lists;
   messaging: typeof messaging;
+  metabase: typeof metabase;
+  metabaseSync: typeof metabaseSync;
   paymentText: typeof paymentText;
   performance: typeof performance;
   photos: typeof photos;

@@ -34,6 +34,15 @@ const WHATSAPP = `https://wa.me/${COMPANY.phoneHref.replace(
     keep COMPANY.email — Google's OAuth review checks that one. */
 export const CONTACT_EMAIL = "contact@footfall.zone";
 
+export const META_AD_PREFERENCES = {
+  title: "Help us measure our ads?",
+  description: "With your permission, we share visits to our public pages, browser details and advertising cookies with Meta to measure and improve our Facebook and Instagram ads. You can change your choice at any time.",
+  privacy: "Privacy policy",
+  accept: "Allow ad measurement",
+  decline: "No thanks",
+  settings: "Ad privacy settings",
+};
+
 export const LINKS = {
   cta: "/app",
   login: "/app/login",

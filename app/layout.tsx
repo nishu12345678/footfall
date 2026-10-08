@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 import { Analytics } from "@/components/analytics";
 import { Clarity } from "@/components/clarity";
+import { MetaTracking } from "@/components/meta-tracking";
 import "./globals.css";
 
 /*
@@ -78,6 +79,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Analytics />
         {/* Inert without NEXT_PUBLIC_CLARITY_ID; never runs on shops or admin. */}
         <Clarity />
+        <MetaTracking />
       </body>
     </html>
   );

@@ -22,7 +22,7 @@ export default function Privacy() {
   return (
     <LegalPage
       title="Privacy Policy"
-      updated={COMPANY.updated}
+      updated="8 October 2026"
       intro="This policy explains what footfall collects, why, who else sees it, how long we keep it, and how you get it deleted. Section 4 covers the Google Business Profile data specifically, because that is the part most people want to read first."
     >
       <Section n={1} title="Who we are">
@@ -364,6 +364,21 @@ export default function Privacy() {
       </Section>
 
       <Section n={13} title="Cookies and analytics">
+        <P>
+          <Term>Meta advertising measurement.</Term> If you choose to allow ad
+          measurement, we use Meta Pixel and Conversions API on our public
+          homepage, privacy page and terms page to measure website visits and
+          improve our Facebook and Instagram ads. Meta receives page visits,
+          timestamps, browser information, IP addresses and advertising cookie
+          identifiers. Its browser Pixel can also receive the page address and
+          referrer. We do not send account details, Google Business Profile
+          data, report contents, email addresses or phone numbers through this
+          integration. It does not run inside the app, the admin dashboard or
+          customer shop websites. Your preference is remembered for six months;
+          use &ldquo;Ad privacy settings&rdquo; on these public pages to change
+          it. Declining does not affect access to Footfall. See{" "}
+          <A href="https://www.facebook.com/privacy/policy/">Meta&rsquo;s privacy policy</A>.
+        </P>
         <P>
           We use a small number of necessary cookies: one to keep you signed
           in, and one to remember your preferences. You can clear cookies in

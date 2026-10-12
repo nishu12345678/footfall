@@ -161,6 +161,48 @@ Where the two payment events fire is load-bearing:
   order already granted and GA counts a repeated `transaction_id` as a second
   sale.
 
+## Meta Pixel contract
+
+The Meta Pixel exists to run ads: it tells Meta which visitors reached a
+conversion so campaigns can be optimised and audiences built from them. It is
+a marketing-attribution copy of intent, never product or revenue truth — the
+Convex ledger remains the only count of signups, payments and revenue.
+
+It is enabled only when `NEXT_PUBLIC_META_PIXEL_ID` is present, so local and
+preview builds stay out of the ad audiences. The base code
+(`components/meta-pixel.tsx`, mounted once in the root layout) sends one
+`PageView` per route change, the first load included — the copy-paste snippet's
+single `PageView` would miss every client-side navigation. The same host-and-
+path gate as Clarity applies: the marketing site and `/app` product routes, never
+a customer shop microsite (`*.footfall.zone` or `/s/*`) and never `/admin`.
+
+Our explicit events are four of Meta's standard events, so they work in Events
+Manager and ad optimisation without a custom conversion:
+
+- `Contact`: `content_name` (cta id), `content_category` (location) — fired by
+  the same `data-analytics-event="cta_click"` markup GA uses, through a
+  separate delegated listener so the pixel does not depend on a GA id.
+- `Lead`: `content_name` (sign-in method) — at the same moment as GA's
+  `login_start`.
+- `InitiateCheckout`: `value`, `currency`, `content_ids` (plan), `content_name`,
+  `content_type`, `num_items` — at the same moment as `begin_checkout`, from
+  the server's order.
+- `Purchase`: same parameters — behind the same once-per-order claim as GA's
+  `purchase`, and only after `verifyPayment` says `paid`. The Razorpay order id
+  is not sent; Meta needs the amount and the plan, not a key into the ledger.
+
+`lib/meta-pixel.ts` enforces the contract the way `lib/ga.ts` does: a per-event
+parameter allowlist plus the shared identifier net that drops anything shaped
+like an email, phone number or Convex document id. Advanced matching
+(hashed email/phone on `fbq('init')`) is deliberately not wired and there is
+no function to wire it; the privacy policy (§7, §13) says the pixel receives
+nothing that identifies a person, and that sentence must stay true.
+
+To verify an install: Events Manager → Data sources → the pixel should show
+**Active** within ~20 minutes of a production deploy with the id set; the
+Test Events tab or the Meta Pixel Helper extension shows each event as it
+fires.
+
 ## Admin access
 
 The internal dashboard lives at `/admin/analytics`, outside the customer app's

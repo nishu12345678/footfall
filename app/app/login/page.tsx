@@ -8,6 +8,7 @@ import { FootfallAttribution } from "@/components/footfall-attribution";
 import { friendlyError, GENERIC } from "@/lib/errors";
 import { TWILIO_UI_ENABLED } from "@/lib/features";
 import { gaEvent, loginStartParams, type LoginMethod } from "@/lib/ga";
+import { leadParams, metaEvent } from "@/lib/meta-pixel";
 
 type Method = "phone" | "email";
 type Step = "identify" | "code";
@@ -84,9 +85,13 @@ export default function LoginPage() {
    * The identifier is deliberately not passed: lib/ga.ts would drop an
    * email or a phone number anyway, but no call site should be handing one
    * to an analytics function in the first place.
+   *
+   * The same moment is a Meta `Lead` — the top-of-funnel conversion ads
+   * optimise for — carrying the method and nothing else.
    */
   function noteLoginStart(m: LoginMethod) {
     gaEvent("login_start", loginStartParams(m));
+    metaEvent("Lead", leadParams(m));
   }
 
   async function sendCode() {

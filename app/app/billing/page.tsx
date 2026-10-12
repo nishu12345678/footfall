@@ -17,6 +17,11 @@ import {
   gaEvent,
   purchaseParams,
 } from "@/lib/ga";
+import {
+  initiateCheckoutParams,
+  metaEvent,
+  purchaseParams as metaPurchaseParams,
+} from "@/lib/meta-pixel";
 
 /* Razorpay Checkout attaches itself to window. */
 declare global {
@@ -222,6 +227,16 @@ export default function BillingPage() {
           currency: order.currency,
         }),
       );
+      // Meta InitiateCheckout: same moment, same server-confirmed figures,
+      // same "the plan, not the person" rule (lib/meta-pixel.ts).
+      metaEvent(
+        "InitiateCheckout",
+        initiateCheckoutParams({
+          plan: planId,
+          amountPaise: order.amountPaise,
+          currency: order.currency,
+        }),
+      );
 
       let checkout: InstanceType<NonNullable<Window["Razorpay"]>>;
       try {
@@ -277,6 +292,19 @@ export default function BillingPage() {
                     "purchase",
                     purchaseParams({
                       transactionId: orderId,
+                      plan: planId,
+                      amountPaise: order.amountPaise,
+                      currency: order.currency,
+                    }),
+                  );
+                  // Meta Purchase: the conversion ads optimise for. Behind
+                  // the same once-per-order claim, and only after the
+                  // server said "paid", for the reasons above. The order id
+                  // is not sent — Meta needs the amount and the plan, not a
+                  // key into our ledger.
+                  metaEvent(
+                    "Purchase",
+                    metaPurchaseParams({
                       plan: planId,
                       amountPaise: order.amountPaise,
                       currency: order.currency,

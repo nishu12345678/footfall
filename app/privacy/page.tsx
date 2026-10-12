@@ -258,6 +258,18 @@ export default function Privacy() {
             </A>
             .
           </LI>
+          <LI>
+            <Term>Meta Platforms (Meta Pixel)</Term> &mdash; tells Meta which
+            pages on footfall.zone and in the app a visitor reached, and
+            whether they started signing in, started a checkout or paid,
+            together with the plan and amount. We use this to measure and
+            run our advertising on Facebook and Instagram. It does not
+            receive your name, phone, email, business name or account
+            identifiers, and it is not loaded on customer shop websites or
+            the internal admin dashboard. See section 13 and Meta&rsquo;s{" "}
+            <A href="https://www.facebook.com/privacy/policy">privacy policy</A>
+            .
+          </LI>
         </UL>
         <P>
           We may also disclose information where the law requires it, to enforce
@@ -400,6 +412,26 @@ export default function Privacy() {
             privacy.microsoft.com/privacystatement
           </A>
           .
+        </P>
+        <P>
+          We also use the <Term>Meta Pixel</Term> on footfall.zone and inside
+          the app, and unlike the two above, this one is for advertising. It
+          sets Meta&rsquo;s cookies and tells Meta which pages you visited and
+          whether you started signing in, started a checkout or paid, along
+          with the plan and amount &mdash; so we can see whether our Facebook
+          and Instagram ads bring in business owners, and show ads to people
+          like those who did. It is not connected to your account and does not
+          receive your name, email, phone number or business name. If you have
+          a Facebook or Instagram account, Meta may link this activity to it
+          under its own{" "}
+          <A href="https://www.facebook.com/privacy/policy">privacy policy</A>;
+          you can limit that in your Meta{" "}
+          <A href="https://www.facebook.com/adpreferences/ad_settings">
+            ad settings
+          </A>
+          , or block the pixel with any ad blocker and everything on the site
+          will keep working. The pixel is not loaded on customer shop websites
+          or the internal admin dashboard.
         </P>
         <P>
           <Term>Your shop&rsquo;s website is different.</Term> The free site

@@ -73,6 +73,20 @@ export function shouldTrackClarity(
   );
 }
 
+/**
+ * The Meta Pixel follows the same line as GA: marketing page and product,
+ * never a customer's shop microsite. It is an advertising pixel, so the
+ * staff dashboard is excluded too — nothing on /admin is a conversion and
+ * a staff session would only add noise to the audiences ads are built on.
+ */
+export function shouldTrackMetaPixel(
+  host: string | null | undefined,
+  pathname: string | null | undefined,
+  domain = SITE_DOMAIN,
+) {
+  return shouldTrackClarity(host, pathname, domain);
+}
+
 /** The GA4 measurement id, or null when analytics is switched off. */
 export function gaId(): string | null {
   const id = (process.env.NEXT_PUBLIC_GA_ID ?? "").trim();
@@ -87,4 +101,16 @@ export function gaId(): string | null {
 export function clarityId(): string | null {
   const id = (process.env.NEXT_PUBLIC_CLARITY_ID ?? "").trim();
   return /^[A-Za-z0-9]+$/.test(id) ? id : null;
+}
+
+/**
+ * The Meta Pixel id, or null when the pixel is switched off.
+ *
+ * A pixel id is a plain run of digits (e.g. 2073667013518721). Anything
+ * else is refused rather than passed to fbq('init'), for the same reason
+ * as the Clarity id above: the value ends up inside a vendor call.
+ */
+export function metaPixelId(): string | null {
+  const id = (process.env.NEXT_PUBLIC_META_PIXEL_ID ?? "").trim();
+  return /^\d{6,20}$/.test(id) ? id : null;
 }

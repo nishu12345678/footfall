@@ -3,8 +3,10 @@ import {
   clarityId,
   isShopHost,
   isShopPath,
+  metaPixelId,
   shouldTrack,
   shouldTrackClarity,
+  shouldTrackMetaPixel,
 } from "./analytics";
 
 const D = "footfall.zone";
@@ -79,6 +81,46 @@ describe("shouldTrackClarity", () => {
     expect(shouldTrackClarity("footfall.zone", "/admin/analytics", D)).toBe(false);
     expect(shouldTrackClarity("sharma-bakery.footfall.zone", "/", D)).toBe(false);
     expect(shouldTrackClarity("footfall.zone", "/s/sharma-bakery", D)).toBe(false);
+  });
+});
+
+describe("shouldTrackMetaPixel", () => {
+  it("measures marketing and product pages", () => {
+    expect(shouldTrackMetaPixel("footfall.zone", "/", D)).toBe(true);
+    expect(shouldTrackMetaPixel("www.footfall.zone", "/", D)).toBe(true);
+    expect(shouldTrackMetaPixel("footfall.zone", "/app/billing", D)).toBe(true);
+    expect(shouldTrackMetaPixel("footfall.zone", "/app/login", D)).toBe(true);
+  });
+
+  it("excludes the staff dashboard and shop sites", () => {
+    expect(shouldTrackMetaPixel("footfall.zone", "/admin", D)).toBe(false);
+    expect(shouldTrackMetaPixel("footfall.zone", "/admin/analytics", D)).toBe(false);
+    expect(shouldTrackMetaPixel("sharma-bakery.footfall.zone", "/", D)).toBe(false);
+    expect(shouldTrackMetaPixel("sharma-bakery.footfall.zone", "/contact", D)).toBe(false);
+    expect(shouldTrackMetaPixel("footfall.zone", "/s/sharma-bakery", D)).toBe(false);
+  });
+});
+
+describe("metaPixelId", () => {
+  const original = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+
+  afterEach(() => {
+    if (original === undefined) delete process.env.NEXT_PUBLIC_META_PIXEL_ID;
+    else process.env.NEXT_PUBLIC_META_PIXEL_ID = original;
+  });
+
+  it("accepts a numeric pixel id", () => {
+    process.env.NEXT_PUBLIC_META_PIXEL_ID = " 2073667013518721 ";
+    expect(metaPixelId()).toBe("2073667013518721");
+  });
+
+  it("rejects an empty, short or script-shaped value", () => {
+    process.env.NEXT_PUBLIC_META_PIXEL_ID = "";
+    expect(metaPixelId()).toBeNull();
+    process.env.NEXT_PUBLIC_META_PIXEL_ID = "123";
+    expect(metaPixelId()).toBeNull();
+    process.env.NEXT_PUBLIC_META_PIXEL_ID = "2073667013518721');alert(1);//";
+    expect(metaPixelId()).toBeNull();
   });
 });
 

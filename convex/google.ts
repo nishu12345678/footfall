@@ -6,7 +6,8 @@ import {
   internalQuery,
   mutation,
 } from "./_generated/server";
-import type { ActionCtx } from "./_generated/server";
+import type { ActionCtx, MutationCtx } from "./_generated/server";
+import { APP_SCHEME, isAppLink } from "./appLinks";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -646,33 +647,125 @@ export const linkLocation = action({
    consent redirect now lands on this deployment's HTTPS endpoint instead,
    the same origin Convex Auth's own Google login uses successfully.        */
 
+async function beginLink(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  returnTo: string,
+  codeVerifier: string,
+): Promise<string> {
+  const token = crypto.randomUUID().replace(/-/g, "");
+  const attemptId = await ctx.db.insert("googleLinkTokens", {
+    userId,
+    token,
+    codeVerifier,
+    returnTo,
+    expiresAt: Date.now() + 10 * 60 * 1000,
+  });
+
+  // The funnel's "attempted to connect" step, written in the same
+  // transaction as the token row. The non-secret row id is the key — never
+  // the OAuth state token, because analytics dedupe keys persist after that
+  // one-time credential should be forgotten.
+  await recordAnalyticsEvent(ctx, {
+    event: "gbp_connect_started",
+    dedupeKey: dedupe.gbpConnectStarted(attemptId),
+    source: "owner",
+    userId,
+  });
+
+  return token;
+}
+
 export const startLink = mutation({
   args: { returnTo: v.string(), codeVerifier: v.string() },
   handler: async (ctx, { returnTo, codeVerifier }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Sign in first.");
+    return await beginLink(ctx, userId, returnTo, codeVerifier);
+  },
+});
 
-    const token = crypto.randomUUID().replace(/-/g, "");
-    const attemptId = await ctx.db.insert("googleLinkTokens", {
+function base64url(bytes: Uint8Array): string {
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+/**
+ * The native app's version of app/api/google/start.
+ *
+ * The web route builds the consent URL in Next because it reads the session
+ * from a cookie. The app has no Next server to lean on, so the whole URL —
+ * PKCE pair included — is built here and the app only opens it. Consent
+ * returns to the app's own scheme, which the callback honours for errors too.
+ */
+export const startAppLink = mutation({
+  args: {},
+  returns: v.object({ url: v.string() }),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Sign in first.");
+
+    const convexSite = process.env.CONVEX_SITE_URL;
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const mocked = googleMocked();
+    if (!convexSite || (!clientId && !mocked)) {
+      throw new ConvexError("Google is not configured.");
+    }
+
+    const bytes = new Uint8Array(48);
+    crypto.getRandomValues(bytes);
+    const verifier = base64url(bytes);
+    const challenge = base64url(
+      new Uint8Array(
+        await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)),
+      ),
+    );
+
+    const state = await beginLink(
+      ctx,
       userId,
-      token,
-      codeVerifier,
-      returnTo,
-      expiresAt: Date.now() + 10 * 60 * 1000,
-    });
+      `${APP_SCHEME}://connect/processing`,
+      verifier,
+    );
 
-    // The funnel's "attempted to connect" step, written in the same
-    // transaction as the token row. The non-secret row id is the key — never
-    // the OAuth state token, because analytics dedupe keys persist after that
-    // one-time credential should be forgotten.
-    await recordAnalyticsEvent(ctx, {
-      event: "gbp_connect_started",
-      dedupeKey: dedupe.gbpConnectStarted(attemptId),
-      source: "owner",
-      userId,
-    });
+    // Fake Google: no consent screen, straight to the callback, exactly as
+    // the web start route does.
+    if (mocked) {
+      const callback = new URL(`${convexSite}/google/callback`);
+      callback.searchParams.set("code", MOCK_AUTH_CODE);
+      callback.searchParams.set("state", state);
+      return { url: callback.toString() };
+    }
 
-    return token;
+    const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    url.searchParams.set("client_id", clientId!);
+    url.searchParams.set("redirect_uri", `${convexSite}/google/callback`);
+    url.searchParams.set("response_type", "code");
+    url.searchParams.set("scope", "https://www.googleapis.com/auth/business.manage");
+    url.searchParams.set("access_type", "offline");
+    url.searchParams.set("prompt", "consent select_account");
+    url.searchParams.set("state", state);
+    url.searchParams.set("code_challenge", challenge);
+    url.searchParams.set("code_challenge_method", "S256");
+    return { url: url.toString() };
+  },
+});
+
+/**
+ * Where a consent attempt asked to come back to, for the callback's early
+ * error exits (Google's own ?error=, before any code exchange). Only the
+ * app's scheme is ever returned; a web attempt keeps the web fallback.
+ */
+export const appReturnFor = internalQuery({
+  args: { token: v.string() },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, { token }) => {
+    const row = await ctx.db
+      .query("googleLinkTokens")
+      .withIndex("by_token", (q) => q.eq("token", token))
+      .first();
+    return row && isAppLink(row.returnTo) ? row.returnTo : null;
   },
 });
 

@@ -10,6 +10,7 @@ import type { Id } from "./_generated/dataModel";
 import { sendNow as sendMessage, toE164, twilioEnabled } from "./messaging";
 import { sendNow as sendEmail } from "./email";
 import { dedupe, recordAnalyticsEvent } from "./analytics";
+import { isAppLink } from "./appLinks";
 
 /**
  * Three ways in, because shop owners don't all have the same habits:
@@ -153,6 +154,23 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
     }),
   ],
   callbacks: {
+    // Same rule as Convex Auth's default (a path, or an absolute URL on
+    // SITE_URL), plus the native app's own scheme, so Google sign-in from
+    // the phone app can land back in the app with its one-time code.
+    async redirect({ redirectTo }) {
+      if (isAppLink(redirectTo)) return redirectTo;
+      const base = (process.env.SITE_URL ?? "").replace(/\/$/, "");
+      if (redirectTo.startsWith("?") || redirectTo.startsWith("/")) {
+        return `${base}${redirectTo}`;
+      }
+      if (base && redirectTo.startsWith(base)) {
+        const after = redirectTo[base.length];
+        if (after === undefined || after === "?" || after === "/") {
+          return redirectTo;
+        }
+      }
+      throw new Error(`Invalid redirectTo ${redirectTo}`);
+    },
     async afterUserCreatedOrUpdated(ctx, { userId, existingUserId }) {
       // First sign-in ever: say hello, once. The email module dedupes on
       // the key, so a second account link on the same user can't repeat it.

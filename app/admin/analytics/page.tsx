@@ -40,6 +40,7 @@ const WINDOWS = [7, 30, 90] as const;
 type Window = (typeof WINDOWS)[number];
 
 const PAGE_SIZE = 25;
+const METABASE_URL = process.env.NEXT_PUBLIC_METABASE_URL?.trim() || null;
 
 /* ------------------------------- formatting ------------------------------ */
 
@@ -197,6 +198,16 @@ export default function AdminAnalyticsPage() {
       }
       actions={
         <>
+          {METABASE_URL ? (
+            <a
+              href={METABASE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-ghost btn-sm"
+            >
+              Open Metabase ↗
+            </a>
+          ) : null}
           <WindowPicker days={days} onChange={setDays} />
           <button type="button" onClick={refreshClock} className="btn btn-ghost btn-sm">
             Refresh

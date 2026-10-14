@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "webhook:fake": "node scripts/razorpay-webhook.mjs",
+    "sync:metabase": "node scripts/sync-metabase.mjs",
     "env:push": "convex env set --force --from-file"
   },
   "dependencies": {

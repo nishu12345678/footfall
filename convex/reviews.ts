@@ -18,6 +18,7 @@ import { activeBusinessFor,
 } from "./access";
 import { v4Base } from "./googleHosts";
 import { dedupe, recordAnalyticsEvent } from "./analytics";
+import { chatCompletion, chatContent, llmApiKey } from "./llm";
 
 /**
  * Reviews from the Google Business Profile.
@@ -385,7 +386,7 @@ export const draftReply = internalAction({
       { userId, id: reviewId },
     );
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = llmApiKey();
     if (!apiKey) return null;
 
     const c = await ctx.runQuery(internal.reviews.replyContext, { userId });
@@ -471,27 +472,18 @@ export const draftReply = internalAction({
       .join("\n");
 
     try {
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          temperature: 0.7,
-          response_format: { type: "json_object" },
-          messages: [{ role: "user", content: prompt }],
-        }),
+      const res = await chatCompletion({
+        apiKey,
+        temperature: 0.7,
+        messages: [{ role: "user", content: prompt }],
       });
       if (!res.ok) {
         console.error(`[reviews] draft ${res.status}`);
         return null;
       }
 
-      const body = await res.json();
       const text = String(
-        JSON.parse(body.choices?.[0]?.message?.content ?? "{}").reply ?? "",
+        JSON.parse(await chatContent(res)).reply ?? "",
       ).trim();
       // Google caps a reply at 4096 characters; we are nowhere near, but a
       // runaway generation shouldn't reach the API at all.

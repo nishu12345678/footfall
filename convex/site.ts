@@ -11,6 +11,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
 import { activeBusinessFor, paidAction, paidMutation, paidQuery } from "./access";
 import { dedupe, recordAnalyticsEvent } from "./analytics";
+import { chatCompletion, chatContent, llmApiKey, requireLlmApiKey } from "./llm";
 
 /**
  * A free one-page website for shops that don't have one.
@@ -285,8 +286,7 @@ export const generateSite = action({
     const c = await ctx.runQuery(internal.site.siteContext, { userId });
     if (!c) throw new ConvexError("Connect your Google profile first.");
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new ConvexError("The writing assistant isn't set up on this server yet.");
+    const apiKey = requireLlmApiKey();
 
     const b = c.business;
     const where = [b.city, b.pinCode].filter(Boolean).join(" ");
@@ -347,37 +347,28 @@ export const generateSite = action({
       .filter(Boolean)
       .join("\n");
 
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        temperature: 0.7,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "You write websites for Indian neighbourhood businesses. Concrete and local. You never invent facts about a business.",
-          },
-          { role: "user", content: prompt },
-        ],
-      }),
+    const res = await chatCompletion({
+      apiKey,
+      temperature: 0.7,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You write websites for Indian neighbourhood businesses. Concrete and local. You never invent facts about a business.",
+        },
+        { role: "user", content: prompt },
+      ],
     });
 
     if (!res.ok) {
       const text = await res.text();
-      console.error(`[openai] ${res.status} ${text.slice(0, 300)}`);
+      console.error(`[llm] ${res.status} ${text.slice(0, 300)}`);
       throw new ConvexError("Couldn't write the website just now. Try again in a moment.");
     }
 
-    const data = await res.json();
     let copy: any = {};
     try {
-      copy = JSON.parse(data?.choices?.[0]?.message?.content ?? "{}");
+      copy = JSON.parse(await chatContent(res));
     } catch {
       throw new ConvexError("Couldn't get an answer just now. Try again.");
     }
@@ -579,7 +570,7 @@ export const reviewExistingSite = paidAction({
       };
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = llmApiKey();
     if (!apiKey) return { url: business.website, checks, advice: [] };
 
     const prompt = [
@@ -595,34 +586,23 @@ export const reviewExistingSite = paidAction({
       'Reply as JSON only: {"items":["...","..."]}',
     ].join("\n");
 
-    const ai = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        temperature: 0.4,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "You advise Indian shop owners on their websites. Practical and plain. Never use jargon.",
-          },
-          { role: "user", content: prompt },
-        ],
-      }),
+    const ai = await chatCompletion({
+      apiKey,
+      temperature: 0.4,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You advise Indian shop owners on their websites. Practical and plain. Never use jargon.",
+        },
+        { role: "user", content: prompt },
+      ],
     });
 
     let advice: string[] = [];
     if (ai.ok) {
-      const payload = await ai.json();
       try {
-        advice =
-          JSON.parse(payload?.choices?.[0]?.message?.content ?? "{}").items ??
-          [];
+        advice = JSON.parse(await chatContent(ai)).items ?? [];
       } catch {
         advice = [];
       }

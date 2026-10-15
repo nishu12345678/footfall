@@ -9,6 +9,7 @@ import {
   dataForSeoTrendDemand,
   googleAutocomplete,
 } from "./searchProviders";
+import { chatCompletion, chatContent, requireLlmApiKey } from "./llm";
 
 /**
  * Keyword research for a local business.
@@ -235,8 +236,7 @@ async function refine(
     offerings: string[];
   },
 ): Promise<{ term: string; head: string }[]> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new ConvexError("The writing assistant isn't set up on this server yet.");
+  const apiKey = requireLlmApiKey();
 
   const prompt = [
     `Business: ${business.name}`,
@@ -261,37 +261,26 @@ async function refine(
     .filter(Boolean)
     .join("\n");
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content:
-            "You do local SEO for Indian neighbourhood businesses. You are strict about relevance and never keep a phrase that would bring the wrong customer.",
-        },
-        { role: "user", content: prompt },
-      ],
-    }),
+  const res = await chatCompletion({
+    apiKey,
+    temperature: 0.2,
+    messages: [
+      {
+        role: "system",
+        content:
+          "You do local SEO for Indian neighbourhood businesses. You are strict about relevance and never keep a phrase that would bring the wrong customer.",
+      },
+      { role: "user", content: prompt },
+    ],
   });
 
   if (!res.ok) {
-    console.error(`[openai] ${res.status} ${(await res.text()).slice(0, 200)}`);
+    console.error(`[llm] ${res.status} ${(await res.text()).slice(0, 200)}`);
     return candidates.map((term) => ({ term, head: term.split(" ")[0] }));
   }
 
-  const data = await res.json();
   try {
-    const items = JSON.parse(
-      data?.choices?.[0]?.message?.content ?? "{}",
-    ).items;
+    const items = JSON.parse(await chatContent(res)).items;
     return (Array.isArray(items) ? items : [])
       .filter((i: any) => i?.term && i?.head)
       .map((i: any) => ({

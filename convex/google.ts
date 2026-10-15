@@ -20,6 +20,7 @@ import {
   revokeUrl,
   tokenUrl,
 } from "./googleHosts";
+import { chatCompletion, chatContent, llmApiKey } from "./llm";
 
 /**
  * Google Business Profile connection.
@@ -1133,7 +1134,7 @@ async function matchServiceTypes(
   offerings: string[],
   serviceTypes: ServiceType[],
 ): Promise<Record<string, string>> {
-  const key = process.env.OPENAI_API_KEY;
+  const key = llmApiKey();
   if (!key || serviceTypes.length === 0) return {};
 
   const exact = new Map(
@@ -1149,48 +1150,37 @@ async function matchServiceTypes(
   if (unresolved.length === 0) return out;
 
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "user",
-            content: [
-              "Google defines these services for this business category:",
-              serviceTypes
-                .map((s) => `${s.serviceTypeId} = ${s.displayName}`)
-                .join("\n"),
-              "",
-              "A shop lists the following services in its own words:",
-              unresolved.map((o) => `- ${o}`).join("\n"),
-              "",
-              "For each of the shop's services, give the id of the Google",
-              "service that means the same thing. The wording will differ:",
-              "'Root Canal Treatment' is Google's 'Root canals', 'Oral",
-              "Check-ups' is 'Checkups', 'Dental Cleaning' is 'Teeth",
-              "cleaning'. Match on what the customer receives.",
-              "Do not match a genuinely different treatment, and do not use",
-              "the same Google service for two of the shop's services.",
-              "If nothing means the same thing, leave it out entirely.",
-              "",
-              'Reply with JSON: {"matches": {"<shop service>": "<id>"}}',
-            ].join("\n"),
-          },
-        ],
-      }),
+    const res = await chatCompletion({
+      apiKey: key,
+      messages: [
+        {
+          role: "user",
+          content: [
+            "Google defines these services for this business category:",
+            serviceTypes
+              .map((s) => `${s.serviceTypeId} = ${s.displayName}`)
+              .join("\n"),
+            "",
+            "A shop lists the following services in its own words:",
+            unresolved.map((o) => `- ${o}`).join("\n"),
+            "",
+            "For each of the shop's services, give the id of the Google",
+            "service that means the same thing. The wording will differ:",
+            "'Root Canal Treatment' is Google's 'Root canals', 'Oral",
+            "Check-ups' is 'Checkups', 'Dental Cleaning' is 'Teeth",
+            "cleaning'. Match on what the customer receives.",
+            "Do not match a genuinely different treatment, and do not use",
+            "the same Google service for two of the shop's services.",
+            "If nothing means the same thing, leave it out entirely.",
+            "",
+            'Reply with JSON: {"matches": {"<shop service>": "<id>"}}',
+          ].join("\n"),
+        },
+      ],
     });
     if (!res.ok) return out;
 
-    const body = await res.json();
-    const matches = JSON.parse(
-      body.choices?.[0]?.message?.content ?? "{}",
-    ).matches;
+    const matches = JSON.parse(await chatContent(res)).matches;
     // The model tends to drop Google's "job_type_id:" prefix, so accept
     // either form and resolve back to the id Google actually wants.
     const valid = new Map<string, string>();

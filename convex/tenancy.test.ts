@@ -130,7 +130,7 @@ function stubFetch() {
     let body: unknown = {};
     if (url.includes("/localPosts")) {
       body = { name: "accounts/x/locations/x/localPosts/1" };
-    } else if (url.includes("openai.com")) {
+    } else if (url.includes("openrouter.ai")) {
       body = {
         choices: [
           { message: { content: JSON.stringify({ reply: "Thank you." }) } },
@@ -156,7 +156,7 @@ beforeEach(async () => {
   a = await seedShop(t, "A");
   b = await seedShop(t, "B");
   calls = stubFetch();
-  vi.stubEnv("OPENAI_API_KEY", "test-key");
+  vi.stubEnv("OPENROUTER_API_KEY", "test-key");
 });
 
 afterEach(() => {
@@ -367,7 +367,7 @@ describe("the owner's own path is unchanged", () => {
     });
     expect(text).toBe("Thank you.");
     expect(calls).toHaveLength(1);
-    expect(calls[0]).toContain("openai.com");
+    expect(calls[0]).toContain("openrouter.ai");
     expect((await get(a.reviewId))?.replyText).toBe("Thank you.");
   });
 });

@@ -51,7 +51,7 @@ SITE_URL=http://localhost:3000
 # Dev only: prints sign-in codes to the backend log.
 OTP_DEV_ECHO=1
 
-OPENAI_API_KEY=
+OPENROUTER_API_KEY=
 FIRECRAWL_API_KEY=
 # DataForSEO Basic auth: base64(api-login:api-password).
 # Rank checks, geo-grid, Trends, competitors and keyword volumes.
@@ -117,7 +117,7 @@ with `npx convex env list`, adding `--deployment <name>` for a cloud one.
 | `RAZORPAY_KEY_ID` (`rzp_test_…`), `RAZORPAY_KEY_SECRET` | Convex | Paying for a plan in test mode | Billing page cannot create an order |
 | `RAZORPAY_WEBHOOK_SECRET` | Convex | The webhook path, real or faked | Webhook returns 500 |
 | `RAZORPAY_ONE_RUPEE_TEST_EMAILS` | Convex production | Exact comma-separated verified login emails that pay ₹1 through live Razorpay while receiving the full selected plan | Everyone pays the normal server price |
-| `OPENAI_API_KEY` | Convex | Writing posts, review replies, keyword ideas, the shop site, post images | Those buttons error; everything else works |
+| `OPENROUTER_API_KEY` | Convex | Writing posts, review replies, keyword ideas, the shop site, post images — all routed through OpenRouter | Those buttons error; everything else works |
 | `FIRECRAWL_API_KEY` | Convex | Reading the shop's website for the report and for suggestions | Website check reports nothing |
 | `DATAFORSEO_AUTH` | Convex | Base64-encoded DataForSEO `api-login:api-password`; powers Maps rank checks, geo-grid, competitor strength, Google Trends related queries/demand, and keyword search volumes | Rank checks/geo-grid error; keyword research still has free Google Autocomplete and built local phrases, but no Trends or volume data |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Convex | Only for the real Google consent screen. Not needed with the mock. | Nothing, with the mock on |
@@ -190,7 +190,7 @@ refuses to serve unless `GOOGLE_MOCK_ENABLED=1`, so production meets a
    mode (next section). You are now on a plan.
 5. Onboarding steps 2 to 6 and the dashboard are open. Reviews, photos
    and performance are already populated from the mock. Posts, review
-   replies and the shop site need `OPENAI_API_KEY`.
+   replies and the shop site need `OPENROUTER_API_KEY`.
 
 Anything that goes wrong on the backend is in the `npx convex dev`
 terminal. To start again from nothing:
@@ -323,7 +323,7 @@ and Razorpay can deliver real test-mode webhooks.
    npx @convex-dev/auth                     # JWT_PRIVATE_KEY, JWKS, SITE_URL
    npx convex env set SITE_URL http://localhost:3000
    npx convex env set OTP_DEV_ECHO 1
-   npx convex env set OPENAI_API_KEY ...
+   npx convex env set OPENROUTER_API_KEY ...
    npx convex env set FIRECRAWL_API_KEY ...
    npx convex env set RAZORPAY_KEY_ID rzp_test_...
    npx convex env set RAZORPAY_KEY_SECRET ...

@@ -26,9 +26,9 @@ Running example used throughout: **Bansal Minerals**, a tile shop in Agra. The o
 
 | API | What we use it for |
 |---|---|
-| **SerpAPI** | Fetches Google Autocomplete suggestions and Google Trends related queries by code. Also runs the map searches used for rank checks and competition checks. |
-| **DataForSEO** | Gives real monthly search volume per city (it reads the numbers from Google's ads system and sells them to us). |
-| **OpenAI** | Acts as a filter, once, on the candidate list. It can only *remove* phrases — never add them. |
+| **Google Autocomplete** (free) | Fetches Google's own search suggestions, no key needed. |
+| **DataForSEO** | Google Trends related queries, real monthly search volume per city (read from Google's ads system), and the map searches used for rank checks and competition checks. |
+| **OpenRouter** | Acts as a filter, once, on the candidate list. It can only *remove* phrases — never add them. |
 
 ---
 
@@ -74,7 +74,7 @@ After this step "how to polish granite" and "granite shop thrissur" are gone. "n
 
 ### 5. Let the AI judge, once
 
-One request to OpenAI with the shop's details and the surviving list. The instruction: **keep only phrases where the searcher could walk into this shop and buy.**
+One request through OpenRouter with the shop's details and the surviving list. The instruction: **keep only phrases where the searcher could walk into this shop and buy.**
 
 It removes "nissan granite". For every phrase it keeps, it names the head term.
 

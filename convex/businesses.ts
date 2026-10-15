@@ -15,6 +15,7 @@ import {
   subscriptionBusinessId,
 } from "./access";
 import { recordOnboardingStep } from "./analytics";
+import { chatCompletion, llmApiKey } from "./llm";
 
 /** The signed-in owner's ACTIVE business, or null if none is connected. */
 export const mine = query({
@@ -218,40 +219,32 @@ export const tuneRadius = paidAction({
     let km: number | null = null;
     let reason = "";
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = llmApiKey();
     if (apiKey) {
       try {
-        const res = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "gpt-4o-mini",
-            temperature: 0.2,
-            response_format: { type: "json_object" },
-            messages: [
-              {
-                role: "user",
-                content: [
-                  `A ${trade} in ${business.city ?? "an Indian city"}, India.`,
-                  "",
-                  "How far will an ordinary customer travel to reach a shop",
-                  "of this kind, in kilometres? Think about what the trade is",
-                  "worth the trip for. People pick a dentist or a salon within",
-                  "a few kilometres of home. People drive across a city to",
-                  "compare marble, furniture or cars.",
-                  "",
-                  "Give a single number between 2 and 15, and one short",
-                  "sentence a shop owner would recognise as true of their",
-                  "trade. Do not mention SEO, Google or ranking.",
-                  "",
-                  'Reply with JSON: {"km": 4, "reason": "..."}',
-                ].join("\n"),
-              },
-            ],
-          }),
+        const res = await chatCompletion({
+          apiKey,
+          temperature: 0.2,
+          messages: [
+            {
+              role: "user",
+              content: [
+                `A ${trade} in ${business.city ?? "an Indian city"}, India.`,
+                "",
+                "How far will an ordinary customer travel to reach a shop",
+                "of this kind, in kilometres? Think about what the trade is",
+                "worth the trip for. People pick a dentist or a salon within",
+                "a few kilometres of home. People drive across a city to",
+                "compare marble, furniture or cars.",
+                "",
+                "Give a single number between 2 and 15, and one short",
+                "sentence a shop owner would recognise as true of their",
+                "trade. Do not mention SEO, Google or ranking.",
+                "",
+                'Reply with JSON: {"km": 4, "reason": "..."}',
+              ].join("\n"),
+            },
+          ],
         });
 
         if (res.ok) {

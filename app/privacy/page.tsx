@@ -223,10 +223,10 @@ export default function Privacy() {
             <Term>Vercel</Term> &mdash; hosting for the website and application.
           </LI>
           <LI>
-            <Term>OpenAI</Term> &mdash; drafts the text of posts and review
-            replies and generates images. It receives your business details and
-            the review text being replied to. It does not receive your contact
-            details, and it does not train on this content.
+            <Term>OpenRouter</Term> &mdash; routes the writing assistant that
+            drafts the text of posts and review replies and generates images.
+            It receives your business details and the review text being
+            replied to. It does not receive your contact details.
           </LI>
           <LI>
             <Term>DataForSEO and Firecrawl</Term> &mdash; search data providers.

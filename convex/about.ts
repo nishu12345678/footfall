@@ -18,6 +18,7 @@ import { activeBusinessFor,
   paidMutation,
   paidQuery,
 } from "./access";
+import { chatCompletion, chatContent, requireLlmApiKey } from "./llm";
 import { recordOnboardingStep } from "./analytics";
 
 /**
@@ -253,8 +254,7 @@ export const suggest = paidAction({
     });
     if (!context) throw new ConvexError("Connect your Google profile first.");
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new ConvexError("The writing assistant isn't set up on this server yet.");
+    const apiKey = requireLlmApiKey();
 
     const wantSpecialties = kind === "specialties";
     const site = await webContext(
@@ -284,40 +284,31 @@ export const suggest = paidAction({
       .filter(Boolean)
       .join("\n");
 
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        temperature: 0.7,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "You help Indian local business owners describe their shop for Google. You are concrete and specific, never generic.",
-          },
-          { role: "user", content: prompt },
-        ],
-      }),
+    const res = await chatCompletion({
+      apiKey,
+      temperature: 0.7,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You help Indian local business owners describe their shop for Google. You are concrete and specific, never generic.",
+        },
+        { role: "user", content: prompt },
+      ],
     });
 
     if (!res.ok) {
       const body = await res.text();
-      console.error(`[openai] ${res.status} ${body.slice(0, 300)}`);
+      console.error(`[llm] ${res.status} ${body.slice(0, 300)}`);
       throw new ConvexError("Couldn't get suggestions just now. Try again in a moment.");
     }
 
-    const data = await res.json();
-    const raw = data?.choices?.[0]?.message?.content ?? "{}";
+    const raw = await chatContent(res);
     let items: string[] = [];
     try {
       items = JSON.parse(raw).items ?? [];
     } catch {
-      console.error("[openai] unparseable reply", raw.slice(0, 200));
+      console.error("[llm] unparseable reply", raw.slice(0, 200));
     }
 
     const seen = new Set(context.have.map((h: string) => h.toLowerCase()));

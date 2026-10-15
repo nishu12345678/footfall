@@ -18,6 +18,14 @@ import { activeBusinessFor,
 import { v4Base } from "./googleHosts";
 import type { ActionCtx } from "./_generated/server";
 import { dedupe, recordAnalyticsEvent } from "./analytics";
+import {
+  chatCompletion,
+  chatContent,
+  generateImage,
+  imageBase64,
+  llmApiKey,
+  requireLlmApiKey,
+} from "./llm";
 
 /**
  * Writing and publishing Google Business Profile posts.
@@ -439,8 +447,7 @@ export const draftBody = internalAction({
     const c = await ctx.runQuery(internal.posts.postContext, { userId });
     if (!c) return null;
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new ConvexError("The writing assistant isn't set up on this server yet.");
+    const apiKey = requireLlmApiKey();
 
     const angle = ANGLES[Math.floor(Math.random() * ANGLES.length)];
 
@@ -495,39 +502,28 @@ export const draftBody = internalAction({
       .filter(Boolean)
       .join("\n");
 
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        temperature: 0.85,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "You write short Google Business Profile posts for Indian neighbourhood shops. Concrete, warm, never salesy. You never invent facts about a business.",
-          },
-          { role: "user", content: prompt },
-        ],
-      }),
+    const res = await chatCompletion({
+      apiKey,
+      temperature: 0.85,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You write short Google Business Profile posts for Indian neighbourhood shops. Concrete, warm, never salesy. You never invent facts about a business.",
+        },
+        { role: "user", content: prompt },
+      ],
     });
 
     if (!res.ok) {
       console.error(
-        `[openai] ${res.status} ${(await res.text()).slice(0, 300)}`,
+        `[llm] ${res.status} ${(await res.text()).slice(0, 300)}`,
       );
       return null;
     }
 
-    const data = await res.json();
     try {
-      const body = JSON.parse(
-        data?.choices?.[0]?.message?.content ?? "{}",
-      ).body;
+      const body = JSON.parse(await chatContent(res)).body;
       const text = String(body ?? "").trim();
       return text ? text.slice(0, 1000) : null;
     } catch {
@@ -969,8 +965,7 @@ async function researchTopics(
   c: NonNullable<Awaited<ReturnType<typeof contextOf>>>,
   count: number,
 ): Promise<{ topic: string; targets?: string }[]> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new ConvexError("The writing assistant isn't set up on this server yet.");
+  const apiKey = requireLlmApiKey();
 
   const now = new Date();
   const month = now.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
@@ -1017,36 +1012,27 @@ async function researchTopics(
       .filter(Boolean)
       .join("\n");
 
-  const research = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      temperature: 0.9,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content:
-            "You plan Google Business Profile content for Indian neighbourhood businesses. You think like a local SEO specialist: every post must earn its place, and no two may cover the same ground.",
-        },
-        { role: "user", content: brief },
-      ],
-    }),
+  const research = await chatCompletion({
+    apiKey,
+    temperature: 0.9,
+    messages: [
+      {
+        role: "system",
+        content:
+          "You plan Google Business Profile content for Indian neighbourhood businesses. You think like a local SEO specialist: every post must earn its place, and no two may cover the same ground.",
+      },
+      { role: "user", content: brief },
+    ],
   });
 
   if (!research.ok) {
-    console.error(`[openai] plan ${research.status}`);
+    console.error(`[llm] plan ${research.status}`);
     throw new ConvexError("Couldn't plan the posts just now. Try again.");
   }
 
-  const payload = await research.json();
   let topics: { topic: string; targets?: string }[] = [];
   try {
-    topics = JSON.parse(payload?.choices?.[0]?.message?.content ?? "{}").topics ?? [];
+    topics = JSON.parse(await chatContent(research)).topics ?? [];
   } catch {
     throw new ConvexError("Couldn't plan the posts just now. Try again.");
   }
@@ -1312,7 +1298,7 @@ export const generatePostImage = internalAction({
     ctx,
     { postId, topic, category, orgName, city, offerings },
   ): Promise<string | null> => {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = llmApiKey();
     if (!apiKey) return null;
 
     const subject = subjectFor(category, orgName);
@@ -1331,24 +1317,16 @@ export const generatePostImage = internalAction({
       .join(" ");
 
     try {
-      const res = await fetch("https://api.openai.com/v1/images/generations", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-image-1",
-          prompt,
-          // Landscape, closest of the supported sizes to Google's 4:3.
-          // JPEG because Google takes JPG or PNG and a compressed JPEG
-          // comfortably clears their 5 MB ceiling.
-          size: "1536x1024",
-          quality: "medium",
-          output_format: "jpeg",
-          output_compression: 85,
-          n: 1,
-        }),
+      const res = await generateImage({
+        apiKey,
+        prompt,
+        // Landscape, closest of the supported sizes to Google's 4:3.
+        // JPEG because Google takes JPG or PNG and a compressed JPEG
+        // comfortably clears their 5 MB ceiling.
+        size: "1536x1024",
+        quality: "medium",
+        outputFormat: "jpeg",
+        outputCompression: 85,
       });
 
       if (!res.ok) {
@@ -1359,7 +1337,7 @@ export const generatePostImage = internalAction({
       }
 
       const data = await res.json();
-      const b64: string | undefined = data?.data?.[0]?.b64_json;
+      const b64 = imageBase64(data);
       if (!b64) return null;
 
       const binary = atob(b64);

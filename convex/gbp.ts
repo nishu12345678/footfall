@@ -18,6 +18,7 @@ import { activeBusinessFor,
 } from "./access";
 import { recordOnboardingStep } from "./analytics";
 import { dataForSeoMapsSearch, googleAutocomplete } from "./searchProviders";
+import { chatCompletion, chatContent, requireLlmApiKey } from "./llm";
 
 /**
  * Step 4 — the parts of the listing that decide whether anyone finds it:
@@ -203,8 +204,7 @@ export const suggestKeywords = paidAction({
     const c = await ctx.runQuery(internal.gbp.keywordContext, { userId });
     if (!c) throw new ConvexError("Connect your Google profile first.");
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new ConvexError("The writing assistant isn't set up on this server yet.");
+    const apiKey = requireLlmApiKey();
 
     const prompt = [
       `Business: ${c.name}`,
@@ -225,40 +225,30 @@ export const suggestKeywords = paidAction({
       .filter(Boolean)
       .join("\n");
 
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        temperature: 0.7,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "You do local SEO for Indian neighbourhood businesses. You know how people actually type searches on a phone.",
-          },
-          { role: "user", content: prompt },
-        ],
-      }),
+    const res = await chatCompletion({
+      apiKey,
+      temperature: 0.7,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You do local SEO for Indian neighbourhood businesses. You know how people actually type searches on a phone.",
+        },
+        { role: "user", content: prompt },
+      ],
     });
 
     if (!res.ok) {
       const body = await res.text();
-      console.error(`[openai] ${res.status} ${body.slice(0, 300)}`);
+      console.error(`[llm] ${res.status} ${body.slice(0, 300)}`);
       throw new ConvexError("Couldn't get keyword ideas just now. Try again in a moment.");
     }
 
-    const data = await res.json();
     let items: string[] = [];
     try {
-      items =
-        JSON.parse(data?.choices?.[0]?.message?.content ?? "{}").items ?? [];
+      items = JSON.parse(await chatContent(res)).items ?? [];
     } catch {
-      console.error("[openai] unparseable keyword reply");
+      console.error("[llm] unparseable keyword reply");
     }
 
     const seen = new Set(c.have.map((h: string) => h.toLowerCase()));

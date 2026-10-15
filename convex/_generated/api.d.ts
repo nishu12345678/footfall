@@ -31,6 +31,7 @@ import type * as http from "../http.js";
 import type * as inbound from "../inbound.js";
 import type * as keywords from "../keywords.js";
 import type * as lists from "../lists.js";
+import type * as llm from "../llm.js";
 import type * as messaging from "../messaging.js";
 import type * as metabase from "../metabase.js";
 import type * as metabaseSync from "../metabaseSync.js";
@@ -73,6 +74,7 @@ declare const fullApi: ApiFromModules<{
   inbound: typeof inbound;
   keywords: typeof keywords;
   lists: typeof lists;
+  llm: typeof llm;
   messaging: typeof messaging;
   metabase: typeof metabase;
   metabaseSync: typeof metabaseSync;

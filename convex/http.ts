@@ -3,6 +3,7 @@ import { httpAction, type ActionCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { auth } from "./auth";
 import { hmacHex, safeEqual } from "./billing";
+import { isAppLink } from "./appLinks";
 
 const http = httpRouter();
 
@@ -49,8 +50,14 @@ http.route({
 
     const googleError = params.get("error");
     if (googleError) {
+      // An attempt started from the native app goes back to the app, which
+      // shows the same message; a web attempt goes back to the web page.
+      const state = params.get("state");
+      const appReturn = state
+        ? await ctx.runQuery(internal.google.appReturnFor, { token: state })
+        : null;
       return bounce(
-        `${fallback}/app/connect`,
+        appReturn ?? `${fallback}/app/connect`,
         googleError === "access_denied"
           ? "You didn't grant access, so we can't manage the listing."
           : googleError,
@@ -60,8 +67,11 @@ http.route({
     const code = params.get("code");
     const state = params.get("state");
     if (!code || !state) {
+      const appReturn = state
+        ? await ctx.runQuery(internal.google.appReturnFor, { token: state })
+        : null;
       return bounce(
-        `${fallback}/app/connect`,
+        appReturn ?? `${fallback}/app/connect`,
         "Google didn't return an authorisation code.",
       );
     }
@@ -74,7 +84,11 @@ http.route({
 
     const returnTo = result.returnTo ?? `${fallback}/app/connect/processing`;
     if (!result.ok) {
-      return bounce(`${fallback}/app/connect`, result.error ?? "Linking failed.");
+      const to =
+        result.returnTo && isAppLink(result.returnTo)
+          ? result.returnTo
+          : `${fallback}/app/connect`;
+      return bounce(to, result.error ?? "Linking failed.");
     }
     return bounce(returnTo);
   }),
